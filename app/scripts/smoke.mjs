@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import { runSmokeProcess } from './smoke-process.mjs';
@@ -18,25 +19,43 @@ export function validBehaviorReport(report) {
     ['happy', 'shout', 'stretch'].every((name) => report.behaviorTopTransparent?.[name] === true);
 }
 
+/** 刚解压的 Electron 在 macOS 上首次启动时 GPU 进程起不来，报 UnknownVizError，第二次即正常
+ * （主导 2026-11-16 复现：删掉 node_modules/electron/dist 后首跑必失败、次跑通过）。
+ * 只在"本次刚下载"且原因正是 UnknownVizError 时重跑一次；其他失败照常报出。 */
+export function shouldRetryFreshElectron(freshDownload, code, output) {
+  return freshDownload && code !== 0 && /UnknownVizError/.test(output);
+}
+
+async function runOnce(electron, args) {
+  let invalid = false; let output = '';
+  const code = await runSmokeProcess(electron, args, {
+    cwd: fileURLToPath(new URL('..', import.meta.url)),
+    stdout: (text) => {
+      output += text;
+      try {
+        const report = JSON.parse(text);
+        if (report.ok && (!validBehaviorReport(report) || !validUiReport(report) || !validSoundReport(report))) {
+          invalid = true;
+          process.stdout.write(JSON.stringify({ ...report, ok: false, reason: '冒烟缺少界面/行为/音效、不透明像素占比无效或角色超出取景' }) + '\n');
+          return;
+        }
+      } catch { /* Ordinary child diagnostics are forwarded unchanged. */ }
+      process.stdout.write(text);
+    },
+  });
+  return { code: invalid ? 1 : code, output };
+}
+
 export async function smokeMain(executable, args = ['.', '--smoke']) {
   try {
+    const freshDownload = !executable && !existsSync(fileURLToPath(new URL('../node_modules/electron/dist', import.meta.url)));
     const electron = executable ?? (await import('electron')).default;
-    let invalid = false;
-    const code = await runSmokeProcess(electron, args, {
-      cwd: fileURLToPath(new URL('..', import.meta.url)),
-      stdout: (text) => {
-        try {
-          const report = JSON.parse(text);
-          if (report.ok && (!validBehaviorReport(report) || !validUiReport(report) || !validSoundReport(report))) {
-            invalid = true;
-            process.stdout.write(JSON.stringify({ ...report, ok: false, reason: '冒烟缺少界面/行为/音效、不透明像素占比无效或角色超出取景' }) + '\n');
-            return;
-          }
-        } catch { /* Ordinary child diagnostics are forwarded unchanged. */ }
-        process.stdout.write(text);
-      },
-    });
-    process.exitCode = invalid ? 1 : code;
+    let result = await runOnce(electron, args);
+    if (shouldRetryFreshElectron(freshDownload, result.code, result.output)) {
+      console.log('刚下载的 Electron 首次启动报 UnknownVizError（macOS 首启问题），重跑一次冒烟');
+      result = await runOnce(electron, args);
+    }
+    process.exitCode = result.code;
   } catch (error) {
     console.log(JSON.stringify({ ok: false, reason: `Electron 冒烟启动失败：${error.message}` }));
     process.exitCode = 1;

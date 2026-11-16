@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 // @ts-expect-error The allowed smoke entry is JavaScript; its validation is tested directly.
-import { BEHAVIORS, validBehaviorReport, validUiReport, validSoundReport } from '../scripts/smoke.mjs';
+import { BEHAVIORS, validBehaviorReport, validUiReport, validSoundReport, shouldRetryFreshElectron } from '../scripts/smoke.mjs';
 import { runSmokeProcess } from '../scripts/smoke-process.mjs';
 
 const success = { ok: true, ui: ['bubble', 'chat', 'settings'], model: '/repo/assets/models/usagi.vrm', earDifferenceRatio: 0.06, happyFaceDifferenceRatio: 0.1, opaqueRatio: 0.21, vrmVersion: '1', expressions: ['blink', 'happy'],
@@ -129,4 +129,14 @@ it('冒烟必须证明 Usagi 资源、上 30% 耳朵变化 > 3% 与脸部表情�
     expect(validBehaviorReport({ ...success, model })).toBe(false);
   }
   expect(validBehaviorReport({ ...success, model: '/bundle/resources/models/usagi.vrm' })).toBe(true);
+});
+
+describe('刚下载的 Electron 首启 UnknownVizError 只重跑一次', () => {
+  it('只在本次刚下载且原因正是 UnknownVizError 时重跑', () => {
+    const viz = '{"ok":false,"reason":"Electron 冒烟进程退出：1；Error: UnknownVizError"}';
+    expect(shouldRetryFreshElectron(true, 1, viz)).toBe(true);
+    expect(shouldRetryFreshElectron(false, 1, viz)).toBe(false);
+    expect(shouldRetryFreshElectron(true, 0, viz)).toBe(false);
+    expect(shouldRetryFreshElectron(true, 1, '{"ok":false,"reason":"冒烟缺少界面"}')).toBe(false);
+  });
 });
