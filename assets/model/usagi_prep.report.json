@@ -41,11 +41,11 @@
   "rotation_degrees": -90.0,
   "front_before": [
     0.9999969601631165,
-    -0.0024733329191803932,
+    -0.0024734039325267076,
     0.0
   ],
   "front_after": [
-    -0.0024733766913414,
+    -0.0024734477046877146,
     -0.9999969601631165,
     0.0
   ],
@@ -74,6 +74,21 @@
     "volume_after": 0.13259153089428127,
     "method": "radial Laplacian relaxation toward angular Dirichlet harmonic profiles; signed-volume compensation with sin^2 boundary taper; Z/azimuth/arms pinned; depth vs interpolated fitted boundary ellipses"
   },
+  "side_waist": {
+    "depth_m": 0.038,
+    "half_width_m": 0.018,
+    "side_x_min": 0.1962384045124054,
+    "side_x_full": 0.2780044063925743,
+    "center_z_inner": 0.2892446417808533,
+    "center_z_outer": 0.30724464178085326,
+    "vertices_processed": 148,
+    "vertices_by_side": {
+      "l": 74,
+      "r": 74
+    },
+    "max_displacement_m": 0.03796649602546075,
+    "method": "side-only radial inset; smoothstep X mask and compact cosine-squared Z band; Z pinned; landmarks measured before inset"
+  },
   "region_boundary": {
     "faces_before_tail_subdivision": 31616,
     "faces_before_cut": 42572,
@@ -87,18 +102,18 @@
     "ear_faces_before_subdivision": 1565,
     "ear_faces_after_subdivision": 25040,
     "boundaries": {
-      "ear_r": [
-        {
-          "segments": 213,
-          "closed": true,
-          "max_turn_degrees": 25.923766136277248
-        }
-      ],
       "ear_l": [
         {
           "segments": 217,
           "closed": true,
           "max_turn_degrees": 26.345289553357293
+        }
+      ],
+      "ear_r": [
+        {
+          "segments": 213,
+          "closed": true,
+          "max_turn_degrees": 25.923766136277248
         }
       ],
       "tail": [
