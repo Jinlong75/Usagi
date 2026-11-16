@@ -1,6 +1,6 @@
 # Blender 网格清理与预览
 
-仅使用 Blender 自带的 Python、bpy、bmesh、mathutils 和 Python 标准库，无需安装其他 Python 包。已在 Blender 5.2.3 LTS 验证。
+清理、整备和绑骨仅使用 Blender 自带的 Python、bpy、bmesh、mathutils 和 Python 标准库。011 五官图集使用仓库外临时 Pillow 环境，运行时测试使用临时 npm 环境（见末节）。已在 Blender 5.2.3 LTS 验证。
 
 ## 运行真实 Tripo 模型
 
@@ -85,7 +85,7 @@ VRM 的骨架依赖保留用于显示，脚本不编辑或导出骨架。自动�
 sh pipeline/build_usagi.sh prep
 ```
 
-入口使用 `Material/tripo/usagi_3d.glb`，复用清理流程，自动转正到 Blender -Y、删除雕刻五官、修整脸部、分配 Body／EarInner／Tail 材质和同名顶点组，并测量绑骨关键点。原始模型不改写，Blender 路径规则与测试入口一致。`rig` 阶段见下节；`face`、`vrm` 阶段仍只打印“尚未实现”。
+入口使用 `Material/tripo/usagi_3d.glb`，复用清理流程，自动转正到 Blender -Y、删除雕刻五官、修整脸部、分配 Body／EarInner／Tail 材质和同名顶点组，并测量绑骨关键点。原始模型不改写，Blender 路径规则与测试入口一致。`rig` 阶段见下节；`face` 阶段见 011 小节；`vrm` 保留入口仍只打印“尚未实现”。
 
 `prep_usagi.py` 接受 `--in`、`--out`、`--landmarks`、`--report`，以及 `--smooth-waist on|off`（默认 **off**）和 `--waist-iterations`（默认 100）。用户已决定保留腰线，正式底模不做腰线平滑。
 
@@ -153,3 +153,49 @@ sh pipeline/build_usagi.sh rig
 `pipeline/run_tests.sh` 最后运行 `test_rig_usagi.py`：合成球身/头、耳柱、短臂柱、短腿柱和尾球，附独立关键点与区域数据；实际尝试热量权重并验证最终结果。覆盖骨长与映射、独立坐标掩码的权重约束、故意写坏脸部权重后检查能否检出、耳弯变形局部性、GLB JSON 内元信息/材质/弹簧参数、碰撞体世界位置，以及 VRM 插件重新导入后的人形映射与 spring/collider 数量。另验证 spring 显式末端和父子链、九个实际模拟关节（包含 Tail）、旧颈部带之外仍有平滑权重混合、高度带下边界连续性，以及颈部/脸部渐变交界处的斜率连续性。原 cleanup/preview/prep 测试不变。测试成功清理临时产物，失败保留现场并返回非零；姿态截图由 rig 自测与 010 门禁生成。
 
 UniVRM / Mate Engine 尚未实测。导出只使用 VRM 1.0、MToon 1.0、标准球碰撞体与最多四个权重通道，减少格式差异；Q 版极短四肢的通用人形动画重定向、单关节尾巴弹簧及 MToon 世界坐标描边在具体运行时中的表现，需要合流后确认。短臂上举会进入大头轮廓，几何比例没有在本阶段更改。
+
+## 五官贴片与 VRM 表情（011）
+
+```sh
+ar gui check Blender --headless
+sh pipeline/build_usagi.sh face
+```
+
+仅读取 rig 的 `assets/model/usagi_body.vrm` 与 `usagi_landmarks.json`，缺少身体模型直接失败。不会重新整备身体、改变骨骼/权重/弹簧或替换桌宠程序模型。最终文件是 `assets/model/usagi.vrm`，另输出 `face/eyes_atlas.png`、`face/mouth_atlas.png`、`face/atlas_preview.png`、`usagi_face.report.json` 和 `preview_face/`。预览用 Eevee、实际 MToon 贴图/透明截断与固定正面相机，14 张 384×384 脸部近景及带名字的四列表情拼图 `expression_sheet.png`；导出发生在预览改动材质 offset 之前，模型默认保持 neutral。
+
+图集采用 **Pillow 11.3.0**。入口通过 `pipeline/face/python_env.sh` 在系统临时目录创建虚拟环境，退出清理；只在该环境安装 Pillow，不改用户 Python、Blender 或项目依赖。可用 `FACE_PYTHON=/absolute/venv/bin/python` 指定已安装这个版本 Pillow 的外部环境。首次生成需要 pip 网络访问。绘制脚本独立可运行：
+
+```sh
+"$FACE_PYTHON" pipeline/face/draw_atlas.py --out assets/model/face
+```
+
+两张 RGBA 图都是 2048×2048、4×4 格、每格 512×512。绘制时做 2 倍超采样再缩小；边缘至少 41 像素（8%）全透明。未命名格完全透明。按左到右、上到下排列：
+
+| 图集 | 格子顺序 |
+| --- | --- |
+| eyes | neutral, blink, blinkLeft, blinkRight, happy, angry, sad, relaxed, surprised |
+| mouth | neutral, aa, ih, ou, ee, oh, happy, angry, sad, surprised |
+
+`relaxed` 的嘴明确沿用 neutral；它仍显式绑定两张贴片。blinkLeft 指角色左眼（Blender +X / 正面图片右侧）。眼睛高光、两侧长眉弧、ω 嘴、粉色椭圆与三条斜短线依据 `Material/tripo/usagi_3d_ref.png` 和 `Material/tripo/refs/face.png` 的正脸手工用椭圆和 Bezier 曲线画出，线色 `#2B1A12`。表情沿用这些特征，使用独立格子，不混合格内图案。
+
+定位直接使用任务给出的原雕刻块范围，按 009 的 `(x,y,z) → (y,-x,z)`（绕 Z -90°）转换。眼睛中心为 X ±0.1045、Z 0.458；眉线为左右 X ±(0.074…0.216)、Z 0.513…0.640；嘴 X -0.055…0.050、Z 0.303…0.404（米）。用 landmark `face_normal` 的正交平面投影，横向为世界 +X 在该平面的投影，向上为 normal×right；腮红沿用原贴片中心的脸平面 X ±0.194、向上投影 0.347 米。两张贴片从身体前向表面复制原多边形，保留曲面与三角划分；只取完全落在投影框内的面，五官外至少 15% 的透明保护区吸收边界三角面差异。眼贴片额外覆盖参考图的双颊。所有点沿原顶点世界法线外移 0.0015 米，刚性 100% Head。原网格 UV 在 [0,1]，材质 `KHR_texture_transform.scale=[.25,.25]`、默认 offset=[0,0]，所以只显示 neutral。报告记录原雕刻/旋转/投影边界、平面轴、贴片来源顶点、顶点数、UV 范围和全部绑定，方便核对。
+
+修订后的线宽以脸平面米制计算：眉线、闭眼弧线、ω 嘴、sad/ee 嘴及开口轮廓统一为 **0.0142 米**，约头宽 0.66 米的 2.15%。非正方形投影框用椭圆像素笔刷抵消 UV 拉伸，保证模型上线宽均匀；眉线中心曲线与长度、睁眼椭圆与白色高光维持原值。neutral 嘴的含线宽外框为 X `[-0.055, 0.050]`、向上投影 `[0.24984, 0.35532]`，中心 `[-0.0025, 0.30258]` 米，对齐原雕刻投影范围。为放大的腮红保留 8% 透明边距，眼贴片向下扩至投影 0.266 米，并补偿眼睛像素高度以保持原米制尺寸。嘴贴片的透明投影框扩为 X `[-0.0925, 0.0875]`、向上 `[0.209, 0.396]`，容纳同步放大的口型。腮红宽 0.116 米（头宽约 17.6%）、高 0.07733 米，比例 1.5:1；左右含色外框分别为 X `[-0.252,-0.136]` / `[0.136,0.252]`、向上 `[0.30833,0.38567]` 米；三道斜线为黑色并同步加粗。atlas_preview 按投影框实际宽高展示，避免将宽眼贴图的正方形 UV 格误看成实际形状。
+
+VRM 插件的 `Vrm1Importer.setup_vrm1_humanoid_bones()` 会给无子骨 Foot 选择世界 `(0,-1,0)` 的目标轴，改变 Blender rest bone 的轴向；导出会将这次轴转换写成约 90° 的局部旋转与新的逆绑定矩阵。face 在导入后读取输入 GLB 节点层级/TRS，转换到 Blender Z-up，恢复所有输入骨骼的世界 rest frame，保留骨子对象（碰撞球）的世界矩阵，并显式选择 `restPositionPose` 导出。修复发生在 Blender 场景，**不改输入 VRM，也不事后修改导出的 GLB**。测试独立解析输入/输出 JSON 与二进制 MAT4，按节点名检查所有原节点的 translation/rotation/scale、所有 skin 的每个关节逆绑定矩阵，容差均为 `1e-4`；同时覆盖合成模型和正式产物。
+
+材质选择 **MASK、cutoff=0.5**，不描边，renderQueueOffsetNumber=0（MToon 1.0 的 OPAQUE/MASK 要求为零，导出器也可省略这个默认字段）。MASK 保持细线清楚并减少眼/嘴两个面层的透明排序问题；外移负责深度分离。baseColorFactor RGB 与 shadeColorFactor 都为零，颜色由同一图集的 emissiveTexture、emissiveFactor=[1,1,1]、emissiveStrength=1 给出，避免明暗改变五官颜色。baseColorTexture 仍提供 alpha，并与 emissiveTexture 使用相同的 UV 变换。
+
+所有 14 个 VRM 1.0 preset 表情为 `isBinary=true`，只用 textureTransformBinds，scale 始终 [.25,.25]，offset 指定目标格。五个情绪同时绑定眼/嘴，并配置 overrideBlink=block、overrideMouth=block、overrideLookAt=none；三个 blink 只绑定眼，五个口型只绑定嘴，neutral 显式绑定两张材质的默认格。
+
+three-vrm **3.5.5** 源码确认支持 VRM 1.0 textureTransformBinds，MToon 的 map/emissiveMap 等纹理一起变换。绑定值是绝对目标，但运行时将每个目标减去初始变换，再按权重**相加**；二值权重仅在 >0.5 时启用。happy=1 会完全阻止 blink/aa 等类别，关闭后恢复仍在请求的眨眼/口型。**override 不负责情绪之间的互斥，也不阻止 blink 与 blinkLeft 同时激活。调用方必须每次只选一个情绪、一个 blink 和一个口型，切换时清零同类旧值。** 这不是靠 isBinary 能解决的问题；多个情绪同时为 1 会将 offset 相加而串格。本阶段不修改 app，此调用约束留给模型合流。
+
+依据（固定 v3.5.5 源码）：[导入绑定](https://github.com/pixiv/three-vrm/blob/v3.5.5/packages/three-vrm-core/src/expressions/VRMExpressionLoaderPlugin.ts)、[UV 增量叠加与支持材质](https://github.com/pixiv/three-vrm/blob/v3.5.5/packages/three-vrm-core/src/expressions/VRMExpressionTextureTransformBind.ts)、[override 类别与应用](https://github.com/pixiv/three-vrm/blob/v3.5.5/packages/three-vrm-core/src/expressions/VRMExpressionManager.ts)、[二值阈值](https://github.com/pixiv/three-vrm/blob/v3.5.5/packages/three-vrm-core/src/expressions/VRMExpression.ts)。未进行 UniVRM / Mate Engine 实机检查。
+
+`sh pipeline/run_tests.sh` 保留全部原测试，并追加：
+
+- Pillow 像素测试：尺寸、命名格/空格、每格 >0.5% 且 <50% 非透明覆盖、8% 全透明边距、各命名格内容不同，以及 neutral 嘴米制外框、腮红尺寸/比例/中心。
+- 在 010 同一合成角色上实际运行 rig→face，检查曲面复制/外移、全 Head、UV、材质/14 个表达式/格坐标，身体每个三角面的位置与逐点蒙皮、元信息、人形与弹簧保留，以及 VRM 插件重新导入后的绑定与权重。身体比较允许导出器在接缝拆点，位置/权重/碰撞体使用 1e-6 数值容差；插件附加的四个空 look preset 只允许没有任何绑定。
+- 临时 npm 目录仅安装 `@pixiv/three-vrm@3.5.5` 与 app 同版 `three@0.187.0`（不改 app/package 或锁文件），读取合成 VRM 的真实 JSON 绑定，调用实际 MToonMaterial、VRMExpressionManager 和纹理绑定类，验证 happy 阻止 blink/aa、二值阈值、base/emissive 同步、关闭表情重置。这些测试依赖用于覆盖目标运行时的叠加行为，不加入桌宠产品依赖。npm 首次需要网络，退出清理临时目录。
+
+失败保留合成模型与日志现场；全量验收和门禁截图由 AgentRouter 执行，执行者只跑任务点名的测试和 face 预览。

@@ -1,0 +1,1086 @@
+{
+  "patches": {
+    "FaceEyes": {
+      "vertices": 369,
+      "faces": 658,
+      "source_body": "Usagi_Body",
+      "source_vertex_ids": [
+        539,
+        540,
+        541,
+        542,
+        543,
+        544,
+        545,
+        546,
+        547,
+        548,
+        549,
+        550,
+        551,
+        552,
+        553,
+        554,
+        555,
+        556,
+        557,
+        558,
+        559,
+        560,
+        561,
+        562,
+        563,
+        564,
+        565,
+        610,
+        607,
+        606,
+        611,
+        612,
+        613,
+        597,
+        621,
+        598,
+        601,
+        648,
+        650,
+        652,
+        654,
+        655,
+        660,
+        661,
+        663,
+        664,
+        665,
+        666,
+        667,
+        668,
+        669,
+        670,
+        671,
+        672,
+        673,
+        674,
+        687,
+        688,
+        689,
+        693,
+        694,
+        695,
+        701,
+        702,
+        703,
+        713,
+        714,
+        715,
+        719,
+        720,
+        721,
+        722,
+        726,
+        727,
+        780,
+        779,
+        785,
+        891,
+        892,
+        894,
+        923,
+        929,
+        965,
+        979,
+        993,
+        994,
+        1041,
+        1042,
+        1307,
+        1309,
+        1330,
+        1331,
+        1332,
+        1333,
+        1334,
+        1335,
+        1336,
+        1337,
+        1338,
+        1339,
+        1340,
+        1341,
+        1342,
+        1343,
+        1345,
+        1346,
+        1347,
+        1348,
+        1349,
+        1350,
+        1351,
+        1352,
+        1353,
+        1354,
+        1355,
+        1356,
+        1357,
+        1362,
+        1363,
+        1364,
+        1365,
+        1368,
+        1369,
+        1370,
+        1371,
+        1372,
+        1373,
+        1374,
+        1375,
+        1376,
+        1377,
+        1378,
+        1379,
+        1380,
+        1477,
+        1478,
+        1479,
+        1480,
+        1481,
+        1484,
+        1485,
+        1486,
+        1487,
+        1488,
+        1489,
+        1491,
+        1505,
+        1536,
+        1543,
+        1557,
+        1558,
+        1559,
+        1560,
+        1561,
+        1562,
+        1563,
+        1567,
+        1568,
+        1569,
+        1570,
+        1571,
+        1572,
+        1573,
+        1574,
+        1575,
+        1576,
+        1584,
+        1585,
+        1588,
+        1589,
+        1605,
+        1606,
+        1607,
+        1611,
+        1612,
+        1619,
+        1620,
+        1629,
+        1630,
+        1631,
+        1632,
+        1659,
+        1660,
+        1667,
+        1668,
+        1669,
+        1670,
+        1671,
+        1672,
+        1673,
+        1674,
+        1675,
+        1676,
+        1677,
+        1678,
+        2775,
+        2747,
+        2831,
+        2832,
+        2855,
+        2856,
+        2863,
+        2866,
+        2865,
+        2867,
+        2868,
+        2869,
+        2878,
+        2879,
+        2880,
+        2924,
+        2946,
+        2947,
+        2948,
+        2949,
+        2950,
+        2951,
+        2961,
+        2967,
+        2971,
+        3003,
+        3014,
+        3028,
+        3029,
+        3030,
+        3031,
+        3036,
+        3038,
+        3048,
+        3058,
+        3322,
+        3328,
+        3327,
+        3329,
+        3330,
+        3326,
+        3335,
+        3336,
+        3337,
+        3338,
+        3339,
+        3344,
+        3334,
+        3343,
+        3345,
+        3346,
+        3347,
+        3348,
+        3349,
+        3350,
+        3351,
+        3352,
+        3353,
+        3354,
+        3355,
+        3356,
+        3402,
+        3403,
+        3404,
+        3405,
+        3406,
+        3407,
+        3408,
+        3409,
+        3410,
+        3411,
+        3412,
+        3413,
+        3477,
+        3478,
+        3480,
+        3481,
+        3482,
+        3484,
+        3485,
+        3492,
+        3493,
+        3494,
+        3495,
+        3496,
+        3497,
+        3498,
+        3499,
+        3500,
+        3501,
+        3502,
+        3503,
+        3504,
+        3505,
+        3506,
+        3507,
+        3508,
+        3509,
+        3510,
+        3511,
+        3512,
+        3521,
+        3522,
+        3523,
+        3524,
+        3525,
+        3537,
+        3538,
+        3539,
+        3540,
+        3541,
+        3542,
+        3543,
+        3545,
+        3546,
+        3547,
+        3548,
+        3549,
+        3595,
+        3596,
+        3597,
+        3598,
+        3602,
+        3603,
+        3604,
+        3658,
+        3707,
+        3708,
+        3709,
+        3710,
+        3711,
+        3712,
+        3733,
+        3768,
+        3769,
+        3843,
+        3844,
+        3845,
+        3846,
+        3847,
+        3848,
+        3849,
+        3850,
+        3851,
+        3852,
+        3853,
+        3854,
+        3855,
+        3856,
+        3857,
+        3858,
+        3859,
+        3860,
+        3861,
+        3863,
+        3864,
+        3867,
+        3865,
+        3870,
+        3874,
+        3875,
+        3878,
+        3879,
+        4084,
+        4085,
+        4086,
+        4087,
+        4088,
+        4089,
+        4090,
+        4091,
+        4092,
+        4093,
+        4094
+      ],
+      "offset_m": 0.0015,
+      "head_weight": 1,
+      "uv_min": [
+        0.001099489745683968,
+        0.0026020125951617956
+      ],
+      "uv_max": [
+        0.9988981485366821,
+        0.9963257312774658
+      ],
+      "plane_bounds": [
+        -0.3224,
+        0.3224,
+        0.266,
+        0.658
+      ]
+    },
+    "FaceMouth": {
+      "vertices": 52,
+      "faces": 75,
+      "source_body": "Usagi_Body",
+      "source_vertex_ids": [
+        719,
+        663,
+        720,
+        721,
+        725,
+        724,
+        726,
+        664,
+        727,
+        667,
+        778,
+        779,
+        780,
+        785,
+        891,
+        672,
+        892,
+        687,
+        965,
+        979,
+        993,
+        1324,
+        1321,
+        1322,
+        1325,
+        1323,
+        1326,
+        1327,
+        1328,
+        1147,
+        1152,
+        1329,
+        1157,
+        2747,
+        2748,
+        2749,
+        2775,
+        2831,
+        2832,
+        2855,
+        2856,
+        2857,
+        2863,
+        2878,
+        2879,
+        3310,
+        3311,
+        3088,
+        3089,
+        3312,
+        3313,
+        3314
+      ],
+      "offset_m": 0.0015,
+      "head_weight": 1,
+      "uv_min": [
+        0.0022872304543852806,
+        0.01767532154917717
+      ],
+      "uv_max": [
+        0.9847553968429565,
+        0.9342881441116333
+      ],
+      "plane_bounds": [
+        -0.0925,
+        0.0875,
+        0.209,
+        0.396
+      ]
+    }
+  },
+  "expressions": {
+    "neutral": {
+      "isBinary": true,
+      "overrideBlink": "none",
+      "overrideMouth": "none",
+      "overrideLookAt": "none",
+      "textureTransformBinds": [
+        {
+          "material": "FaceEyes",
+          "tile": "neutral",
+          "scale": [
+            0.25,
+            0.25
+          ],
+          "offset": [
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "material": "FaceMouth",
+          "tile": "neutral",
+          "scale": [
+            0.25,
+            0.25
+          ],
+          "offset": [
+            0.0,
+            0.0
+          ]
+        }
+      ]
+    },
+    "blink": {
+      "isBinary": true,
+      "overrideBlink": "none",
+      "overrideMouth": "none",
+      "overrideLookAt": "none",
+      "textureTransformBinds": [
+        {
+          "material": "FaceEyes",
+          "tile": "blink",
+          "scale": [
+            0.25,
+            0.25
+          ],
+          "offset": [
+            0.25,
+            0.0
+          ]
+        }
+      ]
+    },
+    "blinkLeft": {
+      "isBinary": true,
+      "overrideBlink": "none",
+      "overrideMouth": "none",
+      "overrideLookAt": "none",
+      "textureTransformBinds": [
+        {
+          "material": "FaceEyes",
+          "tile": "blinkLeft",
+          "scale": [
+            0.25,
+            0.25
+          ],
+          "offset": [
+            0.5,
+            0.0
+          ]
+        }
+      ]
+    },
+    "blinkRight": {
+      "isBinary": true,
+      "overrideBlink": "none",
+      "overrideMouth": "none",
+      "overrideLookAt": "none",
+      "textureTransformBinds": [
+        {
+          "material": "FaceEyes",
+          "tile": "blinkRight",
+          "scale": [
+            0.25,
+            0.25
+          ],
+          "offset": [
+            0.75,
+            0.0
+          ]
+        }
+      ]
+    },
+    "happy": {
+      "isBinary": true,
+      "overrideBlink": "block",
+      "overrideMouth": "block",
+      "overrideLookAt": "none",
+      "textureTransformBinds": [
+        {
+          "material": "FaceEyes",
+          "tile": "happy",
+          "scale": [
+            0.25,
+            0.25
+          ],
+          "offset": [
+            0.0,
+            0.25
+          ]
+        },
+        {
+          "material": "FaceMouth",
+          "tile": "happy",
+          "scale": [
+            0.25,
+            0.25
+          ],
+          "offset": [
+            0.5,
+            0.25
+          ]
+        }
+      ]
+    },
+    "angry": {
+      "isBinary": true,
+      "overrideBlink": "block",
+      "overrideMouth": "block",
+      "overrideLookAt": "none",
+      "textureTransformBinds": [
+        {
+          "material": "FaceEyes",
+          "tile": "angry",
+          "scale": [
+            0.25,
+            0.25
+          ],
+          "offset": [
+            0.25,
+            0.25
+          ]
+        },
+        {
+          "material": "FaceMouth",
+          "tile": "angry",
+          "scale": [
+            0.25,
+            0.25
+          ],
+          "offset": [
+            0.75,
+            0.25
+          ]
+        }
+      ]
+    },
+    "sad": {
+      "isBinary": true,
+      "overrideBlink": "block",
+      "overrideMouth": "block",
+      "overrideLookAt": "none",
+      "textureTransformBinds": [
+        {
+          "material": "FaceEyes",
+          "tile": "sad",
+          "scale": [
+            0.25,
+            0.25
+          ],
+          "offset": [
+            0.5,
+            0.25
+          ]
+        },
+        {
+          "material": "FaceMouth",
+          "tile": "sad",
+          "scale": [
+            0.25,
+            0.25
+          ],
+          "offset": [
+            0.0,
+            0.5
+          ]
+        }
+      ]
+    },
+    "relaxed": {
+      "isBinary": true,
+      "overrideBlink": "block",
+      "overrideMouth": "block",
+      "overrideLookAt": "none",
+      "textureTransformBinds": [
+        {
+          "material": "FaceEyes",
+          "tile": "relaxed",
+          "scale": [
+            0.25,
+            0.25
+          ],
+          "offset": [
+            0.75,
+            0.25
+          ]
+        },
+        {
+          "material": "FaceMouth",
+          "tile": "neutral",
+          "scale": [
+            0.25,
+            0.25
+          ],
+          "offset": [
+            0.0,
+            0.0
+          ]
+        }
+      ]
+    },
+    "surprised": {
+      "isBinary": true,
+      "overrideBlink": "block",
+      "overrideMouth": "block",
+      "overrideLookAt": "none",
+      "textureTransformBinds": [
+        {
+          "material": "FaceEyes",
+          "tile": "surprised",
+          "scale": [
+            0.25,
+            0.25
+          ],
+          "offset": [
+            0.0,
+            0.5
+          ]
+        },
+        {
+          "material": "FaceMouth",
+          "tile": "surprised",
+          "scale": [
+            0.25,
+            0.25
+          ],
+          "offset": [
+            0.25,
+            0.5
+          ]
+        }
+      ]
+    },
+    "aa": {
+      "isBinary": true,
+      "overrideBlink": "none",
+      "overrideMouth": "none",
+      "overrideLookAt": "none",
+      "textureTransformBinds": [
+        {
+          "material": "FaceMouth",
+          "tile": "aa",
+          "scale": [
+            0.25,
+            0.25
+          ],
+          "offset": [
+            0.25,
+            0.0
+          ]
+        }
+      ]
+    },
+    "ih": {
+      "isBinary": true,
+      "overrideBlink": "none",
+      "overrideMouth": "none",
+      "overrideLookAt": "none",
+      "textureTransformBinds": [
+        {
+          "material": "FaceMouth",
+          "tile": "ih",
+          "scale": [
+            0.25,
+            0.25
+          ],
+          "offset": [
+            0.5,
+            0.0
+          ]
+        }
+      ]
+    },
+    "ou": {
+      "isBinary": true,
+      "overrideBlink": "none",
+      "overrideMouth": "none",
+      "overrideLookAt": "none",
+      "textureTransformBinds": [
+        {
+          "material": "FaceMouth",
+          "tile": "ou",
+          "scale": [
+            0.25,
+            0.25
+          ],
+          "offset": [
+            0.75,
+            0.0
+          ]
+        }
+      ]
+    },
+    "ee": {
+      "isBinary": true,
+      "overrideBlink": "none",
+      "overrideMouth": "none",
+      "overrideLookAt": "none",
+      "textureTransformBinds": [
+        {
+          "material": "FaceMouth",
+          "tile": "ee",
+          "scale": [
+            0.25,
+            0.25
+          ],
+          "offset": [
+            0.0,
+            0.25
+          ]
+        }
+      ]
+    },
+    "oh": {
+      "isBinary": true,
+      "overrideBlink": "none",
+      "overrideMouth": "none",
+      "overrideLookAt": "none",
+      "textureTransformBinds": [
+        {
+          "material": "FaceMouth",
+          "tile": "oh",
+          "scale": [
+            0.25,
+            0.25
+          ],
+          "offset": [
+            0.25,
+            0.25
+          ]
+        }
+      ]
+    }
+  },
+  "plugin_validation": [],
+  "atlas": {
+    "eyes": [
+      "neutral",
+      "blink",
+      "blinkLeft",
+      "blinkRight",
+      "happy",
+      "angry",
+      "sad",
+      "relaxed",
+      "surprised"
+    ],
+    "mouth": [
+      "neutral",
+      "aa",
+      "ih",
+      "ou",
+      "ee",
+      "oh",
+      "happy",
+      "angry",
+      "sad",
+      "surprised"
+    ],
+    "grid": [
+      4,
+      4
+    ],
+    "cell": 512,
+    "margin": 41
+  },
+  "plane": {
+    "right": [
+      1.0,
+      6.651992407569196e-06,
+      -1.1502746701808064e-06
+    ],
+    "up": [
+      0.0,
+      0.17039304971694946,
+      0.985376238822937
+    ],
+    "normal": [
+      6.7507139647204895e-06,
+      -0.9853761196136475,
+      0.17039303481578827
+    ]
+  },
+  "sculpture": {
+    "eyeLeft": {
+      "source_bounds": [
+        [
+          0.241,
+          0.064,
+          0.419
+        ],
+        [
+          0.29,
+          0.145,
+          0.497
+        ]
+      ],
+      "rotated_bounds": [
+        [
+          0.06400000303983688,
+          -0.28999999165534973,
+          0.4189999997615814
+        ],
+        [
+          0.14499999582767487,
+          -0.2409999966621399,
+          0.4970000088214874
+        ]
+      ],
+      "projected_bounds": [
+        [
+          0.06399750227546974,
+          0.1449979107324566
+        ],
+        [
+          0.36345865949988365,
+          0.4486672729253769
+        ]
+      ]
+    },
+    "eyeRight": {
+      "source_bounds": [
+        [
+          0.241,
+          -0.145,
+          0.419
+        ],
+        [
+          0.29,
+          -0.064,
+          0.497
+        ]
+      ],
+      "rotated_bounds": [
+        [
+          -0.14499999582767487,
+          -0.28999999165534973,
+          0.4189999997615814
+        ],
+        [
+          -0.06400000303983688,
+          -0.2409999966621399,
+          0.4970000088214874
+        ]
+      ],
+      "projected_bounds": [
+        [
+          -0.145002496592042,
+          -0.06400208813505515
+        ],
+        [
+          0.36345865949988365,
+          0.4486672729253769
+        ]
+      ]
+    },
+    "browLeft": {
+      "source_bounds": [
+        [
+          0.169,
+          0.074,
+          0.513
+        ],
+        [
+          0.212,
+          0.216,
+          0.64
+        ]
+      ],
+      "rotated_bounds": [
+        [
+          0.07400000095367432,
+          -0.21199999749660492,
+          0.5130000114440918
+        ],
+        [
+          0.2160000056028366,
+          -0.16899999976158142,
+          0.6399999856948853
+        ]
+      ],
+      "projected_bounds": [
+        [
+          0.0739978545555573,
+          0.21599829132520654
+        ],
+        [
+          0.4693746641278267,
+          0.6018443796783686
+        ]
+      ]
+    },
+    "browRight": {
+      "source_bounds": [
+        [
+          0.169,
+          -0.216,
+          0.513
+        ],
+        [
+          0.212,
+          -0.074,
+          0.64
+        ]
+      ],
+      "rotated_bounds": [
+        [
+          -0.2160000056028366,
+          -0.21199999749660492,
+          0.5130000114440918
+        ],
+        [
+          -0.07400000095367432,
+          -0.16899999976158142,
+          0.6399999856948853
+        ]
+      ],
+      "projected_bounds": [
+        [
+          -0.21600215200095363,
+          -0.07400171523130439
+        ],
+        [
+          0.4693746641278267,
+          0.6018443796783686
+        ]
+      ]
+    },
+    "mouth": {
+      "source_bounds": [
+        [
+          0.251,
+          -0.055,
+          0.303
+        ],
+        [
+          0.286,
+          0.05,
+          0.404
+        ]
+      ],
+      "rotated_bounds": [
+        [
+          -0.054999999701976776,
+          -0.28600001335144043,
+          0.30300000309944153
+        ],
+        [
+          0.05000000074505806,
+          -0.25099998712539673,
+          0.40400001406669617
+        ]
+      ],
+      "projected_bounds": [
+        [
+          -0.055002366882831666,
+          0.04999798256179133
+        ],
+        [
+          0.24983657896518707,
+          0.35532334819436073
+        ]
+      ]
+    }
+  },
+  "alpha_mode": "MASK",
+  "alpha_cutoff": 0.5,
+  "render_queue_offset": 0,
+  "artwork": {
+    "line_width_m": 0.0142,
+    "neutral_mouth_bounds": [
+      -0.055,
+      0.05,
+      0.24984,
+      0.35532
+    ],
+    "cheek_bounds": [
+      [
+        -0.252,
+        -0.136,
+        0.3083333333333333,
+        0.38566666666666666
+      ],
+      [
+        0.136,
+        0.252,
+        0.3083333333333333,
+        0.38566666666666666
+      ]
+    ],
+    "coordinates": "metres: right/up axes of landmark face plane"
+  },
+  "rest_pose": "Source node world frames restored in Blender before export; restPositionPose; no exported GLB edits.",
+  "blend_policy": "Binary weights; emotions block blink/mouth; application must select one emotion, one blink and one viseme at a time. Offsets add relative to neutral.",
+  "body_unchanged": true
+}
