@@ -1,6 +1,6 @@
 ---
 id: 022
-title: 身体形状还原为 Tripo 原始模型：撤掉侧腰凹口、脸部平滑不许碰腰线，手臂静止保持原始姿态
+title: 换用更细致的 Tripo 模型 usagi3d2.glb 并严格保持其形状：撤掉侧腰凹口、脸部平滑不许碰腰线，手臂静止保持原始姿态
 type: fix
 worker: auto
 effort: high
@@ -30,7 +30,9 @@ review: true
 
 用户 2026-11-16 看了 015 的结果："还是不对，身子旁边有凸起，你直接看 material 下的 tripo 生成的原始 3d 模型，那个形状就是最标准的形状"。
 
-**`Material/tripo/usagi_3d.glb` 的形状就是标准。** 除了去掉脸上雕刻出来的五官（眼、眉、嘴的小凸块，D3/D8：五官改用贴片），身体、头、腰线、小手、脚、耳朵、尾巴的形状都必须和原始模型一致。
+同一天用户又放了一个更细致的模型："我在 material/tripo 下放了一个更加细致的乌撒气3d模型usagi3d2"——**`Material/tripo/usagi3d2.glb` 取代 `usagi_3d.glb` 成为流水线输入和形状标准**（主导已渲染核对：形状、朝向 +X 与旧模型一致，网格更密、雕刻五官更清楚；旧文件保留不删）。
+
+**`Material/tripo/usagi3d2.glb` 的形状就是标准。** 除了去掉脸上雕刻出来的五官（眼、眉、嘴的小凸块，D3/D8：五官改用贴片），身体、头、腰线、小手、脚、耳朵、尾巴的形状都必须和原始模型一致。
 
 主导已核对（Blender 渲染原始模型与 `assets/model/preview/preview_front.png` 对比）：
 
@@ -40,9 +42,10 @@ review: true
 
 ## 要求
 
+0. **换输入**：`pipeline/build_usagi.sh`（两处）、`pipeline/tests/test_prep_usagi.py:273`、`pipeline/README.md:88` 里的 `Material/tripo/usagi_3d.glb` 改为 `Material/tripo/usagi3d2.glb`；prep 里依赖网格密度的参数（合并距离、五官碎块识别、耳朵细分次数等）按新网格核实，汇报写新旧网格顶点/面数。若新网格太密导致桌宠运行或门禁明显变慢（VRM 超过约 5 MB、冒烟超时），先汇报再决定是否减面，**不要擅自减面**。
 1. **撤掉 015 的侧腰凹口**：`prep` 不再调用 `deepen_side_waist`；函数和它的测试一起删除（汇报的 `## 断言改写` 写明删了哪条测试、为什么——用户否定了这个做法）。
 2. **脸部平滑只碰雕刻五官**：`smooth_face`（或替代做法）只能改动雕刻五官所在的小区域（眼、眉、嘴的凸起及周围一圈过渡，范围由五官凸起的实际包围盒外扩一个小边距得出，不用固定的 z 区间），**腰线凹槽及以下、头部其余部分一个顶点都不许动**。
-3. **形状一致性检查（新增，写进 `pipeline/tests/`，由 `run_tests.sh` 跑）**：把 prep 输出的底模（`usagi_base.glb`，按 prep 自己的朝向/缩放变换逆回到原始坐标，或把原始模型变换到底模坐标）与 `Material/tripo/usagi_3d.glb` 比较：
+3. **形状一致性检查（新增，写进 `pipeline/tests/`，由 `run_tests.sh` 跑）**：把 prep 输出的底模（`usagi_base.glb`，按 prep 自己的朝向/缩放变换逆回到原始坐标，或把原始模型变换到底模坐标）与 `Material/tripo/usagi3d2.glb` 比较：
    - 底模每个顶点到原始模型表面的最近距离（BVHTree），**五官区域以外最大 ≤ 0.5 mm**（按原始模型尺度换算；若原始模型单位不是米，按 prep 缩放后高度 1 的尺度写成相对值 0.0005）；
    - 反方向：原始模型五官区域以外的顶点到底模表面的最近距离同样 ≤ 0.5 mm；
    - 五官区域的定义与 prep 用的是同一个函数，报告里输出区域顶点数、两个方向的最大距离和最大距离所在位置；
@@ -54,7 +57,7 @@ review: true
 
 ## 验收产物
 
-- `assets/model/preview/` 重出的五视图；另把**原始模型**用同一个 `render_preview.py`、同一机位渲染一份放 `assets/model/preview_original/`（原始模型朝 +X，正面朝向用 prep 的同一变换摆正后再渲染，保证两套图正面对正面），供主导并排对比。
+- `assets/model/preview/` 重出的五视图；另把**原始模型 usagi3d2.glb** 用同一个 `render_preview.py`、同一机位渲染一份放 `assets/model/preview_original/`（原始模型朝 +X，正面朝向用 prep 的同一变换摆正后再渲染，保证两套图正面对正面），供主导并排对比。
 - 门禁冒烟截图 smoke-idle / walk / happy：两侧不能有鼓起，腰线像原始模型那样是一圈光滑凹槽，小手是光滑小圆柱。
 
 ## 受影响的已有测试
