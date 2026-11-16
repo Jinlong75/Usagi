@@ -19,6 +19,6 @@ export function blinkValue(state: BlinkState, now: number, random = Math.random)
 }
 export function blink(vrm: VRM, state: BlinkState, elapsed: number): void {
   if (vrm.expressionManager?.getExpression('blink')) {
-    vrm.expressionManager.setValue('blink', blinkValue(state, elapsed));
+    vrm.expressionManager.setValue('blink', blinkValue(state, elapsed) >= 0.5 ? 1 : 0);
   }
 }

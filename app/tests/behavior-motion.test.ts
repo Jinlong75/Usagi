@@ -2,12 +2,13 @@ import { describe, expect, it, vi, afterEach } from 'vitest';
 import { Bone, Box3, BoxGeometry, Float32BufferAttribute, Object3D, Skeleton, SkinnedMesh, Uint16BufferAttribute, Vector3 } from 'three';
 import type { VRM, VRMHumanBoneName } from '@pixiv/three-vrm';
 import { MOTION_SECONDS, MotionRig, jumps, neutralPose, sampleMotion } from '../src/renderer/motion';
+import { EMOTIONS, setEmotion } from '../src/renderer/behaviors/expressions';
 import type { MotionName } from '../src/renderer/motion';
 import { DragSprings, SPRING_ACCELERATION_COEFFICIENT } from '../src/renderer/motion/springs';
 import { renderInterval } from '../src/renderer/behavior/power';
 import { prepareMove, WindowMotion } from '../src/main/motion';
 import { frameBounds, framingPoses, measureMotionBounds } from '../src/renderer/motion/framing';
-import { topRowsTransparent } from '../src/shared/hit';
+import { regionDifference, topRowsTransparent } from '../src/shared/hit';
 
 function model() {
   const bones = new Map<VRMHumanBoneName, Object3D>();
@@ -30,6 +31,8 @@ describe('程序化动作与复位', () => {
     const rig = new MotionRig(vrm);
     const baseline = [...bones.values()].map((bone) => bone.quaternion.clone());
     const origin = vrm.scene.position.clone();
+    const hips = vrm.humanoid.getNormalizedBoneNode('hips')!;
+    const hipsOrigin = hips.position.clone();
     const changed = sampleMotion(name, name === 'happy' || name === 'jump' ? 0.175 : durations[name] * 0.37);
     expect(changed).not.toEqual(neutralPose());
     rig.apply(changed);
@@ -39,6 +42,7 @@ describe('程序化动作与复位', () => {
     for (const t of [0, durations[name], durations[name] + 1]) {
       rig.reset(); rig.apply(sampleMotion(name, t));
       expect(vrm.scene.position.toArray()).toEqual(origin.toArray());
+      expect(hips.position.toArray()).toEqual(hipsOrigin.toArray());
       expect(vrm.scene.scale.toArray()).toEqual([1, 1, 1]);
       expect(vrm.scene.rotation.toArray().slice(0, 3)).toEqual([0, 0, 0]);
       [...bones.values()].forEach((bone, i) => expect(bone.quaternion.angleTo(baseline[i]!)).toBeLessThan(1e-7));
@@ -59,16 +63,16 @@ describe('程序化动作与复位', () => {
       expect(jumps(landing + 0.11).squash).toBeCloseTo(0.15);
       expect(jumps(landing + 0.22).squash).toBeCloseTo(0);
     }
-    expect(sampleMotion('shout', 0.6).expressions).toEqual({ aa: 1, angry: 0.6 });
+    expect(sampleMotion('shout', 0.6).expressions).toEqual({ angry: 1 });
     expect(sampleMotion('surprised', 0.5).expressions).toEqual({ surprised: 1 });
-    expect(sampleMotion('drag', 0.5).expressions).toEqual({ surprised: 0.4 });
+    expect(sampleMotion('drag', 0.5).expressions).toEqual({ surprised: 1 });
     expect(Math.abs(sampleMotion('drag', 0.5, { velocityX: 10000 }).rotation[2])).toBeCloseTo(Math.PI / 12);
   });
   it('步态按 45px 一步推进，90px/s 对应平均每秒两步，原生缓动与脚步同相', () => {
     const a = sampleMotion('walk', 0.5, { duration: 3, distance: 22.5 });
     const b = sampleMotion('walk', 0.5, { duration: 3, distance: 67.5 });
-    expect(a.bones.leftUpperLeg![0]).toBeCloseTo(0.3);
-    expect(b.bones.leftUpperLeg![0]).toBeCloseTo(-0.3);
+    expect(a.bones.leftUpperLeg![0]).toBeCloseTo(0.16);
+    expect(b.bones.leftUpperLeg![0]).toBeCloseTo(-0.16);
     expect(a.position[1]).toBeCloseTo(b.position[1]);
     const p = 0.5 / 3;
     const distance = (p * p * (3 - 2 * p)) * 3 * 90;
@@ -82,7 +86,7 @@ describe('拖动弹簧受力与省电', () => {
     const vrm = { springBoneManager: { joints: new Set(settings.map((setting) => ({ settings: setting }))) } } as unknown as VRM;
     const original = settings.map((setting) => ({ gravityDir: setting.gravityDir.clone(), gravityPower: setting.gravityPower }));
     const springs = new DragSprings(vrm);
-    expect(SPRING_ACCELERATION_COEFFICIENT).toBe(0.00008);
+    expect(SPRING_ACCELERATION_COEFFICIENT).toBe(0.00012);
     springs.sample({ x: 0, y: 0 }, 0); springs.sample({ x: 500, y: 0 }, 100); springs.update(0.016, true);
     settings.forEach((setting) => expect(setting.gravityDir.x).toBeLessThan(0));
     for (let i = 0; i < 60; i++) springs.update(1 / 60, true);
@@ -157,7 +161,7 @@ describe('动作取景与冒烟顶部透明检查', () => {
     expect(frame.width / frame.height).toBeCloseTo(aspect);
     expect(frame.centerX).toBeCloseTo(0.1); // Center the asymmetric motion range.
     expect([neutral, ...poses]).toEqual(originals);
-    expect(jumps(0.175).y).toBeCloseTo(0.08); // happy smoke samples the apex, not a landing.
+    expect(jumps(0.175).y).toBeCloseTo(0.1); // happy smoke samples the apex, not a landing.
   });
   it('姿态向脚底以下延伸时，只按需要上移角色且保留顶部和底部边距', () => {
     const low = box([-0.4, -0.5, -0.2], [0.4, 1.8, 0.2]);
@@ -226,4 +230,53 @@ describe('动作取景与冒烟顶部透明检查', () => {
     expect(topRowsTransparent(bitmap, 0)).toBe(false);
     expect(topRowsTransparent(bitmap.slice(0, 12), 4)).toBe(false);
   });
+});
+
+it('所有点击/聊天情绪互斥，清掉 relaxed 和口型，不干涉 blink', () => {
+  const { vrm, values } = model();
+  values.set('blink', 1);
+  for (const selected of EMOTIONS) {
+    for (const emotion of EMOTIONS) values.set(emotion, 1);
+    values.set('aa', 1);
+    setEmotion(vrm, selected);
+    for (const emotion of EMOTIONS) expect(values.get(emotion)).toBe(emotion === selected ? 1 : 0);
+    expect(values.get('aa')).toBe(0);
+    expect(values.get('blink')).toBe(1);
+  }
+  for (const name of ['happy', 'surprised', 'shout', 'drag', 'spin'] as const) {
+    for (const age of [0.001, 0.03, 0.175, 0.9]) {
+      expect(Object.values(sampleMotion(name, age).expressions).every(value => value === 0 || value === 1)).toBe(true);
+    }
+  }
+});
+it('按模型高度跳 10%，落地 XZ 1.08，短腿摇摆大于手臂，伸展上移 Hips', () => {
+  expect(sampleMotion('jump', 0.175, { modelHeight: 2 }).position[1]).toBeCloseTo(0.2);
+  expect(sampleMotion('happy', 0.46).scale).toEqual([1.08, 0.85, 1.08]);
+  const walk = sampleMotion('walk', 0.7, { distance: 22.5 });
+  expect(walk.rotation[2]).toBeCloseTo(0.1);
+  expect(walk.position[1]).toBeCloseTo(0.028);
+  expect(walk.bones.leftUpperArm![0]).toBeCloseTo(-0.025);
+  const stretch = sampleMotion('stretch', 1.1);
+  expect(stretch.hipsY).toBeCloseTo(0.025);
+  expect(stretch.bones.chest![0]).toBeCloseTo(-0.1);
+  expect(stretch.bones.leftUpperArm![2] - 1.1).toBeCloseTo(1.5);
+});
+
+it('像素比较只看指定区域，跟随脸部位移，透明度和颜色变化都能检出', () => {
+  const bitmap = new Uint8Array(10 * 10 * 4);
+  const other = bitmap.slice();
+  const image = { bitmap, width: 10, height: 10, region: { x: 0, y: 0, width: 1, height: 0.3 } };
+  other[(9 * 10) * 4 + 3] = 255;
+  expect(regionDifference(image, { ...image, bitmap: other })).toBe(0);
+  other[3] = 255;
+  expect(regionDifference(image, { ...image, bitmap: other })).toBeCloseTo(1 / 30);
+  const shifted = bitmap.slice();
+  bitmap[(4 * 10 + 3) * 4] = 255;
+  shifted[(2 * 10 + 3) * 4] = 255;
+  const face = { ...image, region: { x: 0.2, y: 0.3, width: 0.5, height: 0.4 } };
+  const moved = { ...image, bitmap: shifted, region: { ...face.region, y: 0.1 } };
+  expect(regionDifference(face, moved)).toBe(0);
+  shifted[(2 * 10 + 3) * 4] = 0;
+  expect(regionDifference(face, moved)).toBeGreaterThan(0);
+  expect(() => regionDifference(image, { ...image, bitmap: new Uint8Array(4) })).toThrow();
 });

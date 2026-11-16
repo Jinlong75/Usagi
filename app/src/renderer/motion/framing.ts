@@ -5,7 +5,7 @@ import type { MotionRig, Pose } from './index';
 import { TURN_ANGLE } from '../behavior/machine';
 
 /** Pose extrema, sampled once before the first rendered frame. */
-export function framingPoses(): Pose[] {
+export function framingPoses(modelHeight = 1): Pose[] {
   const poses = [sampleMotion('shout', 0.55), sampleMotion('happy', 0.175), sampleMotion('stretch', 1.1),
     sampleMotion('shake', 0.3), sampleMotion('shake', 0.42)];
   for (let angle = 0; angle < 360; angle += 45) {
@@ -20,6 +20,10 @@ export function framingPoses(): Pose[] {
     const turnedWalk = sampleMotion('walk', 0.7, { distance: direction * 22.5 });
     turnedWalk.rotation[1] = direction * TURN_ANGLE;
     poses.push(turnedWalk, sampleMotion('drag', 0.5, { velocityX: direction * 700 }));
+  }
+  for (const pose of poses) {
+    pose.position = pose.position.map(value => value * modelHeight) as Pose['position'];
+    if (pose.hipsY) pose.hipsY *= modelHeight;
   }
   return poses;
 }
@@ -36,7 +40,7 @@ export function measureMotionBounds(vrm: VRM, rig: MotionRig): { neutral: Box3; 
   const neutral = measure();
   const motion = neutral.clone();
   try {
-    for (const pose of framingPoses()) {
+    for (const pose of framingPoses(neutral.getSize(new Vector3()).y)) {
       rig.reset();
       rig.apply(pose);
       motion.union(measure());
@@ -49,6 +53,17 @@ export function measureMotionBounds(vrm: VRM, rig: MotionRig): { neutral: Box3; 
     vrm.scene.updateMatrixWorld(true);
   }
   return { neutral, motion };
+}
+
+/** Reserve lateral room for long ears deflecting up to 35° beyond the head. */
+export function springEnvelope(neutral: Box3, motion: Box3): Box3 {
+  const height = neutral.getSize(new Vector3()).y;
+  return motion.clone().expandByVector(new Vector3(height * 0.3 * Math.sin(35 * Math.PI / 180), height * 0.015, 0));
+}
+
+export function motionAspect(bounds: Box3): number {
+  const size = bounds.getSize(new Vector3());
+  return Math.max(0.4, Math.min(2, size.x * 1.08 / (size.y * 1.08 / 0.95)));
 }
 
 /** Fit the union with 4% on every side; anchor neutral soles at 5% where possible.

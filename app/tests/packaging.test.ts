@@ -26,7 +26,7 @@ it('打包路径与开发根目录独立；配置优先，smoke 仍实际加载�
   expect(resolveModel(root, custom, false, runtime)).toBe(custom);
   expect(resolveSounds(root, runtime)).toBe(join(resourcesPath, 'sounds/usagi'));
   expect(resolveSounds(root, { ...runtime, isPackaged: false })).toBe(join(root, 'assets/sounds/usagi'));
-  expect(resolveModel(root, null, false, { ...runtime, isPackaged: false })).toBe(join(root, 'assets/placeholder/Seed-san.vrm'));
+  expect(resolveModel(root, null, false, { ...runtime, isPackaged: false })).toBe(join(root, 'assets/models/usagi.vrm'));
 });
 
 it('包内模型缺失时保留包内失败路径，不静默读取开发素材', () => {

@@ -34,9 +34,9 @@ npm --prefix app test
 npm --prefix app run smoke
 ```
 
-`smoke` 构建后用 `--smoke` 启动隐藏窗口，设置 `offscreen: true`，不创建托盘、不读写应用配置、不轮询鼠标，开发时加载仓库里的占位模型，打包后加载包内模型。模型加载并渲染 60 帧后，依次播放待机、原地步态、开心、惊讶、喊叫、伸懒腰、拖动姿态（走路不实际移动窗口）。每段在代表时刻定格，开心在跳跃最高点（175ms）截图，通过 `capturePage({stayHidden:true})` 获取带 alpha 的 PNG，检查非零 alpha 的占比在 2%～95%，并检查 VRM 版本为 1。开心最高点、喊叫和伸懒腰截图最上方两行 alpha 必须全为 0，模型触顶会打印 `ok:false`。60 秒超时或加载、截图失败均打印 `ok:false` JSON 并退出 1。
+`smoke` 构建后用 `--smoke` 启动隐藏窗口，设置 `offscreen: true`，不创建托盘、不读写应用配置、不轮询鼠标，开发时默认加载 `assets/models/usagi.vrm`，打包后加载包内同一模型。模型加载并渲染 60 帧后，依次播放待机、原地步态、开心、惊讶、喊叫、伸懒腰、拖动姿态和甩耳朵（走路不实际移动窗口）。每段按固定 1/60 秒步长推进并在代表时刻冻结弹簧状态，开心在跳跃最高点（175ms）截图，通过 `capturePage({stayHidden:true})` 获取带 alpha 的 PNG，检查非零 alpha 的占比在 2%～95%，并检查 VRM 版本为 1。开心最高点、喊叫和伸懒腰截图最上方两行 alpha 必须全为 0，模型触顶会打印 `ok:false`。60 秒超时或加载、截图失败均打印 `ok:false` JSON 并退出 1。
 
-输出为 `AR_GATE_ARTIFACT_DIR/smoke.png` 以及 `smoke-idle.png`、`smoke-walk.png`、`smoke-happy.png`、`smoke-surprised.png`、`smoke-shout.png`、`smoke-stretch.png`、`smoke-drag.png`；未指定目录时写到 `app/smoke-out/`。标准输出 JSON 包含实际模型路径、`opaqueRatio`、`vrmVersion`、`expressions`、`behaviors: ["idle","walk","happy","surprised","shout","stretch","drag"]` 与 `behaviorOpaqueRatios`（每种行为的不透明像素占比），以及 `behaviorTopTransparent: {happy:true, shout:true, stretch:true}`。八张图均检查 2%～95%，启动脚本还检查七种行为、七个占比和三种顶部透明检查齐全。单张拖动截图不能判断头发晃动幅度，仍需主导走查。首次运行时 Electron npm 包可能按其官方机制下载当前平台二进制；无需额外安装命令。
+输出为 `AR_GATE_ARTIFACT_DIR/smoke.png` 以及 `smoke-idle.png`、`smoke-walk.png`、`smoke-happy.png`、`smoke-surprised.png`、`smoke-shout.png`、`smoke-stretch.png`、`smoke-drag.png`、`smoke-ear-shake.png`；未指定目录时写到 `app/smoke-out/`。标准输出 JSON 包含实际模型路径、`opaqueRatio`、`vrmVersion`、`expressions`、`behaviors: ["idle","walk","happy","surprised","shout","stretch","drag","ear-shake"]` 与 `behaviorOpaqueRatios`（每种行为的不透明像素占比），以及 `behaviorTopTransparent: {happy:true, shout:true, stretch:true}`。九张图均检查 2%～95%，启动脚本还检查八种行为、八个占比和三种顶部透明检查齐全。`earDifferenceRatio` 要求甩耳与 idle 上方 30% 区域像素差异 > 3%；`happyFaceDifferenceRatio` 要求跟随脸部贴片投影取区后差异 > 0，避免跳跃位移造成假阳性。`earDegrees` 记录耳根到耳尖相对中性的偏角（含头/身体倾斜）。截图与真实动作观感由主导走查。首次运行时 Electron npm 包可能按其官方机制下载当前平台二进制；无需额外安装命令。
 
 主进程写完结果 JSON 后才退出，启动脚本会等待子进程输出管道关闭再判定结果。静默提前退出、缺少结果字段、非零退出、信号终止、启动失败和超时都会输出带原因的 `ok:false` JSON 并返回 1；即使 Electron 返回 0，也必须收到完整、有效的成功结果。相关回归测试只启动 Node fixture，不启动 Electron 或桌面窗口。
 
@@ -72,7 +72,7 @@ npm --prefix app run smoke
 
 大小固定为 240×315、320×420、440×578。窗口恢复时须完整落在任一当前屏幕工作区，否则回到主屏右下角、距边缘 40px。配置损坏时原文件改名为 `config.broken-<时间>.json`，使用默认值；写入采用临时文件加 rename。设置写盘失败会记录日志、保留原有内存配置，不广播或应用失败的设置；设置页用红字显示具体原因，保留编辑内容和窗口，供修复磁盘空间或权限后重试。
 
-模型路径顺序：有效的 `modelPath` → `assets/models/usagi.vrm` → `assets/placeholder/Seed-san.vrm`；相对路径以仓库根目录解析，可指定绝对路径。VRM 以二进制 IPC 传给隔离的渲染进程，当前支持自包含 VRM（贴图等资源内嵌）。加载失败显示“模型加载失败：原因”并记录日志，可从托盘重新加载。Seed-san 仅用于开发；正式包不得包含，缺正式模型时只生成带 -dev 后缀的开发包，不分发，模型许可和来源见项目目标文档。
+模型路径顺序：有效的 `modelPath` → `assets/models/usagi.vrm`（缺失则报错，Seed-san 仅显式指定时加载）；相对路径以仓库根目录解析，可指定绝对路径。VRM 以二进制 IPC 传给隔离的渲染进程，当前支持自包含 VRM（贴图等资源内嵌）。加载失败显示“模型加载失败：原因”并记录日志，可从托盘重新加载。Seed-san 仅用于开发；正式包不得包含，缺正式模型时只生成带 -dev 后缀的开发包，不分发，模型许可和来源见项目目标文档。
 
 ## 平台差异与实现
 
@@ -113,7 +113,7 @@ TODO(lead): Windows 实测走动流畅度（Windows 高频 setPosition 可能掉
 
 气泡是独立的透明、无边框、置顶、不抢焦点且完全鼠标穿透的窗口，通过桌宠 move/resize 事件立即重新计算位置，无位置轮询。默认在桌宠窗口上方居中；空间不足时选空闲最多的一侧，文字使用 textContent、2px 深棕描边、150ms 淡入淡出。聊天、设置、气泡各有独立 preload，所有 IPC 校验窗口和主 frame，禁止页面导航与弹新窗口。
 
-冒烟保留原八张模型/行为截图与全部检查，再注入 app/scripts/smoke-ui.ts 的假 ChatService 接口、内存会话和无密钥存储，不联网、不读写真实 Key/会话。脚本通过聊天输入框提交“乌萨奇，今天开心吗？”，假服务按片段返回 `[开心]呀哈！今天也要元气满满！`，经过情绪过滤，等待真实界面的打字机完成后截图。在 AR_GATE_ARTIFACT_DIR 额外生成 smoke-bubble.png（按实际窗口坐标合成桌宠与气泡）、smoke-chat.png、smoke-settings.png；JSON 增加 `"ui": ["bubble","chat","settings"]`，启动脚本要求这三项齐全。生产聊天、界面与核心均使用同一接线，假服务只在既有 --smoke 启动路径中注入。截图由门禁生成，执行者自测只跑 typecheck 与相关无 GUI 单测。
+冒烟保留原有模型/行为截图及新增甩耳截图与全部检查，再注入 app/scripts/smoke-ui.ts 的假 ChatService 接口、内存会话和无密钥存储，不联网、不读写真实 Key/会话。脚本通过聊天输入框提交“乌萨奇，今天开心吗？”，假服务按片段返回 `[开心]呀哈！今天也要元气满满！`，经过情绪过滤，等待真实界面的打字机完成后截图。在 AR_GATE_ARTIFACT_DIR 额外生成 smoke-bubble.png（按实际窗口坐标合成桌宠与气泡）、smoke-chat.png、smoke-settings.png；JSON 增加 `"ui": ["bubble","chat","settings"]`，启动脚本要求这三项齐全。生产聊天、界面与核心均使用同一接线，假服务只在既有 --smoke 启动路径中注入。截图由门禁生成，执行者自测只跑 typecheck 与相关无 GUI 单测。
 
 Windows 托盘位于任务栏右下角，可能收在折叠区；macOS 位于顶部菜单栏。气泡在两端均请求 floating 置顶级别，Windows 的原生置顶层级与 macOS 不同，截图不能确认跨应用的实际层叠效果或拖动延迟。
 
@@ -141,10 +141,36 @@ Electron 下载镜像在 `.npmrc` 与 `electron-builder.yml` 配为 npmmirror（
 npm --prefix app run smoke:packaged -- /绝对路径/Usagi.app/Contents/MacOS/Usagi
 ```
 
-也可直接运行该可执行文件加 `--smoke`。所有窗口离屏隐藏，不联网，不读写真实配置、Key 或聊天记录。模型与八张行为图、气泡/聊天/设置页共用开发冒烟逻辑；读取全部可用 Ogg 并在渲染进程实际解码一段，JSON 增加 `sounds: {directory, clips, decoded:true}`。模型或声音缺失时输出 `ok:false` 并退出 1。`AR_GATE_ARTIFACT_DIR` 可指定截图目录；开发模式默认写入 `app/smoke-out/`，打包后默认写入系统临时目录的 `usagi-smoke-进程号/`，不会向只读应用包写文件。
+也可直接运行该可执行文件加 `--smoke`。所有窗口离屏隐藏，不联网，不读写真实配置、Key 或聊天记录。模型与全部行为图、气泡/聊天/设置页共用开发冒烟逻辑；读取全部可用 Ogg 并在渲染进程实际解码一段，JSON 增加 `sounds: {directory, clips, decoded:true}`。模型或声音缺失时输出 `ok:false` 并退出 1。`AR_GATE_ARTIFACT_DIR` 可指定截图目录；开发模式默认写入 `app/smoke-out/`，打包后默认写入系统临时目录的 `usagi-smoke-进程号/`，不会向只读应用包写文件。
 
 `npm run smoke` 的外层超时覆盖构建、首次 import Electron 时的同步下载及 Electron 冒烟，10 分钟后杀掉本次进程树、输出原因并退出 1。`smoke:packaged` 同样有此保护，应用内部的 60 秒渲染超时仍保留。
 
 配置依据：[electron-builder macOS](https://www.electron.build/v26/docs/mac/)、[NSIS](https://www.electron.build/v26/docs/nsis/)。
 
 本次 Apple Silicon 交叉构建 Windows：`makensis` 为 x86_64 可执行文件，在当前 arm64 主机启动时报 `Unknown system error -86`（架构兼容限制），未生成最终 NSIS EXE；未安装 Wine 或 Rosetta。可在 Windows x64 环境 `npm --prefix app ci` 后运行 `npm --prefix app run dist:win`。中间的 `win-unpacked/Usagi.exe` 不是安装包。
+
+
+### Usagi 动作调校（013）
+
+最终模型从 `assets/model/usagi.vrm` 原样复制至 `assets/models/usagi.vrm`，不修改模型、弹簧碰撞体或打包配置。平移幅度使用实测模型高度 H；角度为弧度。动作时长、掷骰链和 90 DIP/s 移动速度沿用原值。
+
+| 动作 | 原参数 | Usagi 参数 |
+| --- | --- | --- |
+| 呼吸 | Chest 前后摆 ±0.018，3.5s | Chest ±0.035、Spine ±0.01225，3.5s |
+| 待机 / 张望 | 身体 ±0.025，头 ±0.3 | 身体 ±0.025，头 ±0.12，3.5s |
+| 走路 | 颠 0.018、侧摆 ±0.025；大腿 ±0.3、小腿 0.25、手臂 ±0.18 | 颠 0.028H、侧摆 ±0.1；大腿 ±0.16、小腿 0.12、手臂 ±0.025；仍每 45 DIP 一步 |
+| 跳跃 / 开心 | 峰高 0.08；落地 Y 0.85、XZ 1.075 | 峰高 0.10H；落地 Y 0.85、XZ 1.08；双跳各飞行 350ms、落地挤压 220ms |
+| 伸展 / 喊叫 | 手臂增量 ±2.1、前摆 -0.12；Chest -0.12 / +0.2 | 手臂增量 ±2.6（相对休息位净抬约 86°）、前摆 -0.06；Chest 后仰 -0.1；Hips 上移 0.025H |
+| 甩耳 | 头水平 ±0.32 | 头水平 ±0.38、侧摆 ±0.18；1.2s 五周期，约 4.17Hz |
+| 惊讶 | 后撤 0.09、头后仰 -0.18、Y 0.92 / XZ 0.95 | 后撤 0.04H；头后仰及缩放沿用 |
+| 拖动 | 身体最多 ±15°；手臂 ±0.4 + 速度偏移 0.12；腿 ±0.07 / 0.08 | 身体最多 ±15°；手臂 ±0.16 + 速度偏移 0.05；腿 ±0.035 / 0.04 |
+| 转身 / 转圈 | 转身 50°、转圈 2π | 保留；转圈 happy 改为 1 |
+| 看鼠标 | Head 水平/竖直合成限幅 20°，且启用 VRM lookAt | 水平总量 ≤20°、竖直总量 ≤10°，Head/Neck 各承担一半，禁用 VRM lookAt 自动更新 |
+
+拖动弹簧加速度系数 `0.00008 → 0.00012`，额外合力上限 `3 → 0.85`，按 `exp(-10Δt)` 衰减，释放立即恢复模型原 gravityDir/gravityPower；不更改原碰撞体。真实 VRM 的 CPU 检查覆盖甩头、拖动、释放 1.5s 后残余偏角 <2°及入画边界。
+
+取景使用真实蒙皮顶点的动作并集，加长耳侧向 35°的余量。窗口宽仍为 240/320/440，高按动作范围自动计算；当前模型中号约 320×314。中性脚底以画面下方 5% 为锚，气泡随头顶在相机内的投影留白定位。模型更换或缩放窗口时重新计算。
+
+点击、聊天、转圈、拖动统一使用互斥的二值情绪（happy/surprised/angry/sad/relaxed）。喊叫只设 angry，不叠 aa；整段拖动保持 surprised，优先于聊天情绪。平静不改变当前情绪。blink 输出二值，由模型自身的 overrideBlink 阻止；结束/打断时复位所有动作骨骼（含 Neck、Hips 位移）、缩放和表情。
+
+TODO(lead): 门禁生成截图后核对五官贴片、耳朵碰撞与动作观感，并在 mac 实际拖动走查；本任务执行者不运行 GUI 冒烟，不以 CPU 偏角代替截图观感结论。

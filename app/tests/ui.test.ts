@@ -83,3 +83,9 @@ describe('聊天显示与菜单', () => {
     expect(menuState(config, false)).toEqual({ selfTalk: false, alwaysOnTop: false, mousePassthrough: true, size: 'small', visibility: '显示桌宠' });
   });
 });
+
+it('气泡按模型投影的头顶留白定位，并保留工作区避让', () => {
+  const area = { x: 0, y: 0, width: 1440, height: 900 };
+  const pet = { x: 800, y: 450, width: 320, height: 314 };
+  expect(bubblePosition(pet, area, 264, 72, 0.12)).toMatchObject({ y: 408, side: 'top' });
+});

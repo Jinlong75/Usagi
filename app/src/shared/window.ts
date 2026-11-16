@@ -6,8 +6,13 @@ export const SIZES = {
   large: { width: 440, height: 578 },
 } as const;
 
-export function initialBounds(size: Size, position: Point | null, primary: Rect, workAreas: Rect[]): Rect {
-  const dimensions = SIZES[size];
+export function windowDimensions(size: Size, aspect = 320 / 420): { width: number; height: number } {
+  const width = SIZES[size].width;
+  return { width, height: Math.round(width / aspect) };
+}
+
+export function initialBounds(size: Size, position: Point | null, primary: Rect, workAreas: Rect[], aspect?: number): Rect {
+  const dimensions = aspect === undefined ? SIZES[size] : windowDimensions(size, aspect);
   const fits = position && workAreas.some((area) =>
     position.x >= area.x && position.y >= area.y &&
     position.x + dimensions.width <= area.x + area.width &&

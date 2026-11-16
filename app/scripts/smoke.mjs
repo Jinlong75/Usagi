@@ -2,14 +2,17 @@ import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import { runSmokeProcess } from './smoke-process.mjs';
 
-export const BEHAVIORS = ['idle', 'walk', 'happy', 'surprised', 'shout', 'stretch', 'drag'];
+export const BEHAVIORS = ['idle', 'walk', 'happy', 'surprised', 'shout', 'stretch', 'drag', 'ear-shake'];
 export function validUiReport(report) { return JSON.stringify(report.ui) === JSON.stringify(['bubble', 'chat', 'settings']); }
 export function validSoundReport(report) {
   return typeof report.sounds?.directory === 'string' && !!report.sounds.directory &&
     Number.isInteger(report.sounds.clips) && report.sounds.clips > 0 && report.sounds.decoded === true;
 }
 export function validBehaviorReport(report) {
-  return Array.isArray(report.behaviors) && JSON.stringify(report.behaviors) === JSON.stringify(BEHAVIORS) &&
+  return typeof report.model === 'string' && /(?:assets[\\/]models|(?:^|[\\/])models)[\\/]usagi\.vrm$/.test(report.model) &&
+    Number.isFinite(report.earDifferenceRatio) && report.earDifferenceRatio > 0.03 && report.earDifferenceRatio <= 1 &&
+    Number.isFinite(report.happyFaceDifferenceRatio) && report.happyFaceDifferenceRatio > 0 && report.happyFaceDifferenceRatio <= 1 &&
+    Array.isArray(report.behaviors) && JSON.stringify(report.behaviors) === JSON.stringify(BEHAVIORS) &&
     BEHAVIORS.every((name) => Number.isFinite(report.behaviorOpaqueRatios?.[name]) &&
       report.behaviorOpaqueRatios[name] >= 0.02 && report.behaviorOpaqueRatios[name] <= 0.95) &&
     ['happy', 'shout', 'stretch'].every((name) => report.behaviorTopTransparent?.[name] === true);
