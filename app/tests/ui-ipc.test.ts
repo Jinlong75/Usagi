@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { ChatEvent } from '../src/main/chat/service';
 const host = vi.hoisted(() => ({
-  directory: '', idle: 0,
+  directory: '', idle: 0, weatherFetch: vi.fn<typeof fetch>(),
   appendAssistant: vi.fn(async (_text: string) => {}),
   start: undefined as (() => Promise<void>) | undefined,
   invokes: new Map<string, (...args: any[]) => any>(), sends: new Map<string, (...args: any[]) => any>(),
@@ -39,7 +39,7 @@ vi.mock('electron', () => {
     setAlwaysOnTop = vi.fn(); setVisibleOnAllWorkspaces = vi.fn(); setIgnoreMouseEvents = vi.fn();
     loadFile = vi.fn(async () => {}); loadURL = vi.fn(async () => {});
   }
-  return { BrowserWindow, powerMonitor: { getSystemIdleTime: () => host.idle,
+  return { BrowserWindow, net: { fetch: host.weatherFetch }, powerMonitor: { getSystemIdleTime: () => host.idle,
     on: (name: string, fn: () => void) => host.powerEvents.set(name, fn) },
     app: { commandLine: { getSwitchValue: vi.fn(() => ''), appendSwitch: vi.fn() },
       whenReady: () => ({ then: (start: () => Promise<void>) => { host.start = start; return { catch: vi.fn() }; } }),
@@ -99,6 +99,7 @@ describe('008 主进程接线：原生窗口替身，无 GUI', () => {
     vi.useFakeTimers(); vi.setSystemTime(new Date(2026, 10, 16, 10, 30)); vi.resetModules(); vi.clearAllMocks();
     host.directory = mkdtempSync(join(tmpdir(), 'usagi-ui-routine-')); host.idle = 0;
     host.appendAssistant.mockResolvedValue();
+    host.weatherFetch.mockReset().mockRejectedValue(new Error('test weather offline'));
     vi.stubGlobal('__dirname', fileURLToPath(new URL('../out', import.meta.url)));
     host.windows = []; host.invokes.clear(); host.sends.clear(); host.appEvents.clear(); host.powerEvents.clear();
     host.confirm.mockResolvedValue({ response: 0 }); host.flush.mockImplementation(async () => {});
@@ -106,6 +107,29 @@ describe('008 主进程接线：原生窗口替身，无 GUI', () => {
     await import('../src/main/index'); await host.start!(); pet().emit('ready-to-show');
   });
   afterEach(() => { rmSync(host.directory, { recursive: true, force: true }); vi.restoreAllMocks(); vi.clearAllTimers(); vi.useRealTimers(); vi.unstubAllGlobals(); });
+  it('晨间预取填缓存，问好插入天气；城市 IPC 仅读缓存且限制发送方', async () => {
+    vi.clearAllTimers(); host.windows = []; vi.setSystemTime(new Date(2026, 10, 16, 7));
+    host.weatherFetch.mockImplementation(async url => new Response(JSON.stringify(String(url).includes('open-meteo')
+      ? { daily: { weather_code: [61], temperature_2m_min: [12], temperature_2m_max: [20], precipitation_probability_max: [50] } }
+      : { latitude: 13.75, longitude: 100.5, city: 'Bangkok' })));
+    await host.start!(); pet().emit('ready-to-show');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(host.weatherFetch).toHaveBeenCalledTimes(2);
+    const settings = await open('设置…');
+    expect(await invoke('settings:weather-city', settings)).toBe('Bangkok');
+    expect(() => invoke('settings:weather-city', pet())).toThrow('未授权的请求');
+    settings.hide();
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(host.windows.some(window => window.webContents.send.mock.calls.some(([channel, payload]: any[]) =>
+      channel === 'bubble:text' && payload.text.includes('今天雨，12～20°C，记得带伞。')))).toBe(true);
+    expect(host.weatherFetch).toHaveBeenCalledTimes(2);
+    const initial = await invoke('settings:load', settings);
+    await invoke('settings:save', settings, { ...initial.config, routine: { ...initial.config.routine, weather: false } });
+    vi.setSystemTime(new Date(2026, 10, 17, 7));
+    await host.routine!.tick();
+    expect(host.weatherFetch).toHaveBeenCalledTimes(2);
+  });
+
   it('R4-1 Routine 构造抛错时主进程继续启动，不启动作息定时器且设置和聊天仍可用', async () => {
     vi.clearAllTimers(); host.windows = [];
     const { Routine } = await import('../src/main/routine');

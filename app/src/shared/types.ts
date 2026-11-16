@@ -1,4 +1,4 @@
-import type { BubbleBridge, ChatBridge } from './ui';
+import type { BubbleBridge, ChatBridge, SettingsBridge } from './ui';
 export type Size = 'small' | 'medium' | 'large';
 export interface Point { x: number; y: number }
 export interface Rect extends Point { width: number; height: number }
@@ -10,7 +10,7 @@ export interface Config {
   chat: { baseUrl: string; model: string; temperature: number; maxTokens: number; thinking: 'enabled' | 'disabled' };
   selfTalk: { enabled: boolean; minSec: number; maxSec: number; lines: string[] };
   routine: {
-    enabled: boolean; quiet: boolean;
+    enabled: boolean; quiet: boolean; weather: boolean;
     morning: [string, string]; lunch: [string, string]; nap: [string, string]; dinner: [string, string];
     bedtime: string; sleep: [string, string];
   };
@@ -71,4 +71,8 @@ export interface QuestionBubbleBridge extends BubbleBridge {
 /** Reload persisted routine questions without discarding a hidden chat's draft. */
 export interface RoutineChatBridge extends ChatBridge {
   onHistoryChanged(callback: () => void): () => void;
+}
+
+export interface WeatherSettingsBridge extends SettingsBridge {
+  weatherCity(): Promise<string | null>;
 }

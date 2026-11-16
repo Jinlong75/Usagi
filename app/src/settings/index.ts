@@ -1,8 +1,8 @@
-import type { SettingsBridge } from '../shared/ui';
+import type { WeatherSettingsBridge } from '../shared/types';
 import type { Config } from '../shared/types';
 declare const __USAGI_PLACEHOLDER__: boolean;
 const placeholderBuild = typeof __USAGI_PLACEHOLDER__ !== 'undefined' && __USAGI_PLACEHOLDER__;
-declare global { interface Window { settings: SettingsBridge } }
+declare global { interface Window { settings: WeatherSettingsBridge } }
 const field = <T extends HTMLElement>(id: string) => document.getElementById(id)! as T;
 const value = (id: string) => field<HTMLInputElement>(id);
 const key = value('key'), warning = field('key-warning'), status = field('save-status');
@@ -12,6 +12,9 @@ field('self-talk').closest('section')!.insertAdjacentHTML('beforebegin', `
   <fieldset id="routine"><legend>作息</legend>
   <label class="check"><input id="routine-enabled" type="checkbox">按作息问候</label>
   <label class="check"><input id="routine-quiet" type="checkbox">免打扰</label>
+  <label class="check"><input id="routine-weather" type="checkbox">早上说天气</label>
+  <p class="hint">会用你的网络 IP 查大致位置（ip.sb / geojs.io），再从 Open-Meteo 查天气；不需要账号。</p>
+  <p class="hint" id="weather-city" hidden></p>
   ${[['morning', '早上'], ['lunch', '中午'], ['nap', '午睡'], ['dinner', '晚饭'], ['sleep', '睡觉']].map(([id, label]) => `
     <div class="row"><label>${label}开始<input id="routine-${id}-start" type="time"></label>
     <label>${label}结束<input id="routine-${id}-end" type="time"></label></div>`).join('')}
@@ -33,6 +36,7 @@ function display(next: Config): void {
   value('max-sec').value = String(next.selfTalk.maxSec); value('lines').value = next.selfTalk.lines.join('\n');
   value('volume').value = String(next.volume);
   value('routine-enabled').checked = next.routine.enabled; value('routine-quiet').checked = next.routine.quiet;
+  value('routine-weather').checked = next.routine.weather;
   for (const key of ranges) {
     value(`routine-${key}-start`).value = next.routine[key][0]; value(`routine-${key}-end`).value = next.routine[key][1];
   }
@@ -43,7 +47,7 @@ function outputs(): void {
   field('volume-value').textContent = `${Math.round(Number(value('volume').value) * 100)}%`;
 }
 function collect(): Config {
-  const routine = { ...config.routine, enabled: value('routine-enabled').checked, quiet: value('routine-quiet').checked,
+  const routine = { ...config.routine, enabled: value('routine-enabled').checked, quiet: value('routine-quiet').checked, weather: value('routine-weather').checked,
     bedtime: value('routine-bedtime').value };
   for (const key of ranges) routine[key] = [value(`routine-${key}-start`).value, value(`routine-${key}-end`).value];
   return { ...config, routine, chat: { ...config.chat,
@@ -106,3 +110,17 @@ void window.settings.load().then(snapshot => {
   warning.textContent = snapshot.needsReentry ? 'Key 无法解密，请重新填写。' : '';
   field('version').textContent = `版本 ${snapshot.version}${placeholderBuild ? ' · 开发版（占位模型）' : ''}`; loaded = true;
 }).catch(() => { status.textContent = '设置加载失败，请检查文件权限。'; });
+
+function refreshWeatherCity(): void {
+  void window.settings.weatherCity().then(city => {
+    field('weather-city').textContent = city ? `当前位置：${city}` : '';
+    field('weather-city').hidden = !city;
+  }).catch(() => {});
+}
+// SettingsWindow hides and reuses this page; refresh the cache without replacing edits.
+// backgroundThrottling is off, so a hidden window still reports 'visible'; show() focuses it, so refresh on focus too.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') refreshWeatherCity();
+});
+window.addEventListener('focus', refreshWeatherCity);
+refreshWeatherCity();

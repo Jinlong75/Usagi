@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_CONFIG } from '../src/main/config';
-import type { SettingsBridge } from '../src/shared/ui';
+import type { WeatherSettingsBridge } from '../src/shared/types';
 
 // Only the DOM fields used by settings are needed; no Electron or GUI is started.
 class Field {
@@ -19,19 +19,24 @@ function field(id: string): Field {
   return fields.get(id)!;
 }
 let close = () => {};
-let bridge: SettingsBridge;
+let bridge: WeatherSettingsBridge;
+let page: Field & { visibilityState: string; getElementById: typeof field };
+let win: Field & { settings: WeatherSettingsBridge };
 
 describe('设置页保存失败，无 GUI', () => {
   beforeEach(async () => {
     vi.resetModules(); fields.clear();
     bridge = {
+      weatherCity: vi.fn(async () => 'Bangkok'),
       load: vi.fn(async () => ({ config: structuredClone(DEFAULT_CONFIG), maskedKey: 'sk-****abcd', needsReentry: false, version: '0.1.0' })),
       save: vi.fn(async () => ({ ok: false as const, reason: 'EACCES: permission denied' })),
       revealKey: vi.fn(async () => ''), test: vi.fn(async () => ({ ok: true as const, models: [] })),
       onConfig: vi.fn(() => () => {}), onSaveClose: callback => { close = callback; return () => {}; }, closeReady: vi.fn(),
     };
-    vi.stubGlobal('window', { settings: bridge });
-    vi.stubGlobal('document', { getElementById: field });
+    win = Object.assign(new Field(), { settings: bridge });
+    vi.stubGlobal('window', win);
+    page = Object.assign(new Field(), { visibilityState: 'visible', getElementById: field });
+    vi.stubGlobal('document', page);
     await import('../src/settings/index');
     await vi.waitFor(() => expect(field('version').textContent).toBe('版本 0.1.0'));
     field('model').value = 'custom'; field('custom-model').value = 'my-model';
@@ -77,6 +82,20 @@ describe('设置页保存失败，无 GUI', () => {
       enabled: false, quiet: true, morning: ['07:30', '10:00'], bedtime: '23:00' });
   });
 
+  it('显示缓存城市，保存关闭天气，不用城市查询触发定位', async () => {
+    expect(field('routine-weather').checked).toBe(true);
+    expect(field('weather-city').textContent).toBe('当前位置：Bangkok');
+    expect(field('weather-city').hidden).toBe(false);
+    field('routine-weather').checked = false;
+    await field('save').onclick!();
+    await vi.waitFor(() => expect(bridge.save).toHaveBeenCalled());
+    expect(vi.mocked(bridge.save).mock.calls[0]![0].routine.weather).toBe(false);
+    vi.resetModules(); vi.mocked(bridge.weatherCity).mockResolvedValue(null); field('weather-city').hidden = true;
+    await import('../src/settings/index');
+    await vi.waitFor(() => expect(bridge.weatherCity).toHaveBeenCalledTimes(2));
+    expect(field('weather-city').hidden).toBe(true);
+  });
+
   it('IPC 抛错也显示具体原因并保留窗口', async () => {
     vi.mocked(bridge.save).mockRejectedValueOnce(new Error('disk full'));
     close();
@@ -84,6 +103,38 @@ describe('设置页保存失败，无 GUI', () => {
       .toBe('设置保存失败：disk full。请检查磁盘空间和文件权限。'));
     expect(field('save-status').classes.has('error')).toBe(true);
     expect(field('key').value).toBe('edited-key'); expect(bridge.closeReady).not.toHaveBeenCalled();
+  });
+
+  it('同一页面再次显示时重新读取缓存城市，空缓存后来定位成功也会显示', async () => {
+    vi.resetModules(); vi.mocked(bridge.weatherCity).mockResolvedValue(null);
+    field('weather-city').hidden = true; field('weather-city').textContent = '';
+    await import('../src/settings/index');
+    await vi.waitFor(() => expect(bridge.weatherCity).toHaveBeenCalledTimes(2));
+    expect(field('weather-city').hidden).toBe(true);
+    field('lines').value = '保留我的台词';
+    const calls = vi.mocked(bridge.weatherCity).mock.calls.length;
+    page.visibilityState = 'hidden'; page.listeners.get('visibilitychange')?.();
+    expect(bridge.weatherCity).toHaveBeenCalledTimes(calls);
+    vi.mocked(bridge.weatherCity).mockResolvedValue('Chiang Mai');
+    page.visibilityState = 'visible'; page.listeners.get('visibilitychange')?.();
+    await vi.waitFor(() => expect(field('weather-city').textContent).toBe('当前位置：Chiang Mai'));
+    expect(field('weather-city').hidden).toBe(false);
+    expect(bridge.weatherCity).toHaveBeenCalledTimes(calls + 1);
+    expect(field('lines').value).toBe('保留我的台词');
+  });
+
+  it('隐藏期间页面仍报 visible（backgroundThrottling 关闭）时，窗口再次获得焦点也刷新城市', async () => {
+    vi.resetModules(); vi.mocked(bridge.weatherCity).mockResolvedValue(null);
+    field('weather-city').hidden = true; field('weather-city').textContent = '';
+    await import('../src/settings/index');
+    await vi.waitFor(() => expect(bridge.weatherCity).toHaveBeenCalledTimes(2));
+    field('lines').value = '保留我的台词';
+    vi.mocked(bridge.weatherCity).mockResolvedValue('Chiang Mai');
+    expect(page.visibilityState).toBe('visible');
+    win.listeners.get('focus')?.();
+    await vi.waitFor(() => expect(field('weather-city').textContent).toBe('当前位置：Chiang Mai'));
+    expect(field('weather-city').hidden).toBe(false);
+    expect(field('lines').value).toBe('保留我的台词');
   });
 
   it('占位安装包关于页明确标记开发版', async () => {

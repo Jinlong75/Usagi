@@ -47,3 +47,9 @@ describe('配置持久化', () => {
     },
   );
 });
+
+it('weather defaults on for old configs and preserves explicit false', () => {
+  expect(normalizeConfig({ routine: {} }).routine.weather).toBe(true);
+  expect(normalizeConfig({ routine: { weather: false } }).routine.weather).toBe(false);
+  expect(normalizeConfig({ routine: { weather: 'false' } }).routine.weather).toBe(true);
+});

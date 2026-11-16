@@ -5,7 +5,7 @@ import type { Config } from '../shared/types';
 export const DEFAULT_CONFIG: Config = {
   modelPath: null, size: 'medium', position: null, alwaysOnTop: true,
   chat: { baseUrl: 'https://api.deepseek.com', model: 'deepseek-flash', temperature: 0.7, maxTokens: 2048, thinking: 'disabled' },
-  routine: { enabled: true, quiet: false, morning: ['06:00', '10:00'], lunch: ['11:30', '13:00'],
+  routine: { enabled: true, quiet: false, weather: true, morning: ['06:00', '10:00'], lunch: ['11:30', '13:00'],
     nap: ['13:00', '14:00'], dinner: ['17:30', '19:00'], bedtime: '22:30', sleep: ['00:00', '06:00'] },
   selfTalk: { enabled: true, minSec: 20, maxSec: 60, lines: [] }, volume: 0.7, mousePassthrough: false, showFps: false,
 };
@@ -41,7 +41,7 @@ export function normalizeConfig(value: unknown): Config {
   if (Array.isArray(talk.lines)) result.selfTalk.lines = [...new Set(talk.lines
     .filter((line): line is string => typeof line === 'string').map(line => line.trim()).filter(Boolean))];
   const routine = record(data.routine);
-  for (const key of ['enabled', 'quiet'] as const) if (typeof routine[key] === 'boolean') result.routine[key] = routine[key];
+  for (const key of ['enabled', 'quiet', 'weather'] as const) if (typeof routine[key] === 'boolean') result.routine[key] = routine[key];
   const validTime = (time: unknown): time is string => typeof time === 'string' && /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time);
   for (const key of ['morning', 'lunch', 'nap', 'dinner', 'sleep'] as const) {
     const range = routine[key];
