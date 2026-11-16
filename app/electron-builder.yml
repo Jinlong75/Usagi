@@ -51,7 +51,7 @@ win:
     - target: nsis
       arch: [x64]
   icon: build/icon.ico
-  signAndEditExecutable: false
+  signAndEditExecutable: true
 nsis:
   oneClick: true
   perMachine: false
