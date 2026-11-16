@@ -44,7 +44,7 @@
 
 ## 下一步
 
-1. **011-五官贴片与表情**（在跑，Codex）：门禁跑 `sh docs/specs/checks/011-check.sh`（主导维护，已用 Seed-san 验证插件属性路径）。验收看 `atlas_preview.png` 与 `preview_face/expression_sheet.png`：五官照 `Material/tripo/usagi_3d_ref.png` 正面与原作（黑椭圆眼带高光、额头两道上弯眉线、ω 嘴、粉腮红三斜线），位置落在原雕刻五官处、无串格；happy 阻止 blink。accept 时 `--ack external:<摘要>`（最新 attempts/N/external-audit.json，核对非 concurrent 项）。顺带看 010 留下的脸部正中淡竖线（左右接缝）在贴片后是否明显。完成条件：`ar accept 011-五官贴片与表情`。
+1. **011-五官贴片与表情**（第 2 次在跑，托管，Codex）：第 1 次门禁过，主导看图后 retry：审查三条都成立并已 confirm（脚骨静态旋转被导出改成 90°；MASK 的 renderQueueOffset 必须为 0——这是主导说明写错；neutral 嘴偏小）＋主导审美意见（线条加粗到参考图观感、腮红放大改圆、嘴按原雕刻范围）。眼睛与高光已满意，脸部正中竖缝在预览里不明显。第 2 次验收：看 `attempts/2` 的 expression_sheet.png 对照 `Material/tripo/usagi_3d_ref.png` 正面；确认新测试比较了节点变换与逆绑定矩阵；accept 时 `--ack "external:<摘要> 已知问题：…"`（一个 ack 写全）。完成条件：`ar accept 011-五官贴片与表情`。遗留小项：耳朵内侧粉色边缘有锯齿（010 身体贴图），等 013 后另开小任务或并入。
 2. **012 已合入**（16:5x，合并提交 185359f）：-dev 占位 dmg 127MB，打包冒烟 ok；图标从参考图正面裁出（主导看过，好）。遗留：`dist:win` 在本机失败——NSIS 的 makensis 是 x86_64，本机 arm64 没装 Rosetta（`Unknown system error -86`）；出正式包时主导先 `softwareupdate --install-rosetta --agree-to-license`（用户已授权装工具）再试，仍不行就交用户在 Windows 上跑 `npm --prefix app run dist:win`。EXE 资源编辑被关掉，exe/快捷方式可能是 Electron 默认图标，正式包时核对。
 3. 011、012 都合入后派 013：`ar dispatch docs/specs/013-合流换上Usagi并调校.md --detach`（先 `ar spec impact` 复核受影响测试）。验收看冒烟截图（Usagi 入画、五官、耳朵甩动、表情），主导 `npm --prefix app run dev` 实看。完成条件：013 accept。
 4. 013 合入后：`ar verify --detach` 全量验收（上次通过后已合入 4+ 个任务；首次 Electron 下载约 20 分钟，012 已配 npmmirror 镜像）；再 `npm --prefix app run dist`（或让执行者跑）出正式 dmg/exe（不含 Seed-san）；主导自己装 dmg 试；然后请用户试用并填自己的 DeepSeek Key。完成条件：正式 dmg 在 app/release/，用户收到安装说明。
