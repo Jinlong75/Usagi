@@ -96,7 +96,8 @@ class PrepTests(unittest.TestCase):
         obj, = import_model(self.output)
         bm = bmesh.new()
         bm.from_mesh(obj.data)
-        # 共享 accessors，直接回读仍应连通，不靠额外焊接掩盖材质拆点。
+        # glTF 按材质拆点；仅在计数用的临时网格中焊接同位置顶点。
+        bmesh.ops.remove_doubles(bm, verts=list(bm.verts), dist=1e-6)
         self.assertEqual(len(face_islands(bm)), 1)
         bm.free()
         self.assertEqual({g.name for g in obj.vertex_groups}, {"Body", "EarInner", "Tail"})

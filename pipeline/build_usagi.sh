@@ -16,7 +16,7 @@ fi
 cd "$PROJECT_DIR"
 MODEL_DIR=assets/model
 mkdir -p "$MODEL_DIR"
-# 无平滑对照仅使用临时底模，不覆盖正式产物；退出时清理本次目录。
+# 平滑对照仅使用临时底模，不覆盖正式产物；退出时清理本次目录。
 PREP_TEMP=$(mktemp -d "$MODEL_DIR/.prep-XXXXXX")
 trap 'rm -rf "$PREP_TEMP"' EXIT HUP INT TERM
 "$BLENDER" -b --factory-startup --python-exit-code 1 --python "$PIPELINE_DIR/blender/prep_usagi.py" -- \
@@ -25,7 +25,7 @@ trap 'rm -rf "$PREP_TEMP"' EXIT HUP INT TERM
 "$BLENDER" -b --factory-startup --python-exit-code 1 --python "$PIPELINE_DIR/blender/render_preview.py" -- \
     --in "$MODEL_DIR/usagi_base.glb" --out-dir "$MODEL_DIR/preview" --landmarks "$MODEL_DIR/usagi_landmarks.json"
 "$BLENDER" -b --factory-startup --python-exit-code 1 --python "$PIPELINE_DIR/blender/prep_usagi.py" -- \
-    --in Material/tripo/usagi_3d.glb --out "$PREP_TEMP/nosmooth.glb" --smooth-waist off \
+    --in Material/tripo/usagi_3d.glb --out "$PREP_TEMP/smoothed.glb" --smooth-waist on \
     --landmarks "$PREP_TEMP/landmarks.json" --report "$PREP_TEMP/report.json"
 "$BLENDER" -b --factory-startup --python-exit-code 1 --python "$PIPELINE_DIR/blender/render_preview.py" -- \
-    --in "$PREP_TEMP/nosmooth.glb" --out-dir "$MODEL_DIR/preview_nosmooth"
+    --in "$PREP_TEMP/smoothed.glb" --out-dir "$MODEL_DIR/preview_nosmooth"

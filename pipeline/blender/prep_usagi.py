@@ -493,7 +493,7 @@ def main():
     parser.add_argument("--out", dest="output", required=True)
     parser.add_argument("--landmarks", required=True)
     parser.add_argument("--report", required=True)
-    parser.add_argument("--smooth-waist", choices=("on", "off"), default="on")
+    parser.add_argument("--smooth-waist", choices=("on", "off"), default="off")
     parser.add_argument("--waist-iterations", type=positive_int, default=100)
     prep(parser.parse_args(script_args()))
 

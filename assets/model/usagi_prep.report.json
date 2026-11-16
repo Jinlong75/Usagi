@@ -41,11 +41,11 @@
   "rotation_degrees": -90.0,
   "front_before": [
     0.9999969601631165,
-    -0.0024734039325267076,
+    -0.002473403699696064,
     0.0
   ],
   "front_after": [
-    -0.0024734477046877146,
+    -0.002473447471857071,
     -0.9999969601631165,
     0.0
   ],
@@ -62,16 +62,16 @@
     "method": "local least-squares sphere, radius-0.08m neighborhood, weak global-center regularization; front-depth projection with X/Z pinned"
   },
   "waist": {
-    "enabled": true,
-    "iterations": 100,
+    "enabled": false,
+    "iterations": 0,
     "center_z": 0.26224464178085327,
     "half_width": 0.06,
     "trunk_x_limit": 0.25622862577438354,
-    "vertices_processed": 313,
+    "vertices_processed": 0,
     "max_inward_depth_before": 0.021469797506685262,
-    "max_inward_depth_after": 0.006585155582237517,
+    "max_inward_depth_after": 0.021469797506685262,
     "volume_before": 0.13259153089428127,
-    "volume_after": 0.13259153093536427,
+    "volume_after": 0.13259153089428127,
     "method": "radial Laplacian relaxation toward angular Dirichlet harmonic profiles; signed-volume compensation with sin^2 boundary taper; Z/azimuth/arms pinned; depth vs interpolated fitted boundary ellipses"
   },
   "material_face_counts": {
