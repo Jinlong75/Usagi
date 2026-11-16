@@ -11,7 +11,7 @@ export class DragSprings {
   private force = new Vector3();
   constructor(vrm: VRM) {
     this.originals = [...(vrm.springBoneManager?.joints ?? [])].map((joint) => ({ joint,
-      direction: joint.settings.gravityDir.clone(), power: joint.settings.gravityPower }));
+      direction: joint.settings.gravityDir.clone(), power: joint.settings.gravityPower, stiffness: joint.settings.stiffness }));
   }
   sample(velocity: { x: number; y: number }, timestamp: number): void {
     if (this.time !== null && timestamp > this.time) {
@@ -30,7 +30,15 @@ export class DragSprings {
     }
     this.force.multiplyScalar(Math.exp(-10 * delta));
   }
+  /** A brief authored-stiffness boost straightens both ears while the body holds.
+   * Keep the exact baseline so hiding/reload/drag restores every setting. */
+  caught(active: boolean): void {
+    for (const { joint, stiffness } of this.originals) {
+      if (stiffness !== undefined && /^Ear[LR]_/.test(joint.bone.name)) joint.settings.stiffness = active ? stiffness + 5 : stiffness;
+    }
+  }
   restore(): void {
+    this.caught(false);
     for (const { joint, direction, power } of this.originals) {
       joint.settings.gravityDir.copy(direction); joint.settings.gravityPower = power;
     }

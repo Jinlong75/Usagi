@@ -24,7 +24,7 @@ function model() {
 }
 describe('程序化动作与复位', () => {
   const durations: Record<MotionName, number> = { idle: 3.5, lookAround: 3.5, turn: 0.9, walk: 2, drag: 1.2,
-    jumpRope: 6.5, blowBubbles: 5, napPillow: 4, jump: 1.2, stretch: 2.2, shake: 1.2, spin: 1.8, happy: 1.2, surprised: 1.1, shout: 1.3 };
+    eatRiceball: 6, eatWatermelon: 5, iceCream: 5.5, sneakSnack: 4.5, jumpRope: 6.5, blowBubbles: 5, napPillow: 4, jump: 1.2, stretch: 2.2, shake: 1.2, spin: 1.8, happy: 1.2, surprised: 1.1, shout: 1.3 };
   it.each(Object.keys(durations) as MotionName[])('%s 有正确时长、中段有动作、两端恢复所有骨骼和根节点', (name) => {
     expect(MOTION_SECONDS[name]).toBe(durations[name]);
     const { vrm, bones, values } = model();
@@ -285,4 +285,20 @@ it('像素比较只看指定区域，跟随脸部位移，透明度和颜色变�
   shifted[(2 * 10 + 3) * 4] = 0;
   expect(regionDifference(face, moved)).toBeGreaterThan(0);
   expect(() => regionDifference(image, { ...image, bitmap: new Uint8Array(4) })).toThrow();
+});
+
+it('被抓住时只加强耳朵弹簧刚度，松开/隐藏后恢复精确原值', () => {
+  const joints = ['EarL_1', 'EarR_1', 'Tail'].map(name => ({ bone: { name }, settings: { stiffness: 2, gravityDir: new Vector3(0, -1, 0), gravityPower: 0.2 } }));
+  const springs = new DragSprings({ springBoneManager: { joints: new Set(joints) } } as unknown as VRM);
+  springs.caught(true); expect(joints.map(joint => joint.settings.stiffness)).toEqual([7, 7, 2]);
+  springs.caught(false); expect(joints.map(joint => joint.settings.stiffness)).toEqual([2, 2, 2]);
+  springs.caught(true); springs.restore(); expect(joints.map(joint => joint.settings.stiffness)).toEqual([2, 2, 2]);
+});
+
+it('进食取景包含食物最大尺寸、左右啃、滴落末端与小跳最高点', () => {
+  const poses = framingPoses();
+  for (const [name, t] of [['eatRiceball', 0.6], ['eatRiceball', 5.275], ['eatWatermelon', 0.725], ['eatWatermelon', 1.925],
+    ['iceCream', 3.399999], ['sneakSnack', 0.45], ['sneakSnack', 0.95]] as const) {
+    expect(poses).toContainEqual(sampleMotion(name, t));
+  }
 });

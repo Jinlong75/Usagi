@@ -10,7 +10,8 @@ import { blink, createBlink } from './behaviors/blink';
 import { cursorDirection, look, smoothDirection } from './behaviors/look';
 import { BehaviorMachine, TURN_ANGLE } from './behavior/machine';
 import { PetAudio } from './behavior/audio';
-import { ARM_REST, MotionRig, sampleMotion } from './motion';
+import { isFoodMotion } from './motion/food';
+import { ARM_REST, caughtSnackPose, MotionRig, sampleMotion } from './motion';
 import { PropRig } from './props';
 import type { Pose } from './motion';
 import { DragSprings } from './motion/springs';
@@ -49,7 +50,8 @@ let smokePose: SmokeBehavior | undefined;
 let smokePoseFrames = 0;
 let smokeAge = 0;
 let smokeDragImpulse = false;
-const smokeAges = { idle: 0.875, walk: 0.7, happy: 0.175, surprised: 0.45, shout: 0.55, stretch: 1.1, drag: 0.32, 'ear-shake': 0.3, jumpRope: 2.575, blowBubbles: 1.65, napPillow: 2 };
+// TODO(lead): 冒烟段落统一写 aa，但冰淇淋动作明确要求 ih；截图保留第三次舔的 ih。
+const smokeAges = { idle: 0.875, walk: 0.7, happy: 0.175, surprised: 0.45, shout: 0.55, stretch: 1.1, drag: 0.32, 'ear-shake': 0.3, jumpRope: 2.575, blowBubbles: 1.65, napPillow: 2, eatRiceball: 0.72, eatWatermelon: 0.72, iceCream: 2.3, sneakSnack: 1.6 };
 let chatExpression: { name: PetExpression; until: number } | undefined;
 let volume = 0.7;
 let gaze = { x: 0, y: 0 };
@@ -206,6 +208,7 @@ function flushCommands(): void {
   for (const command of machine.drain()) {
     if (command.type === 'cancel') window.pet.cancelMove();
     else if (command.type === 'move') window.pet.moveTo(command.request);
+    else if (command.type === 'activityDone') window.pet.activityDone(command.activity);
     else if (!smoke && (!dragging || command.use === 'drag')) void audio.play(command.use);
   }
 }
@@ -232,7 +235,7 @@ function renderPose(now: number, delta: number): void {
     if (state.state !== 'idle') lastActivity = now;
     const age = Math.max(0, (now - state.startedAt) / 1000);
     const duration = state.durationMs / 1000;
-    if (state.state !== 'nap') { breathe(vrm, elapsed); blink(vrm, blinkState, elapsed); }
+    if (state.state !== 'nap' && state.state !== 'caught' && !(state.state === 'act' && isFoodMotion(state.action))) { breathe(vrm, elapsed); blink(vrm, blinkState, elapsed); }
     else vrm.expressionManager?.setValue('blink', 0);
     // Keep the gaze tracker out of explicit head motions and reactions.
     if (state.state === 'idle') {
@@ -247,6 +250,9 @@ function renderPose(now: number, delta: number): void {
     } else {
       if (vrm.lookAt) { vrm.lookAt.target = null; vrm.lookAt.reset(); }
       if (state.state === 'nap') applyPose(sampleMotion('napPillow', age, { loop: true, modelHeight }));
+      else if (state.state === 'caught') {
+        applyPose(caughtSnackPose(state.snackAge!, modelHeight));
+      }
       else if (state.state === 'act') applyPose(sampleMotion(state.action!, age, { modelHeight }));
       else if (state.state === 'click') applyPose(sampleMotion(state.reaction!, age, { modelHeight }));
       else if (state.state === 'drag') {
@@ -262,9 +268,10 @@ function renderPose(now: number, delta: number): void {
       }
     }
     springs?.update(delta, dragging);
+    springs?.caught(state.state === 'caught');
   }
   propRig?.apply(activeProps);
-  if (chatExpression && machine.snapshot.state !== 'nap' && now < chatExpression.until) {
+  if (chatExpression && machine.snapshot.state !== 'nap' && machine.snapshot.state !== 'caught' && !isFoodMotion(machine.snapshot.action) && now < chatExpression.until) {
     if (!dragging) setEmotion(vrm, chatExpression.name);
   } else chatExpression = undefined;
   vrm.update(delta);

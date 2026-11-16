@@ -5,6 +5,8 @@ import type { MoveRequest, MoveResult, Point, Rect } from '../src/shared/types';
 
 // Exercise the real main-process handlers with a native-window double, without Electron/GUI.
 const host = vi.hoisted(() => ({
+  routineOptions: undefined as import('../src/main/routine').RoutineOptions | undefined,
+  rendererSend: vi.fn(),
   start: undefined as undefined | (() => Promise<void>),
   handlers: new Map<string, (...args: any[]) => any>(),
   invokes: new Map<string, (...args: any[]) => any>(),
@@ -52,7 +54,8 @@ vi.mock('electron', () => {
     loadURL = vi.fn();
   }
   return { BrowserWindow, contextBridge: { exposeInMainWorld: (_name: string, bridge: import('../src/shared/types').PetBridge) => { host.bridge = bridge; } },
-    ipcRenderer: { on: host.rendererOn, removeListener: host.rendererOff }, safeStorage: { isAsyncEncryptionAvailable: async () => false },
+    ipcRenderer: { send: host.rendererSend, on: host.rendererOn, removeListener: host.rendererOff }, safeStorage: { isAsyncEncryptionAvailable: async () => false },
+    powerMonitor: { on: vi.fn(), getSystemIdleTime: () => 0 },
     app: { commandLine: host.commandLine, whenReady: () => ({ then: (start: () => Promise<void>) => {
       host.start = start; return { catch: vi.fn() };
     } }), on: vi.fn(), getPath: () => '/unused-fixture', dock: { hide: vi.fn() } },
@@ -69,6 +72,14 @@ vi.mock('electron', () => {
 vi.mock('../src/main/config', async (importOriginal) => {
   const original = await importOriginal<typeof import('../src/main/config')>();
   return { ...original, readConfig: () => ({ ...structuredClone(original.DEFAULT_CONFIG), position: host.savedPosition }), writeConfig: host.save };
+});
+
+vi.mock('../src/main/routine', async importOriginal => {
+  const original = await importOriginal<typeof import('../src/main/routine')>();
+  return { ...original, Routine: class {
+    constructor(options: import('../src/main/routine').RoutineOptions) { host.routineOptions = options; }
+    start() {} stop() {} markAway() {} resting = false;
+  } };
 });
 
 function send(channel: string, value?: unknown): void {
@@ -111,6 +122,72 @@ describe('可见性与移动 IPC（原生窗口替身，无 GUI）', () => {
     expect(menu.submenu.map((item: any) => item.label)).toEqual(['跳绳', '吹泡泡']);
     menu.submenu[0].click(); expect(host.send).toHaveBeenLastCalledWith('pet:activity', 'jumpRope');
     menu.submenu[1].click(); expect(host.send).toHaveBeenLastCalledWith('pet:activity', 'blowBubbles');
+  });
+
+  it('喂食子菜单在玩耍上方，三项发正确 IPC，偷吃不进菜单；preload 上报完成', async () => {
+    const index = host.menu.findIndex(item => item.label === '喂食');
+    expect(index).toBeLessThan(host.menu.findIndex(item => item.label === '玩耍'));
+    const menu = host.menu[index];
+    expect(menu.submenu.map((item: any) => item.label)).toEqual(['饭团', '西瓜', '冰淇淋']);
+    for (const [i, activity] of ['eatRiceball', 'eatWatermelon', 'iceCream'].entries()) {
+      menu.submenu[i].click(); expect(host.send).toHaveBeenLastCalledWith('pet:activity', activity);
+    }
+    await import('../src/preload/index');
+    host.bridge!.activityDone('eatRiceball');
+    expect(host.rendererSend).toHaveBeenLastCalledWith('pet:activity-done', 'eatRiceball');
+  });
+
+  it.each(['07:30', '12:00', '18:30'])('%s 问话出现后两分钟内喂食，实际吃完才冒好吃 3.2 秒；重复/非可信回执不生效', async time => {
+    const { UiController } = await import('../src/main/ipc/ui');
+    const { BubbleWindow } = await import('../src/main/windows/bubble');
+    const question = vi.spyOn(UiController.prototype, 'showRoutine').mockResolvedValue();
+    const show = vi.spyOn(BubbleWindow.prototype, 'showBubble').mockResolvedValue();
+    vi.setSystemTime(new Date(`2026-11-17T${time}:00`));
+    await host.routineOptions!.show('吃饭了吗？', 10000, true);
+    expect(question).toHaveBeenCalledWith('吃饭了吗？', 10000, true);
+    vi.advanceTimersByTime(120000);
+    const menu = host.menu.find(item => item.label === '喂食');
+    for (const [i, activity] of ['eatRiceball', 'eatWatermelon', 'iceCream'].entries()) {
+      // Each menu selection qualifies against its own recent question.
+      if (i > 0) await host.routineOptions!.show('吃饭了吗？', 10000, true);
+      show.mockClear(); menu.submenu[i].click(); expect(show).not.toHaveBeenCalled();
+      host.handlers.get('pet:activity-done')!({ sender: {}, senderFrame: host.frame }, activity);
+      send('pet:activity-done', 'jumpRope'); expect(show).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(6000); show.mockClear(); send('pet:activity-done', activity);
+      expect(show).toHaveBeenCalledExactlyOnceWith('呀哈！（好吃！）', 3200);
+      send('pet:activity-done', activity); expect(show).toHaveBeenCalledTimes(1);
+    }
+    question.mockRestore(); show.mockRestore();
+  });
+
+  it.each(['no-question', 'expired', 'outside-meal', 'not-question', 'hidden', 'dragging'] as const)('%s 时喂食不冒好吃气泡', async reason => {
+    const { UiController } = await import('../src/main/ipc/ui');
+    const { BubbleWindow } = await import('../src/main/windows/bubble');
+    const question = vi.spyOn(UiController.prototype, 'showRoutine').mockResolvedValue();
+    const show = vi.spyOn(BubbleWindow.prototype, 'showBubble').mockResolvedValue();
+    vi.setSystemTime(new Date('2026-11-17T12:00:00'));
+    if (reason !== 'no-question') await host.routineOptions!.show('吃饭了吗？', 10000, reason !== 'not-question');
+    if (reason === 'expired') vi.advanceTimersByTime(120001);
+    if (reason === 'outside-meal') vi.setSystemTime(new Date('2026-11-17T16:00:00'));
+    if (reason === 'hidden') host.visible = false;
+    if (reason === 'dragging') { send('pet:hit', true); send('pet:drag-start'); }
+    show.mockClear();
+    host.menu.find(item => item.label === '喂食').submenu[0].click();
+    send('pet:activity-done', 'eatRiceball'); expect(show).not.toHaveBeenCalled();
+    question.mockRestore(); show.mockRestore();
+  });
+
+  it('吃完已经离开午餐时段，不冒好吃', async () => {
+    const { UiController } = await import('../src/main/ipc/ui');
+    const { BubbleWindow } = await import('../src/main/windows/bubble');
+    const question = vi.spyOn(UiController.prototype, 'showRoutine').mockResolvedValue();
+    const show = vi.spyOn(BubbleWindow.prototype, 'showBubble').mockResolvedValue();
+    vi.setSystemTime(new Date('2026-11-17T12:59:59'));
+    await host.routineOptions!.show('吃饭了吗？', 10000, true);
+    host.menu.find(item => item.label === '喂食').submenu[0].click();
+    vi.advanceTimersByTime(6000); send('pet:activity-done', 'eatRiceball');
+    expect(show).not.toHaveBeenCalled();
+    question.mockRestore(); show.mockRestore();
   });
 
   it('Windows 正式窗口禁用后台降频；blur/focus 即使没有拖动也重设穿透，外部窗口激活后轮询兜底', async () => {

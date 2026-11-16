@@ -1,8 +1,9 @@
-import { BackSide, Box3, BufferGeometry, Curve, QuadraticBezierCurve3, CylinderGeometry, Group, Mesh, MeshBasicMaterial,
+import { BackSide, Box3, BufferGeometry, Curve, QuadraticBezierCurve3, CylinderGeometry, ExtrudeGeometry, Shape, Group, Mesh, MeshBasicMaterial,
   Object3D, SphereGeometry, TorusGeometry, TubeGeometry, Vector3 } from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
-export const PROP_COLORS = { outline: '#2b1a14', handles: '#e8584f', rope: '#f2c94c', wand: '#7ec8e3', bubbles: '#bfe8ff', pillow: '#f6c9d3' } as const;
+export const PROP_COLORS = { outline: '#2b1a14', handles: '#e8584f', rope: '#f2c94c', wand: '#7ec8e3', bubbles: '#bfe8ff', pillow: '#f6c9d3', rice: '#fbfbf5', seaweed: '#2e3b2c',
+  melon: '#ef5a5a', rindWhite: '#f3f1e4', rind: '#3f9b4b', cone: '#e3b26b', ice: '#f7a8c4', cookie: '#d9a05b' } as const;
 // Rest hand centers measured on the deployed VRM: ±0.3284H, y=0.2626H.
 // Handles sit just outside the hand surface (±0.3466H), rather than inside the torso.
 export const ROPE_SPAN = 0.355;
@@ -13,9 +14,9 @@ export const WAND_RING: [number, number, number] = [-0.108, 0.355, 0.32];
 export const WAND_GRIP: [number, number, number] = [-0.328, 0.263, 0.015];
 export const PILLOW_SIZE = [0.46, 0.184, 0.10] as const;
 export const PILLOW_CENTER: [number, number, number] = [0, 0.06, 0.295];
-export type PropName = 'handles' | 'rope' | 'wand' | 'bubble' | 'pillow';
+export type PropName = 'handles' | 'rope' | 'wand' | 'bubble' | 'pillow' | 'riceball' | 'rice' | 'watermelon' | 'iceCream' | 'iceDrop' | 'cookie';
 type Triple = [number, number, number];
-export interface PropState { name: PropName; position: Triple; rotation?: Triple; scale?: Triple; visible?: boolean; opacity?: number; ropeOpen?: number }
+export interface PropState { name: PropName; position: Triple; rotation?: Triple; scale?: Triple; visible?: boolean; opacity?: number; ropeOpen?: number; foodRemaining?: number }
 export interface PropHandle { group: Group; apply(state: PropState): void; dispose(): void }
 
 /** Unit geometry and translations are fractions of neutral height H.
@@ -25,6 +26,7 @@ export function createProp(name: PropName): PropHandle {
   const group = new Group(); group.name = `prop:${name}`;
   const geometries = new Set<BufferGeometry>();
   const materials = new Set<MeshBasicMaterial>();
+  const melonFlesh: Group[] = [];
   let openRope: ((amount: number) => void) | undefined;
   const add = (geometry: BufferGeometry, color: string, position: Triple = [0, 0, 0], opacity = 1) => {
     geometries.add(geometry);
@@ -100,12 +102,52 @@ export function createProp(name: PropName): PropHandle {
     add(new SphereGeometry(1, 20, 12), PROP_COLORS.bubbles, [0, 0, 0], 0.45);
     // Same palette, stronger opacity: a small pale highlight on the front cap.
     add(new SphereGeometry(1, 12, 8).scale(0.16, 0.24, 0.07), PROP_COLORS.bubbles, [-0.28, 0.35, 0.9], 0.95);
+  } else if (name === 'riceball') {
+    // Rounded triangular prism, front face at +Z like the character's mouth.
+    const triangle = new Shape();
+    triangle.moveTo(-0.065, -0.06); triangle.quadraticCurveTo(-0.085, -0.06, -0.073, -0.035);
+    triangle.lineTo(-0.018, 0.055); triangle.quadraticCurveTo(0, 0.08, 0.018, 0.055);
+    triangle.lineTo(0.073, -0.035); triangle.quadraticCurveTo(0.085, -0.06, 0.065, -0.06);
+    triangle.closePath();
+    add(new ExtrudeGeometry(triangle, { depth: 0.04, bevelEnabled: true, bevelSegments: 3, steps: 1,
+      bevelSize: 0.005, bevelThickness: 0.005, curveSegments: 12 }).translate(0, 0, -0.02), PROP_COLORS.rice);
+    add(new RoundedBoxGeometry(0.06, 0.045, 0.008, 2, 0.003), PROP_COLORS.seaweed, [0, -0.04, 0.03]);
+  } else if (name === 'rice' || name === 'iceDrop') {
+    add(new SphereGeometry(1, 12, 8).scale(1, name === 'rice' ? 1.7 : 1, 1), name === 'rice' ? PROP_COLORS.rice : PROP_COLORS.ice);
+  } else if (name === 'watermelon') {
+    const halfDisc = (radius: number, depth: number) => {
+      const shape = new Shape(); shape.moveTo(-radius, 0);
+      shape.absarc(0, 0, radius, Math.PI, 0, true); shape.closePath();
+      return new ExtrudeGeometry(shape, { depth, bevelEnabled: false, curveSegments: 32 }).translate(0, -0.045, -depth / 2);
+    };
+    add(halfDisc(0.1, 0.045), PROP_COLORS.rind);
+    add(halfDisc(0.093, 0.008), PROP_COLORS.rindWhite, [0, 0, 0.025]);
+    melonFlesh.push(add(halfDisc(0.085, 0.008), PROP_COLORS.melon, [0, 0, 0.032]));
+    for (const [x, y] of [[-0.055, -0.015], [-0.03, 0.012], [0, 0.025], [0.03, 0.012], [0.055, -0.015]]) {
+      melonFlesh.push(add(new SphereGeometry(1, 12, 8).scale(0.003, 0.007, 0.002), PROP_COLORS.outline, [x!, y!, 0.039]));
+    }
+  } else if (name === 'iceCream') {
+    add(new CylinderGeometry(0.035, 0, 0.12, 24), PROP_COLORS.cone);
+    add(new SphereGeometry(0.05, 24, 16), PROP_COLORS.ice, [0, 0.095, 0]);
+  } else if (name === 'cookie') {
+    const biscuit = new CylinderGeometry(0.04, 0.04, 0.015, 24).rotateX(Math.PI / 2);
+    add(biscuit, PROP_COLORS.cookie);
   } else {
     add(new RoundedBoxGeometry(...PILLOW_SIZE, 2, 0.035), PROP_COLORS.pillow);
   }
   let disposed = false;
   return { group, apply(state) {
     openRope?.(state.ropeOpen ?? 0);
+    const remaining = Math.max(0, Math.min(1, state.foodRemaining ?? 1));
+    for (const part of melonFlesh) {
+      part.scale.y = remaining;
+      // Keep the straight bottom edge fixed while the red arc and seeds shrink.
+      if (part === melonFlesh[0]) part.position.y = -0.045 * (1 - remaining);
+      else {
+        part.userData.restY ??= part.position.y;
+        part.position.y = -0.045 + (part.userData.restY + 0.045) * remaining;
+      }
+    }
     group.visible = !disposed && state.visible !== false;
     group.position.set(...state.position); group.rotation.set(...(state.rotation ?? [0, 0, 0]));
     group.scale.set(...(state.scale ?? [1, 1, 1]));

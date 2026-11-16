@@ -23,7 +23,7 @@ import { initialBounds, windowDimensions } from '../shared/window';
 import { beginGesture, isClick, updateGesture } from '../shared/gesture';
 import { topRowsTransparent, regionDifference } from '../shared/hit';
 import type { Gesture } from '../shared/gesture';
-import type { Config, Point, RenderResult, Size, MoveRequest, SmokeBehavior, SoundUse, Rect } from '../shared/types';
+import type { Config, Point, RenderResult, Size, MoveRequest, SmokeBehavior, SoundUse, Rect, FoodActivity } from '../shared/types';
 
 const smoke = process.argv.includes('--smoke');
 configureWindowsRendering(app.commandLine);
@@ -34,6 +34,17 @@ let config: Config = structuredClone(DEFAULT_CONFIG);
 let ui: UiController;
 let selfTalk: SelfTalk;
 let routine: Routine | undefined;
+let lastMealQuestionAt = -Infinity;
+let pendingFood: { activity: FoodActivity; delicious: boolean } | undefined;
+const foodActivities: FoodActivity[] = ['eatRiceball', 'eatWatermelon', 'iceCream'];
+function mealTime(now = new Date()): boolean {
+  return config.routine.enabled && !config.routine.quiet && (['morning', 'lunch', 'dinner'] as const).some(key => inRange(now, config.routine[key]));
+}
+function feed(activity: FoodActivity): void {
+  if (!win?.isVisible() || gesture) return;
+  pendingFood = { activity, delicious: mealTime() && Date.now() - lastMealQuestionAt <= 120_000 };
+  win.webContents.send('pet:activity', activity);
+}
 let stopWeatherPrefetch: (() => void) | undefined;
 let sessionStore: SessionStore | undefined;
 let keyStore: AsyncKeyStore | undefined;
@@ -54,11 +65,11 @@ let lastDragEndedAt = -Infinity;
 let dragSample = { point: { x: 0, y: 0 }, time: 0 };
 const runtime = { isPackaged: app.isPackaged, resourcesPath: process.resourcesPath };
 const sounds = SoundLibrary.fromRuntime(root, runtime);
-const smokeBehaviors: SmokeBehavior[] = ['idle', 'walk', 'happy', 'surprised', 'shout', 'stretch', 'drag', 'ear-shake', 'jumpRope', 'blowBubbles', 'napPillow'];
+const smokeBehaviors: SmokeBehavior[] = ['idle', 'walk', 'happy', 'surprised', 'shout', 'stretch', 'drag', 'ear-shake', 'jumpRope', 'blowBubbles', 'napPillow', 'eatRiceball', 'eatWatermelon', 'iceCream', 'sneakSnack'];
 // Focused screenshots share the production smoke renderer, without opening UI pages.
 const smokeOnly = smoke ? process.argv.find(arg => arg.startsWith('--only='))?.slice(7).split(',') : undefined;
 if (smokeOnly) {
-  if (!smokeOnly.length || smokeOnly.some(name => !['jumpRope', 'blowBubbles', 'napPillow'].includes(name))) throw new Error('无效的聚焦冒烟动作');
+  if (!smokeOnly.length || smokeOnly.some(name => !['jumpRope', 'blowBubbles', 'napPillow', 'eatRiceball', 'eatWatermelon', 'iceCream', 'sneakSnack'].includes(name))) throw new Error('无效的聚焦冒烟动作');
   smokeBehaviors.splice(0, smokeBehaviors.length, ...smokeBehaviors.filter(name => smokeOnly.includes(name)));
 }
 const propOpaqueRatios: Record<string, number> = {};
@@ -203,6 +214,11 @@ function petMenu(): Electron.MenuItemConstructorOptions[] {
       refreshMenu();
     } },
     { label: '和乌萨奇聊天', click: () => { void ui.chat.open(); } },
+    { label: '喂食', submenu: [
+      { label: '饭团', click: () => feed('eatRiceball') },
+      { label: '西瓜', click: () => feed('eatWatermelon') },
+      { label: '冰淇淋', click: () => feed('iceCream') },
+    ] },
     { label: '玩耍', submenu: [
       { label: '跳绳', click: () => win?.webContents.send('pet:activity', 'jumpRope') },
       { label: '吹泡泡', click: () => win?.webContents.send('pet:activity', 'blowBubbles') },
@@ -257,7 +273,7 @@ async function capture(result: RenderResult): Promise<void> {
     await mkdir(directory, { recursive: true });
     await writeFile(join(directory, expected ? `smoke-${expected}.png` : 'smoke.png'), image.toPNG());
     const { width, height } = image.getSize(1);
-    const requiredProps: Record<string, string[]> = { jumpRope: ['handles', 'rope'], blowBubbles: ['wand', 'bubble'], napPillow: ['pillow'] };
+    const requiredProps: Record<string, string[]> = { jumpRope: ['handles', 'rope'], blowBubbles: ['wand', 'bubble'], napPillow: ['pillow'], eatRiceball: ['riceball'], eatWatermelon: ['watermelon'], iceCream: ['iceCream'], sneakSnack: ['cookie'] };
     if (expected && requiredProps[expected]) {
       for (const name of requiredProps[expected]) {
         const ratio = result.propOpaqueRatios?.[name];
@@ -377,7 +393,10 @@ async function start(): Promise<void> {
       routine = new Routine({
         path: join(app.getPath('userData'), 'routine-state.json'), config: () => config.routine,
         now: () => new Date(), idleSeconds: () => powerMonitor.getSystemIdleTime(), blocked,
-        show: (text, duration, question) => ui.showRoutine(text, duration, question), sound,
+        show: async (text, duration, question) => {
+          await ui.showRoutine(text, duration, question);
+          if (question && mealTime()) lastMealQuestionAt = Date.now();
+        }, sound,
         state: state => win?.webContents.send('routine:state', state),
         weatherLine: () => weather.line().then(line => line ? line + '。' : null),
         onError: error => console.error('作息调度失败', error),
@@ -398,6 +417,11 @@ async function start(): Promise<void> {
   const trusted = (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) =>
     event.sender === win?.webContents && event.senderFrame === win?.webContents.mainFrame;
   ipcMain.handle('pet:config', event => { if (!trusted(event)) throw new Error('未授权的配置请求'); return config; });
+  ipcMain.on('pet:activity-done', (event, activity: unknown) => {
+    if (!trusted(event) || smoke || !foodActivities.includes(activity as FoodActivity) || !pendingFood || pendingFood.activity !== activity) return;
+    const delicious = pendingFood.delicious; pendingFood = undefined;
+    if (delicious && win?.isVisible() && mealTime()) void ui.bubble.showBubble('呀哈！（好吃！）', 3200);
+  });
   ipcMain.on('pet:context-menu', event => {
     if (trusted(event) && win && hit && !config.mousePassthrough) Menu.buildFromTemplate(petMenu()).popup({ window: win });
   });
