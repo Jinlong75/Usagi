@@ -19,7 +19,7 @@ from mathutils import Matrix, Vector
 from common import export_glb, import_model, reset_scene
 from cleanup_mesh import face_islands
 from prep_usagi import (ear_inner_region, tail_region, smooth_waist, waist_depth,
-                        prep, smooth_face, linear_color, assign_regions)
+                        prep, smooth_face, linear_color, assign_regions, deepen_side_waist)
 from region_boundary import boundary_metrics
 
 
@@ -196,6 +196,34 @@ class PrepTests(unittest.TestCase):
             finally:
                 bpy.data.images.remove(base)
                 bpy.data.images.remove(overlay)
+
+    def test_015_side_notch_pins_center_and_limits_depth(self):
+        self.assertGreater(self.report["side_waist"]["vertices_processed"], 0)
+        bm = grooved_cylinder()
+        try:
+            profile = {"height": 1, "head_width": .20, "arm_z": .455}
+            original = {v: v.co.copy() for v in bm.verts}
+            report = deepen_side_waist(bm.verts, profile)
+            self.assertAlmostEqual(report["side_x_min"], .12)
+            self.assertGreater(report["vertices_by_side"]["l"], 0)
+            self.assertEqual(report["vertices_by_side"]["l"], report["vertices_by_side"]["r"])
+            self.assertGreater(report["max_displacement_m"], .015)
+            self.assertLessEqual(report["max_displacement_m"], .038 + 1e-7)
+            changed = 0
+            for vert, before in original.items():
+                # 所有高度带的并集为 .464..518；腹部中线与带外必须逐位不变。
+                if abs(before.x) <= report["side_x_min"] or before.z >= .518 or before.z <= .464:
+                    self.assertEqual(tuple(vert.co), tuple(before))
+                self.assertEqual(vert.co.z, before.z)
+                delta = (vert.co - before).length
+                if delta > 0:
+                    changed += 1
+                    self.assertGreater(abs(before.x), report["side_x_min"])
+                    self.assertLess(math.hypot(vert.co.x, vert.co.y), math.hypot(before.x, before.y))
+            self.assertEqual(changed, report["vertices_processed"])
+            self.assertGreater(changed, 0)
+        finally:
+            bm.free()
 
     def assert_smooth_boundaries(self, obj, expected):
         metrics = boundary_metrics(obj)

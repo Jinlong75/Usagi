@@ -289,6 +289,46 @@ def smooth_waist(bm, center_z, half_width=.06, iterations=100, trunk_limit=None,
             "method": "radial Laplacian relaxation toward angular Dirichlet harmonic profiles; signed-volume compensation with sin^2 boundary taper; Z/azimuth/arms pinned; depth vs interpolated fitted boundary ellipses"}
 
 
+def deepen_side_waist(vertices, profile, depth=.038, half_width=.018, side_ratio=.60):
+    """头身交界只收两侧；中央、Z 和支撑带之外逐点保持原值。
+
+    在关键点测量之后调用，避免凹口改变 neck 的最窄截面及骨架静止姿态。
+    曲线从外侧向内略向下落，紧支撑余弦带避免在上下边界留下折角。
+    """
+    height, width = profile["height"], profile["head_width"]
+    threshold = side_ratio * width
+    full_side = .85 * width
+    changed, max_displacement, sides = 0, 0.0, {"l": 0, "r": 0}
+    for vertex in vertices:
+        p = vertex.co
+        if abs(p.x) <= threshold:
+            continue
+        side = min(1.0, (abs(p.x) - threshold) / (full_side - threshold))
+        center_z = profile["arm_z"] + height * (.027 + .018 * side)
+        band = abs(p.z - center_z) / (half_width * height)
+        if band >= 1:
+            continue
+        taper = side * side * (3 - 2 * side) * math.cos(band * math.pi / 2) ** 2
+        inset = depth * height * taper
+        radius = math.hypot(p.x, p.y)
+        original = p.copy()
+        factor = max(0, 1 - inset / radius)
+        p.x *= factor
+        p.y *= factor
+        displacement = (p - original).length
+        if displacement > 0:
+            changed += 1
+            sides["l" if original.x > 0 else "r"] += 1
+            max_displacement = max(max_displacement, displacement)
+    return {"depth_m": depth * height, "half_width_m": half_width * height,
+            "side_x_min": threshold, "side_x_full": full_side,
+            "center_z_inner": profile["arm_z"] + .027 * height,
+            "center_z_outer": profile["arm_z"] + .045 * height,
+            "vertices_processed": changed, "vertices_by_side": sides,
+            "max_displacement_m": max_displacement,
+            "method": "side-only radial inset; smoothstep X mask and compact cosine-squared Z band; Z pinned; landmarks measured before inset"}
+
+
 def ear_sections(points, profile, side):
     base_z = profile["head_top"]
     ear = [p for p in points if p.z > base_z and p.x * side > profile["head_width"] * .04]
@@ -582,11 +622,14 @@ def prep(args):
                            ear_inner_max_face_normal_y=max(
                                f.normal.y for f in obj.data.polygons if f.material_index == 1))
     landmarks = measure_landmarks(obj, profile, ears)
+    side_waist = deepen_side_waist(obj.data.vertices, profile)
+    obj.data.update()
     # 报告只写仓库相对路径/文件名，不将本机私有路径写进提交产物。
     cleanup.pop("input", None)
     cleanup.pop("output", None)
     report = {"input": Path(args.input).name, "output": Path(args.output).name,
               "cleanup": cleanup, **orientation, "face": face_report, "waist": waist,
+              "side_waist": side_waist,
               "region_boundary": boundary_report, "material_face_counts": counts, "colors_srgb": {k: "#" + v for k, v in COLORS.items()},
               "vertex_groups": REGION_BITS, "vertex_groups_storage": "_USAGI_REGION point attribute bitmask + usagi_vertex_groups extras; common.import_model restores Blender groups",
               "vertices": len(obj.data.vertices), "faces": len(obj.data.polygons),
