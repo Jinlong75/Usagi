@@ -17,7 +17,7 @@ import { DeepSeekClient } from './chat/client';
 import { SessionStore } from './chat/sessionStore';
 import { SelfTalk } from './selfTalk';
 import { Weather, prefetchMorning } from './weather';
-import { Routine, isForegroundFullscreen } from './routine';
+import { Routine, inRange, isForegroundFullscreen } from './routine';
 import { menuState } from '../shared/ui';
 import { initialBounds, windowDimensions } from '../shared/window';
 import { beginGesture, isClick, updateGesture } from '../shared/gesture';
@@ -54,7 +54,15 @@ let lastDragEndedAt = -Infinity;
 let dragSample = { point: { x: 0, y: 0 }, time: 0 };
 const runtime = { isPackaged: app.isPackaged, resourcesPath: process.resourcesPath };
 const sounds = SoundLibrary.fromRuntime(root, runtime);
-const smokeBehaviors: SmokeBehavior[] = ['idle', 'walk', 'happy', 'surprised', 'shout', 'stretch', 'drag', 'ear-shake'];
+const smokeBehaviors: SmokeBehavior[] = ['idle', 'walk', 'happy', 'surprised', 'shout', 'stretch', 'drag', 'ear-shake', 'jumpRope', 'blowBubbles', 'napPillow'];
+// Focused screenshots share the production smoke renderer, without opening UI pages.
+const smokeOnly = smoke ? process.argv.find(arg => arg.startsWith('--only='))?.slice(7).split(',') : undefined;
+if (smokeOnly) {
+  if (!smokeOnly.length || smokeOnly.some(name => !['jumpRope', 'blowBubbles', 'napPillow'].includes(name))) throw new Error('无效的聚焦冒烟动作');
+  smokeBehaviors.splice(0, smokeBehaviors.length, ...smokeBehaviors.filter(name => smokeOnly.includes(name)));
+}
+const propOpaqueRatios: Record<string, number> = {};
+const propFraming: Record<string, boolean> = {};
 const behaviorRatios: Partial<Record<SmokeBehavior, number>> = {};
 const behaviorTopTransparent: Partial<Record<SmokeBehavior, boolean>> = {};
 let smokeIndex = -1;
@@ -157,9 +165,16 @@ function updateConfig(value: unknown): void {
   const candidate = { ...next, position: config.position, size: config.size, modelPath: config.modelPath };
   const saved = save(candidate);
   if (!saved.ok) throw new Error(saved.reason);
+  const routineWasEnabled = config.routine.enabled;
   config = candidate;
   win?.setAlwaysOnTop(config.alwaysOnTop, 'floating');
   applyHit(); refreshMenu(); ui?.broadcast(); if (!quitting) { selfTalk?.restart(); routine?.start(); }
+  // Routine only emits changes to its cached state. Re-enabling needs a fresh
+  // clock sample even if that cache still says nap from before it was disabled.
+  if (!quitting && routine && !routineWasEnabled && config.routine.enabled) {
+    const now = new Date();
+    win?.webContents.send('routine:state', inRange(now, config.routine.sleep) ? 'sleep' : inRange(now, config.routine.nap) ? 'nap' : 'awake');
+  }
 }
 
 // 菜单里的开关直接写配置：写盘失败时恢复勾选状态并用气泡提示，不让异常冒到主进程
@@ -188,6 +203,10 @@ function petMenu(): Electron.MenuItemConstructorOptions[] {
       refreshMenu();
     } },
     { label: '和乌萨奇聊天', click: () => { void ui.chat.open(); } },
+    { label: '玩耍', submenu: [
+      { label: '跳绳', click: () => win?.webContents.send('pet:activity', 'jumpRope') },
+      { label: '吹泡泡', click: () => win?.webContents.send('pet:activity', 'blowBubbles') },
+    ] },
     { label: '设置…', click: () => { void ui.settings.open(); } },
     { label: '自言自语', type: 'checkbox', checked: state.selfTalk, click: item => {
       updateFromMenu({ ...config, selfTalk: { ...config.selfTalk, enabled: item.checked } });
@@ -238,6 +257,16 @@ async function capture(result: RenderResult): Promise<void> {
     await mkdir(directory, { recursive: true });
     await writeFile(join(directory, expected ? `smoke-${expected}.png` : 'smoke.png'), image.toPNG());
     const { width, height } = image.getSize(1);
+    const requiredProps: Record<string, string[]> = { jumpRope: ['handles', 'rope'], blowBubbles: ['wand', 'bubble'], napPillow: ['pillow'] };
+    if (expected && requiredProps[expected]) {
+      for (const name of requiredProps[expected]) {
+        const ratio = result.propOpaqueRatios?.[name];
+        if (!Number.isFinite(ratio) || ratio! <= 0 || ratio! > 1) return fail(`道具没有可见像素：${expected}/${name}`);
+        propOpaqueRatios[name] = ratio!;
+      }
+      propFraming[expected] = result.propsInFrame === true;
+      if (!propFraming[expected]) return fail(`道具超出取景：${expected}`);
+    }
     if (expected === 'idle') idleImage = { bitmap, width, height, face: result.face };
     if (expected && result.earDegrees !== undefined) earDegrees[expected] = result.earDegrees;
     if (expected === 'ear-shake') {
@@ -265,6 +294,12 @@ async function capture(result: RenderResult): Promise<void> {
     const next = smokeBehaviors[smokeIndex];
     if (next) win.webContents.send('pet:smoke-pose', next);
     else {
+      if (smokeOnly) {
+        completed = true;
+        exitSmoke(0, { ok: true, focused: true, model: modelPath, opaqueRatio: initialRatio, vrmVersion: result.vrmVersion,
+          expressions: result.expressions ?? [], behaviors: smokeBehaviors, behaviorOpaqueRatios: behaviorRatios, propOpaqueRatios, propFraming });
+        return;
+      }
       const { captureUi } = await import('../../scripts/smoke-ui');
       // Return to idle before composing the pet + bubble screenshot.
       win.webContents.send('pet:smoke-pose', 'idle');
@@ -279,7 +314,7 @@ async function capture(result: RenderResult): Promise<void> {
       completed = true;
       exitSmoke(0, { ok: true, model: modelPath, opaqueRatio: initialRatio, vrmVersion: result.vrmVersion,
         expressions: result.expressions ?? [], behaviors: smokeBehaviors, behaviorOpaqueRatios: behaviorRatios,
-        behaviorTopTransparent, earDifferenceRatio, happyFaceDifferenceRatio, earDegrees, ui: ['bubble', 'chat', 'settings'],
+        propOpaqueRatios, propFraming, behaviorTopTransparent, earDifferenceRatio, happyFaceDifferenceRatio, earDegrees, ui: ['bubble', 'chat', 'settings'],
         sounds: { directory: audio.directory, clips: audio.clips, decoded: true } });
     }
   } catch (error) { fail(String(error)); }

@@ -1,4 +1,4 @@
-import { AmbientLight, Box3, DirectionalLight, LoadingManager, Object3D, OrthographicCamera, Scene, Vector3, WebGLRenderer } from 'three';
+import { AmbientLight, Box3, DirectionalLight, LoadingManager, Object3D, OrthographicCamera, Scene, Vector2, Vector3, WebGLRenderer } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 import type { VRM } from '@pixiv/three-vrm';
@@ -11,6 +11,8 @@ import { cursorDirection, look, smoothDirection } from './behaviors/look';
 import { BehaviorMachine, TURN_ANGLE } from './behavior/machine';
 import { PetAudio } from './behavior/audio';
 import { ARM_REST, MotionRig, sampleMotion } from './motion';
+import { PropRig } from './props';
+import type { Pose } from './motion';
 import { DragSprings } from './motion/springs';
 import { frameBounds, measureMotionBounds, motionAspect, springEnvelope } from './motion/framing';
 import { setEmotion } from './behaviors/expressions';
@@ -26,6 +28,11 @@ let frames = 0;
 let reported = false;
 let loadGeneration = 0;
 let rig: MotionRig | null = null;
+let propRig: PropRig | null = null;
+let activeProps: Pose['props'];
+let routineState: import('../shared/types').RoutineState = 'awake';
+let routineEnabled = true;
+function applyPose(pose: Pose): void { activeProps = pose.props; rig?.apply(pose); }
 let springs: DragSprings | null = null;
 let machine = new BehaviorMachine();
 let windowInfo: WindowInfo | null = null;
@@ -42,7 +49,7 @@ let smokePose: SmokeBehavior | undefined;
 let smokePoseFrames = 0;
 let smokeAge = 0;
 let smokeDragImpulse = false;
-const smokeAges = { idle: 0.875, walk: 0.7, happy: 0.175, surprised: 0.45, shout: 0.55, stretch: 1.1, drag: 0.32, 'ear-shake': 0.3 };
+const smokeAges = { idle: 0.875, walk: 0.7, happy: 0.175, surprised: 0.45, shout: 0.55, stretch: 1.1, drag: 0.32, 'ear-shake': 0.3, jumpRope: 2.575, blowBubbles: 1.65, napPillow: 2 };
 let chatExpression: { name: PetExpression; until: number } | undefined;
 let volume = 0.7;
 let gaze = { x: 0, y: 0 };
@@ -67,6 +74,13 @@ document.body.append(fpsOverlay);
 function resetFps(): void { frameStats.reset(); lastFpsLoggedAt = performance.now(); }
 function receiveConfig(config: Config): void {
   volume = config.volume;
+  const routineWasEnabled = routineEnabled;
+  routineEnabled = config.routine.enabled;
+  if (routineWasEnabled && !routineEnabled) {
+    routineState = 'awake'; machine.disableRoutine();
+    propRig?.apply(); activeProps = undefined;
+    wake(); flushCommands();
+  }
   if (showFps !== config.showFps) {
     showFps = config.showFps; resetFps();
     fpsOverlay.hidden = !showFps;
@@ -110,6 +124,7 @@ async function loadModel(): Promise<void> {
   springs?.restore();
   audio.stop();
   window.pet.cancelMove();
+  propRig?.dispose(); propRig = null;
   if (vrm) { scene.remove(vrm.scene); VRMUtils.deepDispose(vrm.scene); vrm = null; }
   try {
     const data = await window.pet.loadModel();
@@ -148,11 +163,13 @@ async function loadModel(): Promise<void> {
     rig = new MotionRig(vrm);
     springs = new DragSprings(vrm);
     machine = new BehaviorMachine();
+    machine.routine(routineState);
     if (!smoke && !petVisible) { machine.visibility(false); flushCommands(); }
     // Synchronous sampling finishes and restores neutral before any frame is drawn.
     const measured = measureMotionBounds(vrm, rig);
     neutralBounds = measured.neutral;
     modelHeight = measured.neutral.getSize(new Vector3()).y;
+    propRig = new PropRig(vrm.scene, modelHeight, measured.neutral);
     motionBounds = springEnvelope(measured.neutral, measured.motion);
     restEars = earDirections();
     if (vrm.lookAt) { vrm.lookAt.autoUpdate = false; vrm.lookAt.target = null; }
@@ -195,13 +212,13 @@ function flushCommands(): void {
 function wake(): void { lastActivity = performance.now(); }
 function renderPose(now: number, delta: number): void {
   if (!vrm || !rig) return;
-  rig.reset();
+  rig.reset(); activeProps = undefined;
   if (smoke) {
     const name = smokePose ?? 'idle';
     const step = Math.min(1 / 60, Math.max(0, smokeAges[name] - smokeAge));
     smokeAge += step;
     delta = step;
-    rig.apply(sampleMotion(name === 'ear-shake' ? 'shake' : name, smokeAge, { velocityX: 500, modelHeight }));
+    applyPose(sampleMotion(name === 'ear-shake' ? 'shake' : name, smokeAge, { velocityX: 500, modelHeight }));
     if (name === 'drag' && springs) {
       if (!smokeDragImpulse && smokeAge >= 0.25) {
         springs.sample({ x: 0, y: 0 }, 0); springs.sample({ x: 500, y: 0 }, 100); smokeDragImpulse = true;
@@ -215,8 +232,8 @@ function renderPose(now: number, delta: number): void {
     if (state.state !== 'idle') lastActivity = now;
     const age = Math.max(0, (now - state.startedAt) / 1000);
     const duration = state.durationMs / 1000;
-    breathe(vrm, elapsed);
-    blink(vrm, blinkState, elapsed);
+    if (state.state !== 'nap') { breathe(vrm, elapsed); blink(vrm, blinkState, elapsed); }
+    else vrm.expressionManager?.setValue('blink', 0);
     // Keep the gaze tracker out of explicit head motions and reactions.
     if (state.state === 'idle') {
       const neck = vrm.humanoid.getNormalizedBoneNode('neck');
@@ -226,16 +243,17 @@ function renderPose(now: number, delta: number): void {
       look(vrm, lookTarget, direction, delta);
       if (head) gaze = { x: head.rotation.x, y: head.rotation.y };
       if (neck) neckGaze = { x: neck.rotation.x, y: neck.rotation.y };
-      rig.apply(sampleMotion(Math.floor(state.startedAt / 3500) % 2 ? 'lookAround' : 'idle', age));
+      applyPose(sampleMotion(Math.floor(state.startedAt / 3500) % 2 ? 'lookAround' : 'idle', age));
     } else {
       if (vrm.lookAt) { vrm.lookAt.target = null; vrm.lookAt.reset(); }
-      if (state.state === 'act') rig.apply(sampleMotion(state.action!, age, { modelHeight }));
-      else if (state.state === 'click') rig.apply(sampleMotion(state.reaction!, age, { modelHeight }));
+      if (state.state === 'nap') applyPose(sampleMotion('napPillow', age, { loop: true, modelHeight }));
+      else if (state.state === 'act') applyPose(sampleMotion(state.action!, age, { modelHeight }));
+      else if (state.state === 'click') applyPose(sampleMotion(state.reaction!, age, { modelHeight }));
       else if (state.state === 'drag') {
         // Fade in once, then hold the suspended pose for the whole gesture.
-        rig.apply(sampleMotion('drag', Math.min(0.5, age + 0.001), { velocityX, modelHeight }));
+        applyPose(sampleMotion('drag', Math.min(0.5, age + 0.001), { velocityX, modelHeight }));
       } else if (state.state === 'move') {
-        rig.apply(sampleMotion('walk', age, { duration, modelHeight }));
+        applyPose(sampleMotion('walk', age, { duration, modelHeight }));
         vrm.scene.rotation.y += state.direction * TURN_ANGLE;
       } else if (state.state === 'turn') {
         const p = Math.min(1, age / duration);
@@ -245,7 +263,8 @@ function renderPose(now: number, delta: number): void {
     }
     springs?.update(delta, dragging);
   }
-  if (chatExpression && now < chatExpression.until) {
+  propRig?.apply(activeProps);
+  if (chatExpression && machine.snapshot.state !== 'nap' && now < chatExpression.until) {
     if (!dragging) setEmotion(vrm, chatExpression.name);
   } else chatExpression = undefined;
   vrm.update(delta);
@@ -299,7 +318,15 @@ function animate(now: number): void {
   if (vrm && smoke) {
     if (smokePose ? smokeAge >= smokeAges[smokePose] && ++smokePoseFrames >= 2 && !reported : ++frames >= 60 && !reported) {
       reported = true;
-      window.pet.rendered({ ok: true, vrmVersion: vrm.meta.metaVersion, behavior: smokePose, face: faceRegion(), earDegrees: earDeflection(),
+      const propOpaqueRatios = propRig?.visiblePixelRatios(() => {
+        renderer.render(scene, camera);
+        const gl = renderer.getContext();
+        const size = renderer.getDrawingBufferSize(new Vector2());
+        const pixels = new Uint8Array(size.x * size.y * 4);
+        gl.readPixels(0, 0, size.x, size.y, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+        return pixels;
+      });
+      window.pet.rendered({ ok: true, propOpaqueRatios, propsInFrame: propRig?.inFrame(point => point.project(camera)), vrmVersion: vrm.meta.metaVersion, behavior: smokePose, face: faceRegion(), earDegrees: earDeflection(),
         expressions: vrm.expressionManager?.expressions.map((expression) => expression.expressionName) ?? [] });
     }
   }
@@ -330,6 +357,13 @@ try {
     if (!smoke && petVisible && window.pet.platform === 'win32') updateHit();
   });
   void window.pet.windowInfo().then((info) => { windowInfo = info; }).catch(showError);
+  window.pet.onActivity(activity => {
+    if (petVisible && !dragging) { wake(); audio.stop(); machine.activity(activity); flushCommands(); }
+  });
+  window.pet.onRoutine(state => {
+    if (!routineEnabled) return;
+    routineState = state; wake(); audio.stop(); machine.routine(state); flushCommands();
+  });
   window.pet.onClick(() => { if (petVisible) { wake(); machine.click(); flushCommands(); } });
   window.pet.onPress((pressed) => {
     if (!pressed) pointerDown = false;
@@ -357,7 +391,7 @@ try {
     petVisible = visible;
     machine.visibility(visible); flushCommands();
     dragging = false; velocityX = 0; pointerDown = false;
-    audio.stop(); springs?.restore();
+    audio.stop(); springs?.restore(); propRig?.apply();
     resetFps();
     if (!visible) {
       cancelAnimationFrame(animationFrame); animationFrame = 0;

@@ -31,7 +31,6 @@ vi.mock('three/addons/loaders/GLTFLoader.js', () => ({ GLTFLoader: class {
 vi.mock('@pixiv/three-vrm', () => ({ VRMLoaderPlugin: class {}, VRMUtils: {
   removeUnnecessaryVertices() {}, combineSkeletons() {}, combineMorphs() {}, rotateVRM0() {}, deepDispose() {},
 } }));
-vi.mock('../src/renderer/motion', () => ({ ARM_REST: 1, MotionRig: class { reset() {} apply() {} }, sampleMotion: () => ({}) }));
 vi.mock('../src/renderer/motion/framing', async () => {
   const { Box3, Vector3 } = await import('three');
   const bounds = new Box3(new Vector3(-1, 0, -1), new Vector3(1, 2, 1));
@@ -51,14 +50,14 @@ describe('真实渲染入口接线，无 Electron/DOM/WebGL 宿主', () => {
     vi.resetModules(); vi.useFakeTimers(); vi.clearAllMocks(); host.callbacks.clear();
     host.canvas = new Element(); host.overlay = new Element();
     const scene = new Object3D(); scene.add(new Mesh(new BoxGeometry(1, 2, 1), new MeshBasicMaterial()));
-    host.model = { scene, humanoid: { getNormalizedBoneNode: () => null }, update() {}, meta: { metaVersion: '1' } };
+    host.model = { scene, expressionManager: { getExpression: () => ({}), setValue: vi.fn() }, humanoid: { getNormalizedBoneNode: () => null }, update() {}, meta: { metaVersion: '1' } };
     host.read.mockImplementation((x: number, _y: number, _w: number, _h: number, _format: number, _type: number, pixel: Uint8Array) => {
       pixel[3] = x >= 100 && x < 200 ? 255 : 0;
     });
     const listen = (name: string) => (callback: (value?: any) => void) => { host.callbacks.set(name, callback); return () => {}; };
     bridge = {
       platform: 'win32', reportFps: vi.fn(), getConfig: async () => structuredClone(DEFAULT_CONFIG),
-      onRoutine: listen('routine'), onConfig: listen('config'), onCursor: listen('cursor'), onPress: listen('press'), onClick: listen('click'),
+      onActivity: listen('activity'), onRoutine: listen('routine'), onConfig: listen('config'), onCursor: listen('cursor'), onPress: listen('press'), onClick: listen('click'),
       onDrag: listen('drag'), onMoveDone: listen('done'), onVisibility: listen('visibility'), onSmokePose: listen('smoke'),
       onExpression: listen('expression'), onSound: listen('sound'), onReload: listen('reload'),
       loadModel: async () => ({ bytes: new Uint8Array(), path: '', smoke: false }),
@@ -93,6 +92,61 @@ describe('真实渲染入口接线，无 Electron/DOM/WebGL 宿主', () => {
     host.canvas.listeners.get('pointerup')!({ button: 0 });
     expect(bridge.endDrag).not.toHaveBeenCalled();
   });
+  it('活动和作息 IPC 驱动真实道具，打盹停眨眼，隐藏/reload/拖动清理资源', async () => {
+    host.callbacks.get('activity')!('jumpRope'); draw(200);
+    expect(host.model.scene.getObjectByName('prop:rope')).toBeDefined();
+    host.callbacks.get('routine')!('nap'); draw();
+    expect(host.model.scene.getObjectByName('prop:rope')).toBeUndefined();
+    const pillow = host.model.scene.getObjectByName('prop:pillow');
+    expect(pillow).toBeDefined();
+    const geometry = pillow.children[0].children[0].geometry;
+    const dispose = vi.spyOn(geometry, 'dispose');
+    host.model.expressionManager.setValue.mockClear(); draw(4000);
+    expect(host.model.expressionManager.setValue.mock.calls.filter(([name]: string[]) => name === 'blink')).toEqual([['blink', 0]]);
+    host.callbacks.get('drag')!({ active: true, velocity: { x: 0, y: 0 }, timestamp: performance.now() }); draw();
+    expect(dispose).toHaveBeenCalledOnce(); expect(host.model.scene.getObjectByName('prop:pillow')).toBeUndefined();
+    host.callbacks.get('activity')!('blowBubbles'); draw();
+    expect(host.model.scene.getObjectByName('prop:wand')).toBeUndefined();
+    host.callbacks.get('drag')!({ active: false, velocity: { x: 0, y: 0 }, timestamp: performance.now() });
+    draw(1999); expect(host.model.scene.getObjectByName('prop:pillow')).toBeUndefined();
+    draw(1); expect(host.model.scene.getObjectByName('prop:pillow')).toBeDefined();
+    host.callbacks.get('routine')!('awake'); draw();
+    expect(host.model.scene.getObjectByName('prop:pillow')).toBeUndefined();
+    host.callbacks.get('activity')!('blowBubbles'); draw(1250);
+    expect(host.model.scene.getObjectByName('prop:wand')).toBeDefined();
+    host.callbacks.get('visibility')!({ visible: false });
+    expect(host.model.scene.getObjectByName('prop:wand')).toBeUndefined();
+    host.callbacks.get('visibility')!({ visible: true });
+    host.callbacks.get('activity')!('blowBubbles'); draw(1250);
+    const wandGeometry = host.model.scene.getObjectByName('prop:wand').children[0].children[0].geometry;
+    const wandDispose = vi.spyOn(wandGeometry, 'dispose');
+    host.callbacks.get('reload')!();
+    await vi.waitFor(() => expect(wandDispose).toHaveBeenCalledOnce());
+    expect(host.model.scene.getObjectByName('prop:wand')).toBeUndefined();
+  });
+
+  it.each(['nap', 'sleep'] as const)('%s 中关闭作息立即收枕清醒，迟来状态与 reload 不复睡，开启后等新状态再打盹', async state => {
+    host.callbacks.get('routine')!(state); draw();
+    const pillow = host.model.scene.getObjectByName('prop:pillow');
+    expect(pillow).toBeDefined();
+    const dispose = vi.spyOn(pillow.children[0].children[0].geometry, 'dispose');
+    const disabled = { ...DEFAULT_CONFIG, routine: { ...DEFAULT_CONFIG.routine, enabled: false } };
+    host.callbacks.get('config')!(disabled);
+    expect(dispose).toHaveBeenCalledOnce();
+    expect(host.model.scene.getObjectByName('prop:pillow')).toBeUndefined();
+    draw();
+    expect(host.model.expressionManager.setValue).toHaveBeenCalledWith('relaxed', 0);
+    host.callbacks.get('routine')!(state); draw(61_000);
+    expect(host.model.scene.getObjectByName('prop:pillow')).toBeUndefined();
+    host.callbacks.get('reload')!();
+    await vi.waitFor(() => expect(host.model.scene.getObjectByName('props')).toBeDefined());
+    draw(61_000); expect(host.model.scene.getObjectByName('prop:pillow')).toBeUndefined();
+    host.callbacks.get('config')!(structuredClone(DEFAULT_CONFIG)); draw();
+    expect(host.model.scene.getObjectByName('prop:pillow')).toBeUndefined();
+    host.callbacks.get('routine')!(state); draw();
+    expect(host.model.scene.getObjectByName('prop:pillow')).toBeDefined();
+  });
+
   it('诊断默认隐藏；开启才采样、每10秒发屏幕同样的数字，关闭和隐藏停止记录', () => {
     expect(host.overlay.hidden).toBe(true);
     for (let i = 0; i < 5; i++) draw();

@@ -179,12 +179,39 @@ TODO(lead): 门禁生成截图后核对五官贴片、耳朵碰撞与动作观�
 
 ### 作息与问候
 
-默认每 30 秒读取本机时钟与系统空闲秒数。早上 06:00–10:00 问好和问早饭，中午 11:30–13:00 问午饭，13:00–14:00 午睡，17:30–19:00 问晚饭；从 22:30 起每 30 分钟催睡一次，最多三次，00:00–06:00 睡觉。设置页“作息”可改时间、关闭整个调度或开启免打扰，开始时间等于结束时间表示关闭该时段。托盘和角色右键菜单也能切换免打扰。免打扰只抑制作息气泡和对应叫声，仍切换休息状态；关闭作息则不发送状态事件。午睡和睡觉期间暂停自言自语，本任务尚不改变角色动作与眼睛。
+默认每 30 秒读取本机时钟与系统空闲秒数。早上 06:00–10:00 问好和问早饭，中午 11:30–13:00 问午饭，13:00–14:00 午睡，17:30–19:00 问晚饭；从 22:30 起每 30 分钟催睡一次，最多三次，00:00–06:00 睡觉。设置页“作息”可改时间、关闭整个调度或开启免打扰，开始时间等于结束时间表示关闭该时段。托盘和角色右键菜单也能切换免打扰。免打扰只抑制作息气泡和对应叫声，仍切换休息状态；关闭作息则不发送状态事件。午睡和睡觉期间暂停自言自语，角色抱枕打盹并停止眨眼。
 
 用户空闲达到 60 秒，或桌宠隐藏、拖动、聊天/设置窗口打开、聊天气泡占用时，问候推迟到条件解除；错过整个时段不补。离开电脑至少 30 分钟后恢复活动会招呼，间隔至少两小时，午睡/睡觉期间不招呼。早上问好默认附带天气，可在作息中取消“早上说天气”。IP 自动定位按 ip.sb、geojs.io 顺序回退，再从 Open-Meteo 查询当天预报，无需账号；设置页显示缓存中的城市。定位缓存 24 小时，天气缓存 1 小时，同存于 userData/weather-cache.json，采用临时文件加 rename 原子写入。每次网络请求最多 5 秒，问好最多等 3 秒，失败或超时保留原句、不弹提示；启动前 5 分钟内进入早上时段会预取一次。使用 Electron net.fetch 跟随系统代理，关闭天气后不发请求。
 
 早上、中午、晚饭的问话气泡可点击，10 秒后消失。点击会把括号里的中文原文作为 assistant 消息存入当前聊天记录，再打开聊天窗口，用户可直接回答；已有聊天窗口通过 chat:history-changed 重读记录并保留输入草稿，读取完成前暂时禁止发送。普通气泡仍穿透鼠标。未填 Key 时沿用聊天发送后的设置提示。
 
-去重文件位于 userData/routine-state.json，采用临时文件加 rename 原子写入，损坏文件改名为 routine-state.broken-时间戳.json。逻辑日以本地 05:00 为界，跨越该边界的一段连续睡眠仍只说一次晚安，重启不会重复。主进程 Routine 注入 now、idleSeconds、blocked、weatherLine、state、show、sound；天气最多等 3 秒。preload 的 onRoutine 订阅 routine:state（nap、sleep、awake），角色渲染层留待动作任务接入。
+去重文件位于 userData/routine-state.json，采用临时文件加 rename 原子写入，损坏文件改名为 routine-state.broken-时间戳.json。逻辑日以本地 05:00 为界，跨越该边界的一段连续睡眠仍只说一次晚安，重启不会重复。主进程 Routine 注入 now、idleSeconds、blocked、weatherLine、state、show、sound；天气最多等 3 秒。preload 的 onRoutine 订阅 routine:state（nap、sleep、awake），角色渲染层据此切换抱枕打盹或醒来伸展。
 
 本任务聚焦自测：`npm --prefix app test -- tests/routine.test.ts tests/ui.test.ts tests/ui-ipc.test.ts tests/config.test.ts tests/settings-renderer.test.ts tests/renderer-cursor.test.ts tests/chat/service.test.ts tests/chat/renderer.test.ts`。完整 typecheck/test/smoke 由门禁运行，设置截图沿用 `AR_GATE_ARTIFACT_DIR/smoke-settings.png`（默认 `app/smoke-out/smoke-settings.png`），新增作息卡片可滚动查看。
+
+
+### 道具互动（024）
+
+角色右键和托盘菜单的“玩耍”可立即播放“跳绳”（6.5 秒）或“吹泡泡”（5 秒），会取消当前移动/动作，拖动期间不接管。两项也进入随机动作池，每项权重 0.5，原四项各 1，只排除上次动作。跳绳六圈每圈 0.6 秒，绳过脚底与身体 0.06H 腾空顶点同相，最后落地后开心半秒，片段结束播放现有 click_shout。
+
+道具实现位于 `src/renderer/props/`，`createProp(name)` 返回含 Group、apply、dispose 的句柄，`PropRig` 将 Pose.props 的位置、角度、缩放与透明度应用到模型局部空间；位置以模型高度 H 的分数表示。Usagi VRM 1 的正面为 +Z。道具使用限定单色 MeshBasicMaterial 和同几何体放大 3.5% 的深棕 BackSide 外壳。缺失道具立即释放几何与材质，隐藏、换模型和重新载入均清理。绳为两手柄间下垂 0.42H 的二次贝塞尔 U 弧，绕 X 轴转动，准备和收尾时停在脚下。泡泡棒从右手 (-0.328, 0.263, 0.015)H 斜伸到嘴角外侧圆环 (-0.108, 0.355, 0.32)H，泡泡从圆环向外向上漂浮，以缩放完成出生与消失，带同色高光。软枕为浅粉 #F6C9D3 圆角长方体，宽 0.46H（约身体宽度的 0.7）、高 0.184H（枕宽 0.4）、厚 0.10H，中心 (0, 0.06, 0.295)H，上沿低于嘴至少一个嘴高；头侧倾 10° 并使用 relaxed 闭眼表情。
+
+| 事件 | 行为 |
+| --- | --- |
+| routine nap / sleep | 取消移动和随机动作，循环四秒抱枕打盹，relaxed 闭眼表情，呼吸幅度为待机两倍 |
+| 打盹时点击 | surprised + click_surprise，正常状态机保持清醒 60 秒；到期仍是 nap/sleep 才重新打盹 |
+| 打盹时拖动 | 道具隐藏并释放；放手后两秒重新打盹 |
+| routine awake | 伸懒腰一次后回正常状态机；拖动中收到则等放手 |
+| 休息时选择玩耍 | 立即播放并清醒 60 秒，随后按当前作息决定是否打盹 |
+| 关闭作息 | 渲染层立即清除休息状态与枕头，恢复正常待机；忽略停用期间迟来的作息事件 |
+| 重新开启作息 | 等主进程状态事件；主进程立即按当前时钟补发，仍在 nap/sleep 时段就恢复打盹 |
+
+取景测量补充完整一圈绳旋转/弹跳、泡泡漂浮和抱枕点头姿态，并把道具实际包围盒与角色蒙皮顶点求并集，沿用四边 4% 边距和耳朵余量。
+
+门禁冒烟新增 `smoke-jumpRope.png`、`smoke-blowBubbles.png`、`smoke-napPillow.png`，路径为 `AR_GATE_ARTIFACT_DIR`（默认 `app/smoke-out/`）。取样年龄分别为 2.575 秒（第三次腾空顶点，绳在脚下，避开脸）、1.65 秒（三个泡泡已分散上飘）、2 秒（抱枕点头）。JSON 的 `propOpaqueRatios` 记录 handles、rope、wand、bubble、pillow 的可见像素占比：在同一冻结姿态下逐类隐藏道具重绘，比较真实合成帧 RGBA，仅计原帧 alpha > 0 且有变化的像素；这样包含角色遮挡和半透明泡泡，不依赖色差猜测。每项必须 > 0，`propFraming` 要求三个动作道具的全部包围盒顶点都位于视口内。完整 test/smoke 由门禁执行。
+
+只复查这三种道具截图：先 `ar gui check Electron --headless`，通过后执行 `npm --prefix app run build`，再 `node app/scripts/smoke.mjs --only=jumpRope,blowBubbles,napPillow`。使用同一隐藏离屏渲染入口，只捕获指定行为和初始模型图，不打开聊天、气泡、设置界面；聚焦报告仍要求每类道具有可见像素且包围盒在窗内。全量冒烟的十一种行为、界面和音效检查保持完整。
+
+024 R2-1：跳绳上半圈按相位平滑插值到深 0.85H 的椭圆拱形，避开头部和耳朵；中间相位横向最多外展 3%，避开小手，绳端仍与握柄半径重叠。脚下相位、准备与收尾保持原有 0.42H 二次 U 弧，截图仍取 2.575 秒。形变复用顶点缓冲与材质，更新几何包围盒，现有 48 相位取景测量自动包含张开的绳弧。
+
+R2-1 聚焦自测（从 `app/` 目录运行）：`npm exec -- vitest run tests/props.test.ts tests/usagi-model.test.ts tests/behavior-motion.test.ts`；类型检查为 `npm --prefix app run typecheck`（从仓库根目录）。真实 VRM 回归对整圈 48 相位检查绳管、描边的全部顶点及各 129 个中心线点，以射线奇偶和最近三角面距离检查身体、头、耳、手和尾巴。头顶通过 head 骨骼位置向上发射射线、读取真实蒙皮交点得到；上翻最高点必须高出头顶至少 0.06H。每相位是独立测试用例，沿用测试默认超时。另断言脚下帧的顶点数组与原始 U 弧逐项相等、形变不重建缓冲且资源正确释放。

@@ -2,17 +2,21 @@ import { Euler, Vector3 } from 'three';
 import type { VRM, VRMHumanBoneName } from '@pixiv/three-vrm';
 import { DURATIONS, SPEED } from '../behavior/machine';
 import { setEmotion } from '../behaviors/expressions';
+import { PILLOW_CENTER, ROPE_PIVOT_Y, WAND_RING } from '../props';
+import type { PropState } from '../props';
 import type { Action, Reaction } from '../behavior/machine';
 
-export type MotionName = 'idle' | 'lookAround' | 'turn' | 'walk' | 'drag' | Action | Reaction;
+export type MotionName = 'idle' | 'lookAround' | 'turn' | 'walk' | 'drag' | Action | Reaction | 'napPillow';
 export type Rotation = [number, number, number];
 export interface Pose {
+  props?: Record<string, PropState>;
   position: Rotation; rotation: Rotation; scale: Rotation;
   bones: Partial<Record<VRMHumanBoneName, Rotation>>; hipsY?: number; expressions: Record<string, number>;
 }
 // Translations are fractions of neutral model height; angles are radians.
 export const MOTION_SECONDS: Record<MotionName, number> = {
   idle: 3.5, lookAround: 3.5, turn: 0.9, walk: 2, drag: 1.2,
+  jumpRope: 6.5, blowBubbles: 5, napPillow: 4,
   jump: DURATIONS.jump / 1000, stretch: DURATIONS.stretch / 1000,
   shake: DURATIONS.shake / 1000, spin: DURATIONS.spin / 1000,
   happy: DURATIONS.happy / 1000, surprised: DURATIONS.surprised / 1000, shout: DURATIONS.shout / 1000,
@@ -31,24 +35,81 @@ function envelope(t: number, duration: number, fade = 0.18): number {
   return smooth(t / fade) * smooth((duration - t) / fade);
 }
 /** Two flights followed by two full 220ms landing compression/recovery pulses. */
-export function jumps(t: number, modelHeight = 1): { y: number; squash: number } {
-  for (const start of [0, 0.57]) {
+export function jumps(t: number, modelHeight = 1, starts: readonly number[] = [0, 0.57]): { y: number; squash: number } {
+  for (const start of starts) {
     const age = t - start;
     if (age >= 0 && age < 0.35) return { y: Math.sin(Math.PI * age / 0.35) * modelHeight * 0.1, squash: 0 };
     if (age >= 0.35 && age < 0.57) return { y: 0, squash: Math.sin(Math.PI * (age - 0.35) / 0.22) * 0.15 };
   }
   return { y: 0, squash: 0 };
 }
-export interface MotionOptions { duration?: number; direction?: -1 | 1; velocityX?: number; distance?: number; modelHeight?: number }
+export const ROPE_START = 1.2;
+export const ROPE_PERIOD = 0.6;
+export const ROPE_APEX = 0.175;
+export const BUBBLE_BLOWS = [0.55, 2.45] as const;
+export interface MotionOptions { loop?: boolean; duration?: number; direction?: -1 | 1; velocityX?: number; distance?: number; modelHeight?: number }
 /** Pure pose sampling; every finite clip has neutral endpoints, including expressions and root scale. */
 export function sampleMotion(name: MotionName, t: number, options: MotionOptions = {}): Pose {
   const pose = neutralPose();
   const duration = options.duration ?? MOTION_SECONDS[name];
-  if (t <= 0 || t >= duration) return pose;
+  const looping = name === 'napPillow' && options.loop;
+  if (looping) t = ((t % duration) + duration) % duration;
+  else if (t <= 0 || t >= duration) return pose;
   const weight = envelope(t, duration);
   const p = t / duration;
   const height = options.modelHeight ?? 1;
-  if (name === 'idle' || name === 'lookAround') {
+  if (name === 'jumpRope') {
+    const age = t - ROPE_START;
+    if (age >= 0 && age < 6 * ROPE_PERIOD) {
+      const jump = jumps(age % ROPE_PERIOD, height * 0.6, [0]);
+      pose.position[1] = jump.y;
+      pose.scale = [1 + jump.squash * 0.08 / 0.15, 1 - jump.squash, 1 + jump.squash * 0.08 / 0.15];
+    }
+    const phase = Math.max(0, Math.min(6 * ROPE_PERIOD, age));
+    // Park below the face before/after the six continuously rotating turns.
+    const ropeAngle = age >= 0 && age < 6 * ROPE_PERIOD ? 2 * Math.PI * (phase - ROPE_APEX) / ROPE_PERIOD : 0;
+    // Open the upper sweep around the head/ears while keeping the accepted
+    // underfoot U exactly unchanged. A small lateral opening between vertical
+    // phases also clears the hands; the ends still overlap the handle radii.
+    const upper = Math.max(0, -Math.cos(ropeAngle));
+    const ropeWidth = 1 + 0.03 * Math.sin(ropeAngle) ** 2;
+    pose.props = { handles: { name: 'handles', position: [0, ROPE_PIVOT_Y, 0.02], scale: [weight, weight, weight] },
+      rope: { name: 'rope', position: [0, ROPE_PIVOT_Y, 0.02], rotation: [ropeAngle, 0, 0], scale: [weight * ropeWidth, weight, weight], ropeOpen: smooth(upper) } };
+    const swing = Math.sin(phase / ROPE_PERIOD * Math.PI * 2) * 0.06 * weight;
+    pose.bones.leftUpperArm = [swing, 0, 0]; pose.bones.rightUpperArm = [swing, 0, 0];
+    if (age >= 3.6 && age < 4.1) pose.expressions.happy = 1;
+  } else if (name === 'blowBubbles') {
+    pose.props = { wand: { name: 'wand', position: [...WAND_RING], scale: [weight, weight, weight] } };
+    let blowing = 0;
+    for (const start of BUBBLE_BLOWS) {
+      const age = t - start;
+      if (age >= 0 && age < 0.4) blowing = Math.sin(Math.PI * age / 0.4);
+    }
+    pose.bones.chest = [0.07 * blowing, 0, 0];
+    pose.bones.head = [-0.07 * Math.sin(Math.PI * p) * weight, 0, 0];
+    if (blowing > 0) pose.expressions.ou = 1;
+    BUBBLE_BLOWS.forEach((start, batch) => {
+      for (let i = 0; i < 3; i++) {
+        const age = t - (start + 0.12 + i * 0.09);
+        if (age < 0 || age >= 1.5) continue;
+        const radius = (0.015 + i * 0.0075) * Math.min(1, age / 0.1) * Math.min(1, (1.5 - age) / 0.3);
+        // Fan out instead of converging into one indistinguishable cluster.
+        // Ease the outward drift so late bubbles stay inside the pet's framing.
+        const outward = 0.75 * (1 - Math.exp(-age / 0.75));
+        const upward = 0.9 * (1 - Math.exp(-age / 0.9));
+        pose.props![`bubble-${batch}-${i}`] = { name: 'bubble', position: [WAND_RING[0] - outward * (0.6 - i * 0.16), WAND_RING[1] + upward * (0.24 + i * 0.24), WAND_RING[2] + 0.025], scale: [radius, radius, radius] };
+      }
+    });
+  } else if (name === 'napPillow') {
+    const w = looping ? 1 : weight;
+    pose.props = { pillow: { name: 'pillow', position: [...PILLOW_CENTER], scale: [w, w, w] } };
+    pose.expressions.relaxed = 1;
+    pose.bones.head = [0.06 * (1 - Math.cos(2 * Math.PI * p)) * w, 0, Math.PI / 18 * w];
+    pose.bones.chest = [Math.sin(2 * Math.PI * p) * 0.07 * w, 0, 0];
+    pose.bones.spine = [Math.sin(2 * Math.PI * p) * 0.07 * 0.35 * w, 0, 0];
+    pose.bones.leftUpperArm = [0.08 * w, 0, 0.06 * w];
+    pose.bones.rightUpperArm = [0.08 * w, 0, -0.06 * w];
+  } else if (name === 'idle' || name === 'lookAround') {
     pose.rotation[2] = Math.sin(p * Math.PI * 2) * 0.025 * weight;
     if (name === 'lookAround') pose.bones.head = [0, Math.sin(p * Math.PI * 2) * 0.12 * weight, 0];
   } else if (name === 'happy' || name === 'jump') {

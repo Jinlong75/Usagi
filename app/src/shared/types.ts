@@ -21,13 +21,15 @@ export interface Config {
 export interface FpsSample { fps: number; maxFrameMs: number }
 export interface CursorSample { point: Point; bounds: Rect; workArea: Rect }
 export interface ModelData { bytes: Uint8Array; path: string; smoke: boolean }
-export interface RenderResult { ok: boolean; reason?: string; vrmVersion?: string; expressions?: string[]; behavior?: SmokeBehavior; face?: Rect; earDegrees?: number }
+export interface RenderResult { ok: boolean; reason?: string; vrmVersion?: string; expressions?: string[]; behavior?: SmokeBehavior; face?: Rect; earDegrees?: number; propOpaqueRatios?: Record<string, number>; propsInFrame?: boolean }
+export type Activity = 'jumpRope' | 'blowBubbles';
 export type RoutineState = 'nap' | 'sleep' | 'awake';
 export interface PetBridge {
   readonly platform: string;
   reportFps(sample: FpsSample): void;
   contextMenu(): void;
   getConfig(): Promise<Config>;
+  onActivity(callback: (activity: Activity) => void): () => void;
   onRoutine(callback: (state: RoutineState) => void): () => void;
   onConfig(callback: (config: Config) => void): () => void;
   onExpression(callback: (expression: PetExpression) => void): () => void;
@@ -58,7 +60,7 @@ export type MoveResult = { ok: true; distance: number } | { ok: false; reason: s
 export interface WindowInfo { bounds: Rect; workArea: Rect }
 export interface DragSample { active: boolean; velocity: Point; timestamp: number }
 export type SoundUse = 'click_happy' | 'click_surprise' | 'click_shout' | 'drag' | 'idle_talk' | 'chat_reply';
-export type SmokeBehavior = 'idle' | 'walk' | 'happy' | 'surprised' | 'shout' | 'stretch' | 'drag' | 'ear-shake';
+export type SmokeBehavior = 'idle' | 'walk' | 'happy' | 'surprised' | 'shout' | 'stretch' | 'drag' | 'ear-shake' | Activity | 'napPillow';
 
 export type PetExpression = 'happy' | 'surprised' | 'angry' | 'sad';
 

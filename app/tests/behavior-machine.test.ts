@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BehaviorMachine, DURATIONS, inwardDirection, planMove } from '../src/renderer/behavior/machine';
+import { BehaviorMachine, ACTIONS, pickAction, DURATIONS, inwardDirection, planMove } from '../src/renderer/behavior/machine';
 import type { Action } from '../src/renderer/behavior/machine';
 import type { WindowInfo } from '../src/shared/types';
 import { sampleMotion } from '../src/renderer/motion';
@@ -159,5 +159,53 @@ describe('纯行为规则', () => {
     for (const name of ['happy', 'surprised', 'shout'] as const) {
       expect(DURATIONS[name]).toBeGreaterThanOrEqual(1000); expect(DURATIONS[name]).toBeLessThanOrEqual(1400);
     }
+  });
+});
+
+
+describe('道具活动与作息', () => {
+  it('固定均匀随机数下低权重动作各为旧动作一半，仍只排除上一项', () => {
+    const counts: Record<string, number> = {};
+    for (let i = 0; i < 10000; i++) {
+      const action = pickAction(ACTIONS, undefined, (i + 0.5) / 10000)!;
+      counts[action] = (counts[action] ?? 0) + 1;
+    }
+    expect(counts).toEqual({ jump: 2000, stretch: 2000, shake: 2000, spin: 2000, jumpRope: 1000, blowBubbles: 1000 });
+    for (const previous of ACTIONS) for (let i = 0; i < 100; i++) expect(pickAction(ACTIONS, previous, i / 100)).not.toBe(previous);
+    expect(pickAction(['jumpRope'], 'jumpRope', 0)).toBe('jumpRope');
+    expect(pickAction([], undefined, 0)).toBeUndefined();
+  });
+  it('菜单活动打断移动且旧回执不复活，跳绳结束只喊一次，拖动不可打断', () => {
+    const f = fixture([0.9]); f.advance(3500); f.advance(450); f.machine.drain();
+    f.machine.activity('jumpRope'); expect(f.machine.snapshot).toMatchObject({ state: 'act', action: 'jumpRope', durationMs: 6500 });
+    expect(f.machine.drain()).toEqual([{ type: 'cancel' }]);
+    f.machine.moveDone({ ok: true, distance: 60 }); expect(f.machine.snapshot.action).toBe('jumpRope');
+    f.advance(6499); expect(f.machine.drain()).toEqual([]);
+    f.advance(1); expect(f.machine.drain().filter(command => command.type === 'sound')).toEqual([{ type: 'sound', use: 'click_shout' }]);
+    f.advance(1); expect(f.machine.drain()).toEqual([]);
+    f.machine.drag(true); f.machine.drain(); f.machine.activity('blowBubbles');
+    expect(f.machine.snapshot.state).toBe('drag'); expect(f.machine.drain()).toEqual([]);
+  });
+  it.each(['nap', 'sleep'] as const)('%s 立即取消移动并无限打盹，真实 press/click 顺序惊醒 60 秒，awake 伸懒腰', routine => {
+    const f = fixture([0.9]); f.advance(3500); f.advance(450); f.machine.drain();
+    f.machine.routine(routine); expect(f.machine.snapshot.state).toBe('nap');
+    expect(f.machine.drain()).toEqual([{ type: 'cancel' }]);
+    expect(f.advance(1_000_000).state).toBe('nap');
+    f.machine.press(true); f.machine.press(false);
+    expect(f.machine.click()).toBe('surprised');
+    expect(f.machine.drain()).toContainEqual({ type: 'sound', use: 'click_surprise' });
+    expect(f.advance(1100).state).toBe('idle');
+    expect(f.advance(58_899).state).not.toBe('nap');
+    expect(f.advance(1).state).toBe('nap');
+    f.machine.routine('awake'); expect(f.machine.snapshot).toMatchObject({ state: 'act', action: 'stretch' });
+    expect(f.advance(2200).state).not.toBe('nap');
+  });
+  it('拖动时先藏枕头，放手后恰好 2 秒恢复；拖动中 awake 延迟到放手伸展', () => {
+    const f = fixture([0.9]); f.machine.routine('nap');
+    f.machine.press(true); f.machine.drag(true); expect(f.machine.snapshot.state).toBe('drag');
+    f.advance(10000); f.machine.drag(false); f.machine.press(false);
+    expect(f.advance(1999).state).toBe('idle'); expect(f.advance(1).state).toBe('nap');
+    f.machine.drag(true); f.machine.routine('awake'); expect(f.machine.snapshot.state).toBe('drag');
+    f.machine.drag(false); expect(f.advance(1)).toMatchObject({ state: 'act', action: 'stretch' });
   });
 });
