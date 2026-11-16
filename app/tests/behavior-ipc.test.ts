@@ -44,7 +44,7 @@ vi.mock('electron', () => {
     ipcMain: { on: (name: string, callback: (...args: any[]) => any) => host.handlers.set(name, callback), handle: vi.fn() },
     Menu: { buildFromTemplate: (menu: any[]) => menu },
     Tray: class { setContextMenu(menu: any[]) { host.menu = menu; } setToolTip() {} },
-    nativeImage: { createFromBitmap: () => ({ setTemplateImage: vi.fn() }) },
+    nativeImage: { createFromBitmap: () => ({ setTemplateImage: vi.fn() }), createFromPath: () => ({ setTemplateImage: vi.fn() }) },
     screen: { getPrimaryDisplay: () => ({ workArea: host.area }),
       getAllDisplays: () => [{ workArea: host.area }], getDisplayMatching: () => ({ workArea: host.area }),
       getCursorScreenPoint: () => ({ x: 400, y: 100 }) },

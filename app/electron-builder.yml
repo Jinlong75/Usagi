@@ -1,0 +1,63 @@
+appId: local.usagi.desktoppet
+productName: Usagi
+directories:
+  output: release
+  buildResources: build
+asar: true
+# 保留 root/app/dist 布局，主进程和三个辅助窗口共用既有加载入口。
+extraMetadata:
+  main: app/out/main.cjs
+files:
+  - package.json
+  - from: out
+    to: app/out
+    filter: ["*.cjs"]
+  - from: dist
+    to: app/dist
+  - from: build
+    to: app/build
+    filter: ["tray*.png"]
+extraResources:
+  - from: ../assets/models/usagi.vrm
+    to: models/usagi.vrm
+  - from: ../assets/sounds/usagi
+    to: sounds/usagi
+    filter: ["*.ogg", "manifest.json"]
+# 本机直连下载很慢；dist 脚本允许 ELECTRON_MIRROR 覆盖。
+electronDownload:
+  mirror: https://npmmirror.com/mirrors/electron/
+artifactName: Usagi-${version}-${os}-${arch}.${ext}
+mac:
+  target:
+    - target: dmg
+      arch: [arm64]
+  category: public.app-category.entertainment
+  icon: build/icon.icns
+  identity: "-"
+  hardenedRuntime: false
+  notarize: false
+  extendInfo:
+    LSUIElement: true
+dmg:
+  title: Usagi
+  window:
+    width: 540
+    height: 380
+  contents:
+    - { x: 140, y: 170, type: file }
+    - { x: 400, y: 170, type: link, path: /Applications }
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: build/icon.ico
+  signAndEditExecutable: false
+nsis:
+  oneClick: true
+  perMachine: false
+  runAfterFinish: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  deleteAppDataOnUninstall: false
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico

@@ -70,4 +70,10 @@ describe('设置页保存失败，无 GUI', () => {
     expect(field('save-status').classes.has('error')).toBe(true);
     expect(field('key').value).toBe('edited-key'); expect(bridge.closeReady).not.toHaveBeenCalled();
   });
+
+  it('占位安装包关于页明确标记开发版', async () => {
+    vi.resetModules(); vi.stubGlobal('__USAGI_PLACEHOLDER__', true);
+    await import('../src/settings/index');
+    await vi.waitFor(() => expect(field('version').textContent).toBe('版本 0.1.0 · 开发版（占位模型）'));
+  });
 });

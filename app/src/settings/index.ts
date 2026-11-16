@@ -1,5 +1,7 @@
 import type { SettingsBridge } from '../shared/ui';
 import type { Config } from '../shared/types';
+declare const __USAGI_PLACEHOLDER__: boolean;
+const placeholderBuild = typeof __USAGI_PLACEHOLDER__ !== 'undefined' && __USAGI_PLACEHOLDER__;
 declare global { interface Window { settings: SettingsBridge } }
 const field = <T extends HTMLElement>(id: string) => document.getElementById(id)! as T;
 const value = (id: string) => field<HTMLInputElement>(id);
@@ -80,5 +82,5 @@ window.settings.onSaveClose(() => { void save().then(() => window.settings.close
 void window.settings.load().then(snapshot => {
   display(snapshot.config); maskedKey = snapshot.maskedKey; key.placeholder = maskedKey || '输入 API Key';
   warning.textContent = snapshot.needsReentry ? 'Key 无法解密，请重新填写。' : '';
-  field('version').textContent = `版本 ${snapshot.version}`; loaded = true;
+  field('version').textContent = `版本 ${snapshot.version}${placeholderBuild ? ' · 开发版（占位模型）' : ''}`; loaded = true;
 }).catch(() => { status.textContent = '设置加载失败，请检查文件权限。'; });

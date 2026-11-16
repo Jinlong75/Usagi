@@ -1,10 +1,10 @@
 import { spawn } from 'node:child_process';
 import electron from 'electron';
 import { createServer } from 'vite';
-import { buildProcesses } from './build.mjs';
+import { buildProcesses, placeholderBuild } from './build.mjs';
 
 await buildProcesses();
-const server = await createServer({ server: { host: '127.0.0.1' } });
+const server = await createServer({ server: { host: '127.0.0.1' }, define: { __USAGI_PLACEHOLDER__: JSON.stringify(placeholderBuild) } });
 await server.listen();
 const child = spawn(electron, ['.'], {
   stdio: 'inherit', env: { ...process.env, USAGI_DEV_URL: server.resolvedUrls.local[0] },
