@@ -29,6 +29,8 @@ npm run smoke
 
 输出为 `AR_GATE_ARTIFACT_DIR/smoke.png`，未指定时为 `app/smoke-out/smoke.png`。标准输出 JSON 包含实际模型路径、`opaqueRatio`、`vrmVersion`、`expressions`。首次运行时 Electron npm 包可能按其官方机制下载当前平台二进制；无需额外安装命令。
 
+主进程写完结果 JSON 后才退出，启动脚本会等待子进程输出管道关闭再判定结果。静默提前退出、缺少结果字段、非零退出、信号终止、启动失败和超时都会输出带原因的 `ok:false` JSON 并返回 1；即使 Electron 返回 0，也必须收到完整、有效的成功结果。相关回归测试只启动 Node fixture，不启动 Electron 或桌面窗口。
+
 单元测试涵盖配置默认合并/损坏备份/读写、DPR 1/2 下像素坐标与 alpha 阈值、点击/拖动边界、大小与多屏位置恢复、模型路径优先级，以及眨眼、呼吸、开心跳跃、鼠标朝向。
 
 ## 操作与配置

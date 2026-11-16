@@ -22,11 +22,15 @@ let dragOrigin: Point | null = null;
 let hit = false;
 let completed = false;
 
+function exitSmoke(code: number, result: object): void {
+  // app.exit() is immediate; wait for piped stdout so the gate receives the JSON.
+  process.stdout.write(JSON.stringify(result) + '\n', () => app.exit(code));
+}
+
 function fail(reason: string): void {
   if (completed) return;
   completed = true;
-  console.log(JSON.stringify({ ok: false, reason, model: modelPath }));
-  app.exit(1);
+  exitSmoke(1, { ok: false, reason, model: modelPath });
 }
 const watchdog = smoke ? setTimeout(() => fail('模型渲染在 60 秒内未完成'), 59_000) : undefined;
 
@@ -126,9 +130,8 @@ async function capture(result: RenderResult): Promise<void> {
     await writeFile(join(directory, 'smoke.png'), image.toPNG());
     const ok = Number.isFinite(opaqueRatio) && opaqueRatio >= 0.02 && opaqueRatio <= 0.95 && result.vrmVersion === '1';
     completed = true;
-    console.log(JSON.stringify({ ok, model: modelPath, opaqueRatio, vrmVersion: result.vrmVersion,
-      expressions: result.expressions ?? [], ...(!ok ? { reason: '角色占比、透明背景或 VRM 版本检查失败' } : {}) }));
-    app.exit(ok ? 0 : 1);
+    exitSmoke(ok ? 0 : 1, { ok, model: modelPath, opaqueRatio, vrmVersion: result.vrmVersion,
+      expressions: result.expressions ?? [], ...(!ok ? { reason: '角色占比、透明背景或 VRM 版本检查失败' } : {}) });
   } catch (error) { fail(String(error)); }
 }
 
