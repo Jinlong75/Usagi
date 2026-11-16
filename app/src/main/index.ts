@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain, Menu, nativeImage, screen, Tray, safeStorage } from 'electron';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { DEFAULT_CONFIG, normalizeConfig, readConfig, writeConfig } from './config';
 import { resolveModel } from './model';
 import { prepareMove, WindowMotion } from './motion';
@@ -41,7 +42,8 @@ let completed = false;
 let motion: WindowMotion | undefined;
 let lastDragEndedAt = -Infinity;
 let dragSample = { point: { x: 0, y: 0 }, time: 0 };
-const sounds = new SoundLibrary(resolve(root, 'assets/sounds/usagi'));
+const runtime = { isPackaged: app.isPackaged, resourcesPath: process.resourcesPath };
+const sounds = SoundLibrary.fromRuntime(root, runtime);
 const smokeBehaviors: SmokeBehavior[] = ['idle', 'walk', 'happy', 'surprised', 'shout', 'stretch', 'drag'];
 const behaviorRatios: Partial<Record<SmokeBehavior, number>> = {};
 const behaviorTopTransparent: Partial<Record<SmokeBehavior, boolean>> = {};
@@ -191,15 +193,7 @@ function petMenu(): Electron.MenuItemConstructorOptions[] {
 function refreshMenu(): void { if (tray && win) tray.setContextMenu(Menu.buildFromTemplate(petMenu())); }
 
 function makeTray(): void {
-  // TODO(lead): 换成 Usagi 图标
-  const width = 32;
-  const bitmap = Buffer.alloc(width * width * 4);
-  for (let y = 0; y < width; y++) for (let x = 0; x < width; x++) {
-    const body = ((x - 16) / 11) ** 2 + ((y - 21) / 9) ** 2 <= 1;
-    const ears = y >= 2 && y <= 19 && ((x >= 8 && x <= 13) || (x >= 19 && x <= 24));
-    if (body || ears) bitmap[(y * width + x) * 4 + 3] = 255;
-  }
-  const icon = nativeImage.createFromBitmap(bitmap, { width, height: width, scaleFactor: 2 });
+  const icon = nativeImage.createFromPath(resolve(root, 'app/build', process.platform === 'darwin' ? 'trayTemplate.png' : 'tray.png'));
   if (process.platform === 'darwin') icon.setTemplateImage(true);
   tray = new Tray(icon);
   tray.setToolTip('Usagi 桌宠');
@@ -219,7 +213,7 @@ async function capture(result: RenderResult): Promise<void> {
     let opaque = 0;
     for (let index = 3; index < bitmap.length; index += 4) if (bitmap[index]! > 0) opaque++;
     const opaqueRatio = opaque / (bitmap.length / 4);
-    const directory = process.env.AR_GATE_ARTIFACT_DIR || resolve(root, 'app/smoke-out');
+    const directory = process.env.AR_GATE_ARTIFACT_DIR || (app.isPackaged ? join(tmpdir(), `usagi-smoke-${process.pid}`) : resolve(root, 'app/smoke-out'));
     await mkdir(directory, { recursive: true });
     await writeFile(join(directory, expected ? `smoke-${expected}.png` : 'smoke.png'), image.toPNG());
     if (expected === 'happy' || expected === 'shout' || expected === 'stretch') {
@@ -240,10 +234,18 @@ async function capture(result: RenderResult): Promise<void> {
       // Return to idle before composing the pet + bubble screenshot.
       win.webContents.send('pet:smoke-pose', 'idle');
       await captureUi(ui, win, directory);
+      const audio = await sounds.verify();
+      const decoded = await win.webContents.executeJavaScript(`(async () => {
+        const context = new AudioContext();
+        try { const buffer = await context.decodeAudioData(new Uint8Array(${JSON.stringify(Array.from(audio.sample))}).buffer);
+          return buffer.duration > 0; } finally { await context.close(); }
+      })()`);
+      if (decoded !== true) throw new Error('包内音效解码失败');
       completed = true;
       exitSmoke(0, { ok: true, model: modelPath, opaqueRatio: initialRatio, vrmVersion: result.vrmVersion,
         expressions: result.expressions ?? [], behaviors: smokeBehaviors, behaviorOpaqueRatios: behaviorRatios,
-        behaviorTopTransparent, ui: ['bubble', 'chat', 'settings'] });
+        behaviorTopTransparent, ui: ['bubble', 'chat', 'settings'],
+        sounds: { directory: audio.directory, clips: audio.clips, decoded: true } });
     }
   } catch (error) { fail(String(error)); }
 }
@@ -306,7 +308,7 @@ async function start(): Promise<void> {
   });
   ipcMain.handle('pet:load-model', async (event) => {
     if (!trusted(event)) throw new Error('未授权的模型请求');
-    modelPath = resolveModel(root, config.modelPath, smoke);
+    modelPath = resolveModel(root, config.modelPath, smoke, runtime);
     return { bytes: new Uint8Array(await readFile(modelPath)), path: modelPath, smoke };
   });
   ipcMain.handle('pet:window-info', (event) => {

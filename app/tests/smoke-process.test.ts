@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 // @ts-expect-error The allowed smoke entry is JavaScript; its validation is tested directly.
-import { BEHAVIORS, validBehaviorReport, validUiReport } from '../scripts/smoke.mjs';
+import { BEHAVIORS, validBehaviorReport, validUiReport, validSoundReport } from '../scripts/smoke.mjs';
 import { runSmokeProcess } from '../scripts/smoke-process.mjs';
 
 const success = { ok: true, ui: ['bubble', 'chat', 'settings'], model: 'Seed-san.vrm', opaqueRatio: 0.21, vrmVersion: '1', expressions: ['blink', 'happy'],
@@ -108,4 +108,12 @@ describe('七种行为冒烟报告', () => {
    expect(validUiReport(success)).toBe(true);
    expect(validUiReport({ ...success, ui: ['bubble'] })).toBe(false);
    expect(validUiReport({ ...success, ui: undefined })).toBe(false);
+ });
+
+ it('音效成功报告要求实际资源目录、素材数量和解码成功', () => {
+   const sounds = { directory: '/resources/sounds/usagi', clips: 20, decoded: true };
+   expect(validSoundReport({ sounds })).toBe(true);
+   for (const bad of [undefined, { ...sounds, clips: 0 }, { ...sounds, decoded: false }, { ...sounds, directory: '' }]) {
+     expect(validSoundReport({ sounds: bad })).toBe(false);
+   }
  });

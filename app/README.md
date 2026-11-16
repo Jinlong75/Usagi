@@ -1,6 +1,6 @@
 # Usagi 桌宠程序骨架
 
-开发用 Seed-san（VRM 1.0），Electron 主进程管理透明窗口、托盘与配置，three + three-vrm 渲染模型。包含程序化行为、叫声音效、气泡、自言自语、DeepSeek 聊天与设置；安装包由后续任务接入。
+开发用 Seed-san（VRM 1.0），Electron 主进程管理透明窗口、托盘与配置，three + three-vrm 渲染模型。包含程序化行为、叫声音效、气泡、自言自语、DeepSeek 聊天与设置；支持 macOS arm64 DMG 与 Windows x64 NSIS 安装包。
 
 ## 运行
 
@@ -34,7 +34,7 @@ npm --prefix app test
 npm --prefix app run smoke
 ```
 
-`smoke` 构建后用 `--smoke` 启动隐藏窗口，设置 `offscreen: true`，不创建托盘、不读写应用配置、不轮询鼠标，始终加载仓库里的占位模型。模型加载并渲染 60 帧后，依次播放待机、原地步态、开心、惊讶、喊叫、伸懒腰、拖动姿态（走路不实际移动窗口）。每段在代表时刻定格，开心在跳跃最高点（175ms）截图，通过 `capturePage({stayHidden:true})` 获取带 alpha 的 PNG，检查非零 alpha 的占比在 2%～95%，并检查 VRM 版本为 1。开心最高点、喊叫和伸懒腰截图最上方两行 alpha 必须全为 0，模型触顶会打印 `ok:false`。60 秒超时或加载、截图失败均打印 `ok:false` JSON 并退出 1。
+`smoke` 构建后用 `--smoke` 启动隐藏窗口，设置 `offscreen: true`，不创建托盘、不读写应用配置、不轮询鼠标，开发时加载仓库里的占位模型，打包后加载包内模型。模型加载并渲染 60 帧后，依次播放待机、原地步态、开心、惊讶、喊叫、伸懒腰、拖动姿态（走路不实际移动窗口）。每段在代表时刻定格，开心在跳跃最高点（175ms）截图，通过 `capturePage({stayHidden:true})` 获取带 alpha 的 PNG，检查非零 alpha 的占比在 2%～95%，并检查 VRM 版本为 1。开心最高点、喊叫和伸懒腰截图最上方两行 alpha 必须全为 0，模型触顶会打印 `ok:false`。60 秒超时或加载、截图失败均打印 `ok:false` JSON 并退出 1。
 
 输出为 `AR_GATE_ARTIFACT_DIR/smoke.png` 以及 `smoke-idle.png`、`smoke-walk.png`、`smoke-happy.png`、`smoke-surprised.png`、`smoke-shout.png`、`smoke-stretch.png`、`smoke-drag.png`；未指定目录时写到 `app/smoke-out/`。标准输出 JSON 包含实际模型路径、`opaqueRatio`、`vrmVersion`、`expressions`、`behaviors: ["idle","walk","happy","surprised","shout","stretch","drag"]` 与 `behaviorOpaqueRatios`（每种行为的不透明像素占比），以及 `behaviorTopTransparent: {happy:true, shout:true, stretch:true}`。八张图均检查 2%～95%，启动脚本还检查七种行为、七个占比和三种顶部透明检查齐全。单张拖动截图不能判断头发晃动幅度，仍需主导走查。首次运行时 Electron npm 包可能按其官方机制下载当前平台二进制；无需额外安装命令。
 
@@ -72,7 +72,7 @@ npm --prefix app run smoke
 
 大小固定为 240×315、320×420、440×578。窗口恢复时须完整落在任一当前屏幕工作区，否则回到主屏右下角、距边缘 40px。配置损坏时原文件改名为 `config.broken-<时间>.json`，使用默认值；写入采用临时文件加 rename。设置写盘失败会记录日志、保留原有内存配置，不广播或应用失败的设置；设置页用红字显示具体原因，保留编辑内容和窗口，供修复磁盘空间或权限后重试。
 
-模型路径顺序：有效的 `modelPath` → `assets/models/usagi.vrm` → `assets/placeholder/Seed-san.vrm`；相对路径以仓库根目录解析，可指定绝对路径。VRM 以二进制 IPC 传给隔离的渲染进程，当前支持自包含 VRM（贴图等资源内嵌）。加载失败显示“模型加载失败：原因”并记录日志，可从托盘重新加载。Seed-san 仅用于开发，不应随安装包分发，模型许可和来源见项目目标文档。
+模型路径顺序：有效的 `modelPath` → `assets/models/usagi.vrm` → `assets/placeholder/Seed-san.vrm`；相对路径以仓库根目录解析，可指定绝对路径。VRM 以二进制 IPC 传给隔离的渲染进程，当前支持自包含 VRM（贴图等资源内嵌）。加载失败显示“模型加载失败：原因”并记录日志，可从托盘重新加载。Seed-san 仅用于开发；正式包不得包含，缺正式模型时只生成带 -dev 后缀的开发包，不分发，模型许可和来源见项目目标文档。
 
 ## 平台差异与实现
 
@@ -82,7 +82,7 @@ macOS 隐藏 Dock 图标并调用 `setVisibleOnAllWorkspaces(true)`；Windows �
 
 依赖：Electron、three、three-vrm 为运行功能所需；Vite 负责渲染器构建，esbuild 负责把主进程/preload 编译为 Electron 可加载的 CJS，TypeScript/类型包用于静态检查，Vitest 用于纯逻辑测试。依赖解析锁定在 `package-lock.json`。
 
-待主导处理：打包后的模型路径，以及把临时托盘图标换成 Usagi 图标；对应代码已留 `TODO(lead)`。
+打包后模型使用 `process.resourcesPath/models/usagi.vrm`，音效使用 `process.resourcesPath/sounds/usagi/`；有效的用户 modelPath 仍优先。托盘使用 `build/` 下的 Usagi 头像。
 
 参考官方示例：[three-vrm 加载与优化](https://github.com/pixiv/three-vrm/blob/dev/packages/three-vrm/examples/basic.html)、[Electron 离屏渲染](https://www.electronjs.org/docs/latest/tutorial/offscreen-rendering/)、[BrowserWindow API](https://www.electronjs.org/docs/latest/api/browser-window/)。
 
@@ -100,7 +100,7 @@ macOS 隐藏 Dock 图标并调用 `setVisibleOnAllWorkspaces(true)`；Windows �
 
 托盘隐藏/显示时主进程显式发送 `pet:visibility {visible}`，隐藏立即取消 requestAnimationFrame、暂停状态机计时与掷骰，显示先回 idle 并重新计时再恢复渲染；不依赖 `backgroundThrottling:false` 下仍可能为 visible 的 `document.visibilityState`。连续 8 秒无动作/移动/点击/拖动时限制 30fps，被动呼吸、眨眼、看鼠标不重置闲置时间，活动立即恢复满帧。模型加载后、首次绘制前，依次采样喊叫、开心跳跃最高点、伸懒腰、甩头两侧、转圈每 45°、走路最高点（正面与左右转向）以及左右最大拖动倾斜。每个姿态先更新 VRM 和骨骼世界矩阵，再用 `Box3.setFromObject(scene, true)` 读取包含蒙皮变形的顶点范围并求并集，四边各加并集尺寸 4% 边距。中性脚底保持距画面底部 5%；动作向下超出时按需整体上移角色。采样后恢复中性姿态和弹簧状态，用户看不到采样过程。窗口缩放复用该范围，避免随当前动作改变取景。
 
-TODO(lead): 打包后的音效路径。TODO(lead): Windows 实测走动流畅度（Windows 高频 setPosition 可能掉帧）。TODO(lead): mac 实际拖动复核弹簧受力系数和耳朵/头发晃动幅度。
+TODO(lead): Windows 实测走动流畅度（Windows 高频 setPosition 可能掉帧）。TODO(lead): mac 实际拖动复核弹簧受力系数和耳朵/头发晃动幅度。
 
 
 ## 聊天、设置与气泡
@@ -118,3 +118,33 @@ TODO(lead): 打包后的音效路径。TODO(lead): Windows 实测走动流畅度
 Windows 托盘位于任务栏右下角，可能收在折叠区；macOS 位于顶部菜单栏。气泡在两端均请求 floating 置顶级别，Windows 的原生置顶层级与 macOS 不同，截图不能确认跨应用的实际层叠效果或拖动延迟。
 
 TODO(lead): Windows 实测气泡跟随与托盘。TODO(lead): 用个人测试 Key 走查测试连接、流式聊天、声音和表情联动；macOS/Windows 的实际拖动延迟交由主导实测。
+
+## 安装包与打包后冒烟
+
+普通用户参见 [安装与使用](../docs/guides/02-安装与使用.md)。安装包仅供个人使用，不上传发布。
+
+```sh
+npm --prefix app run dist:mac
+npm --prefix app run dist:win
+npm --prefix app run dist
+```
+
+输出到被 Git 忽略的 `app/release/`。electron-builder 固定为 26.18.1；macOS 使用 `identity: "-"` 做 ad-hoc 签名，`hardenedRuntime: false`，不公证。DMG 支持拖到 Applications。Windows NSIS 一键安装到当前用户，自动运行，创建桌面/开始菜单快捷方式，卸载保留用户数据；`signAndEditExecutable: false` 避免 macOS 需要 Wine 的 rcedit，所以应用 EXE 自身可能保留 Electron 默认图标（安装器配置 Usagi 图标，快捷方式可能沿用应用 EXE 默认图标）。不安装 Wine；若交叉构建仍失败，可在 Windows 上运行同一条 `dist:win` 命令。TODO(lead): Windows 实机安装验证。
+
+打包前选择 `assets/models/usagi.vrm`；缺失时自动用 Seed-san 生成 `Usagi-0.1.0-mac-arm64-dev.dmg` / `Usagi-0.1.0-win-x64-dev.exe`，关于页显示“开发版（占位模型）”。正式模型若仍是改名后的 Seed-san 会拒绝构建。打包后核对模型 SHA-256 与所有 Ogg/manifest 的内容，不携带开发 assets 目录。不得直接绕过 dist 脚本运行 electron-builder 制作正式包。图标重生成方法见 [build/README.md](build/README.md)。
+
+Electron 下载镜像在 `.npmrc` 与 `electron-builder.yml` 配为 npmmirror（本机直连很慢）。可在命令前设置 `ELECTRON_MIRROR=https://其他镜像/` 覆盖；npm 新版可能对 `electron_mirror` 自定义配置提示警告。
+
+启动前在仓库根执行 `ar gui check electron --headless`（系统 ar 若是归档工具，使用上文的 AgentRouter 核心入口），通过后运行：
+
+```sh
+npm --prefix app run smoke:packaged -- /绝对路径/Usagi.app/Contents/MacOS/Usagi
+```
+
+也可直接运行该可执行文件加 `--smoke`。所有窗口离屏隐藏，不联网，不读写真实配置、Key 或聊天记录。模型与八张行为图、气泡/聊天/设置页共用开发冒烟逻辑；读取全部可用 Ogg 并在渲染进程实际解码一段，JSON 增加 `sounds: {directory, clips, decoded:true}`。模型或声音缺失时输出 `ok:false` 并退出 1。`AR_GATE_ARTIFACT_DIR` 可指定截图目录；开发模式默认写入 `app/smoke-out/`，打包后默认写入系统临时目录的 `usagi-smoke-进程号/`，不会向只读应用包写文件。
+
+`npm run smoke` 的外层超时覆盖构建、首次 import Electron 时的同步下载及 Electron 冒烟，10 分钟后杀掉本次进程树、输出原因并退出 1。`smoke:packaged` 同样有此保护，应用内部的 60 秒渲染超时仍保留。
+
+配置依据：[electron-builder macOS](https://www.electron.build/v26/docs/mac/)、[NSIS](https://www.electron.build/v26/docs/nsis/)。
+
+本次 Apple Silicon 交叉构建 Windows：`makensis` 为 x86_64 可执行文件，在当前 arm64 主机启动时报 `Unknown system error -86`（架构兼容限制），未生成最终 NSIS EXE；未安装 Wine 或 Rosetta。可在 Windows x64 环境 `npm --prefix app ci` 后运行 `npm --prefix app run dist:win`。中间的 `win-unpacked/Usagi.exe` 不是安装包。

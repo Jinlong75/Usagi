@@ -39,7 +39,7 @@ vi.mock('electron', () => {
       on: (name: string, fn: (...args: any[]) => any) => host.sends.set(name, fn) },
     Menu: { buildFromTemplate: (template: any[]) => Object.assign(template, { popup: host.popup }) },
     Tray: class { setContextMenu(template: any[]) { host.menu = template; } setToolTip() {} destroy() {} },
-    nativeImage: { createFromBitmap: () => ({ setTemplateImage: vi.fn() }) }, safeStorage: {},
+    nativeImage: { createFromBitmap: () => ({ setTemplateImage: vi.fn() }), createFromPath: () => ({ setTemplateImage: vi.fn() }) }, safeStorage: {},
     screen: { getPrimaryDisplay: () => ({ workArea: { x: 0, y: 0, width: 1200, height: 900 } }),
       getAllDisplays: () => [{ workArea: { x: 0, y: 0, width: 1200, height: 900 } }],
       getDisplayMatching: () => ({ workArea: { x: 0, y: 0, width: 1200, height: 900 } }),
