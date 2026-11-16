@@ -28,14 +28,27 @@ describe('透明像素命中坐标', () => {
 });
 
 describe('点击与拖动', () => {
-  it('短按且位移小于 4px 才是点击', () => {
+  it('短按且位移小于 5px 才是点击', () => {
     expect(isClick(beginGesture({ x: 100, y: 100 }, 0), { x: 102, y: 102 }, 299)).toBe(true);
-    expect(isClick(beginGesture({ x: 100, y: 100 }, 0), { x: 104, y: 100 }, 100)).toBe(false);
+    expect(isClick(beginGesture({ x: 100, y: 100 }, 0), { x: 105, y: 100 }, 100)).toBe(false);
     expect(isClick(beginGesture({ x: 100, y: 100 }, 0), { x: 100, y: 100 }, 300)).toBe(false);
   });
   it('拖动后回到起点也不会误触点击', () => {
     const gesture = beginGesture({ x: -200, y: 100 }, 500);
     updateGesture(gesture, { x: -180, y: 100 });
     expect(isClick(gesture, { x: -200, y: 100 }, 600)).toBe(false);
+  });
+});
+
+describe('缩放阈值与拖后抑制', () => {
+  it.each([240, 320, 440])('窗口宽 %i 时阈值为 5 × width/320', (width) => {
+    const threshold = 5 * width / 320;
+    expect(isClick(beginGesture({ x: 0, y: 0 }, 0, width), { x: threshold - 0.01, y: 0 }, 100)).toBe(true);
+    expect(isClick(beginGesture({ x: 0, y: 0 }, 0, width), { x: threshold, y: 0 }, 100)).toBe(false);
+  });
+  it('拖动结束后 149ms 拒绝、150ms 接受，负时长拒绝', () => {
+    expect(isClick(beginGesture({ x: 0, y: 0 }, 100), { x: 0, y: 0 }, 249, 100)).toBe(false);
+    expect(isClick(beginGesture({ x: 0, y: 0 }, 100), { x: 0, y: 0 }, 250, 100)).toBe(true);
+    expect(isClick(beginGesture({ x: 0, y: 0 }, 100), { x: 0, y: 0 }, 99)).toBe(false);
   });
 });

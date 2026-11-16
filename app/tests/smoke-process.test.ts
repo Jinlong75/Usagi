@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
+// @ts-expect-error The allowed smoke entry is JavaScript; its validation is tested directly.
+import { BEHAVIORS, validBehaviorReport } from '../scripts/smoke.mjs';
 import { runSmokeProcess } from '../scripts/smoke-process.mjs';
 
-const success = { ok: true, model: 'Seed-san.vrm', opaqueRatio: 0.21, vrmVersion: '1', expressions: ['blink', 'happy'] };
+const success = { ok: true, model: 'Seed-san.vrm', opaqueRatio: 0.21, vrmVersion: '1', expressions: ['blink', 'happy'],
+  behaviors: ['idle', 'walk', 'happy', 'surprised', 'shout', 'drag'],
+  behaviorOpaqueRatios: { idle: 0.21, walk: 0.2, happy: 0.23, surprised: 0.19, shout: 0.25, drag: 0.2 } };
 
 async function run(source: string, timeoutMs = 5_000) {
   let stdout = '';
@@ -73,5 +77,19 @@ describe('冒烟子进程结果与诊断（Node fixture，不启动 GUI）', () 
     expect(result.code).toBe(1);
     expect(result.stdout.trim().split('\n')).toHaveLength(1);
     expect(JSON.parse(result.stdout).reason).toContain('超过 60 秒');
+  });
+});
+
+describe('六种行为冒烟报告', () => {
+  it('必须依序包含六种行为且每张图的 alpha 占比有效', () => {
+    expect(success.behaviors).toEqual(BEHAVIORS);
+    expect(validBehaviorReport(success)).toBe(true);
+    expect(validBehaviorReport({ ...success, behaviors: ['idle'] })).toBe(false);
+    expect(validBehaviorReport({ ...success, behaviorOpaqueRatios: {} })).toBe(false);
+    for (const ratio of [0, 0.019, 0.951, 1, NaN, Infinity]) {
+      expect(validBehaviorReport({ ...success, behaviorOpaqueRatios: { ...success.behaviorOpaqueRatios, drag: ratio } })).toBe(false);
+    }
+    expect(validBehaviorReport({ ...success, behaviorOpaqueRatios: { ...success.behaviorOpaqueRatios, drag: 0.02 } })).toBe(true);
+    expect(validBehaviorReport({ ...success, behaviorOpaqueRatios: { ...success.behaviorOpaqueRatios, drag: 0.95 } })).toBe(true);
   });
 });

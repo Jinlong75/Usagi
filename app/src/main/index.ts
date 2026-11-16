@@ -3,10 +3,12 @@ import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { DEFAULT_CONFIG, readConfig, writeConfig } from './config';
 import { resolveModel } from './model';
+import { WindowMotion } from './motion';
+import { SoundLibrary } from './sounds';
 import { initialBounds } from '../shared/window';
 import { beginGesture, isClick, updateGesture } from '../shared/gesture';
 import type { Gesture } from '../shared/gesture';
-import type { Config, Point, RenderResult, Size } from '../shared/types';
+import type { Config, Point, RenderResult, Size, MoveRequest, SmokeBehavior, SoundUse } from '../shared/types';
 
 const smoke = process.argv.includes('--smoke');
 const root = resolve(__dirname, '../..');
@@ -21,6 +23,16 @@ let gesture: Gesture | null = null;
 let dragOrigin: Point | null = null;
 let hit = false;
 let completed = false;
+let motion: WindowMotion | undefined;
+let lastDragEndedAt = -Infinity;
+let dragSample = { point: { x: 0, y: 0 }, time: 0 };
+const sounds = new SoundLibrary(resolve(root, 'assets/sounds/usagi'));
+const smokeBehaviors: SmokeBehavior[] = ['idle', 'walk', 'happy', 'surprised', 'shout', 'drag'];
+const behaviorRatios: Partial<Record<SmokeBehavior, number>> = {};
+let smokeIndex = -1;
+let captureBusy = false;
+let initialRatio = 0;
+let lastCursorSentAt = -Infinity;
 
 function exitSmoke(code: number, result: object): void {
   // app.exit() is immediate; wait for piped stdout so the gate receives the JSON.
@@ -47,6 +59,8 @@ function currentBounds(size = config.size) {
 
 function setSize(size: Size): void {
   if (!win) return;
+  motion?.cancel();
+  win.webContents.send('pet:press', false);
   config.size = size;
   const { x, y } = win.getBounds();
   config.position = { x, y };
@@ -59,16 +73,34 @@ function setSize(size: Size): void {
 
 function applyHit(): void { win?.setIgnoreMouseEvents(!hit && !gesture, { forward: true }); }
 
+function dragPosition(point: Point, now: number): void {
+  if (!win || !gesture || !dragOrigin) return;
+  const wasDragged = gesture.dragged;
+  updateGesture(gesture, point);
+  if (!gesture.dragged) return;
+  if (!wasDragged) motion?.cancel();
+  win.setPosition(Math.round(dragOrigin.x + point.x - gesture.start.x),
+    Math.round(dragOrigin.y + point.y - gesture.start.y));
+  const bounds = win.getBounds();
+  const dt = Math.max(0.008, (now - dragSample.time) / 1000);
+  win.webContents.send('pet:drag', { active: true, timestamp: now,
+    velocity: { x: (bounds.x - dragSample.point.x) / dt, y: (bounds.y - dragSample.point.y) / dt } });
+  dragSample = { point: bounds, time: now };
+}
+
 function finishDrag(cancelled: boolean): void {
   if (!win || !gesture) return;
+  const now = performance.now();
   const point = screen.getCursorScreenPoint();
-  const clicked = !cancelled && isClick(gesture, point, performance.now());
-  if (gesture.dragged && dragOrigin) {
-    win.setPosition(Math.round(dragOrigin.x + point.x - gesture.start.x),
-      Math.round(dragOrigin.y + point.y - gesture.start.y));
+  dragPosition(point, now);
+  const clicked = !cancelled && isClick(gesture, point, now, lastDragEndedAt);
+  if (gesture.dragged) {
+    lastDragEndedAt = now;
+    win.webContents.send('pet:drag', { active: false, velocity: { x: 0, y: 0 }, timestamp: now });
   }
   gesture = null;
   dragOrigin = null;
+  win.webContents.send('pet:press', false);
   const { x, y } = win.getBounds();
   config.position = { x, y };
   save();
@@ -80,7 +112,7 @@ function refreshMenu(): void {
   if (!tray || !win) return;
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: win.isVisible() ? '隐藏桌宠' : '显示桌宠', click: () => {
-      if (win?.isVisible()) { finishDrag(true); win.hide(); }
+      if (win?.isVisible()) { finishDrag(true); motion?.cancel(); win.webContents.send('pet:press', false); win.hide(); }
       else win?.showInactive();
       refreshMenu();
     } },
@@ -116,22 +148,34 @@ function makeTray(): void {
 }
 
 async function capture(result: RenderResult): Promise<void> {
-  if (!smoke || completed || !win) return;
+  if (!smoke || completed || !win || captureBusy) return;
   if (!result.ok) return fail(result.reason ?? '模型加载失败');
+  const expected = smokeIndex < 0 ? undefined : smokeBehaviors[smokeIndex];
+  if (result.behavior !== expected) return fail('冒烟姿态顺序不匹配');
+  captureBusy = true;
   try {
-    // The renderer reports only after the model has completed 60 rendered frames.
     const image = await win.webContents.capturePage(undefined, { stayHidden: true, stayAwake: true });
-    const bitmap = image.toBitmap(); // BGRA; alpha is the fourth byte on both target platforms.
+    const bitmap = image.toBitmap();
     let opaque = 0;
     for (let index = 3; index < bitmap.length; index += 4) if (bitmap[index]! > 0) opaque++;
     const opaqueRatio = opaque / (bitmap.length / 4);
     const directory = process.env.AR_GATE_ARTIFACT_DIR || resolve(root, 'app/smoke-out');
     await mkdir(directory, { recursive: true });
-    await writeFile(join(directory, 'smoke.png'), image.toPNG());
-    const ok = Number.isFinite(opaqueRatio) && opaqueRatio >= 0.02 && opaqueRatio <= 0.95 && result.vrmVersion === '1';
-    completed = true;
-    exitSmoke(ok ? 0 : 1, { ok, model: modelPath, opaqueRatio, vrmVersion: result.vrmVersion,
-      expressions: result.expressions ?? [], ...(!ok ? { reason: '角色占比、透明背景或 VRM 版本检查失败' } : {}) });
+    await writeFile(join(directory, expected ? `smoke-${expected}.png` : 'smoke.png'), image.toPNG());
+    if (!Number.isFinite(opaqueRatio) || opaqueRatio < 0.02 || opaqueRatio > 0.95 || result.vrmVersion !== '1') {
+      return fail(`角色占比、透明背景或 VRM 版本检查失败：${expected ?? 'initial'} (${opaqueRatio})`);
+    }
+    if (expected) behaviorRatios[expected] = opaqueRatio;
+    else initialRatio = opaqueRatio;
+    smokeIndex++;
+    captureBusy = false;
+    const next = smokeBehaviors[smokeIndex];
+    if (next) win.webContents.send('pet:smoke-pose', next);
+    else {
+      completed = true;
+      exitSmoke(0, { ok: true, model: modelPath, opaqueRatio: initialRatio, vrmVersion: result.vrmVersion,
+        expressions: result.expressions ?? [], behaviors: smokeBehaviors, behaviorOpaqueRatios: behaviorRatios });
+    }
   } catch (error) { fail(String(error)); }
 }
 
@@ -146,12 +190,17 @@ async function start(): Promise<void> {
     ...currentBounds(), show: false, transparent: true, backgroundColor: '#00000000',
     frame: false, hasShadow: false, resizable: false, maximizable: false, fullscreenable: false,
     // macOS：窗口未激活时第一次按下也直接交给页面（点击/拖动不用点两次）
-    acceptFirstMouse: true,
+    acceptFirstMouse: true, focusable: false,
     skipTaskbar: process.platform === 'win32', alwaysOnTop: config.alwaysOnTop,
     webPreferences: {
       preload: join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false,
       sandbox: true, offscreen: smoke, backgroundThrottling: false,
     },
+  });
+  motion = new WindowMotion(win, () => {
+    if (!win || win.isDestroyed()) return;
+    const { x, y } = win.getBounds(); config.position = { x, y }; save();
+    win.webContents.send('pet:move-done');
   });
   win.setAlwaysOnTop(config.alwaysOnTop, 'floating');
   if (process.platform === 'darwin') win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
@@ -175,6 +224,25 @@ async function start(): Promise<void> {
     modelPath = resolveModel(root, config.modelPath, smoke);
     return { bytes: new Uint8Array(await readFile(modelPath)), path: modelPath, smoke };
   });
+  ipcMain.handle('pet:window-info', (event) => {
+    if (!trusted(event) || !win) throw new Error('未授权的窗口请求');
+    const bounds = win.getBounds();
+    return { bounds, workArea: screen.getDisplayMatching(bounds).workArea };
+  });
+  ipcMain.handle('pet:sound', (event, use: SoundUse) => {
+    if (!trusted(event) || smoke || !['click_happy', 'click_surprise', 'click_shout', 'drag'].includes(use) ||
+      (gesture?.dragged && use !== 'drag')) return null;
+    return sounds.load(use).then((bytes) => bytes ? new Uint8Array(bytes).buffer : null);
+  });
+  ipcMain.on('pet:move-to', (event, request: MoveRequest) => {
+    if (!trusted(event) || smoke || gesture || !win?.isVisible() || !request ||
+      ![request.x, request.y, request.durationMs].every(Number.isFinite) || request.durationMs <= 0 || request.durationMs > 10_000) return;
+    const bounds = win.getBounds();
+    const area = screen.getDisplayMatching(bounds).workArea;
+    const x = Math.max(area.x + 20, Math.min(area.x + area.width - bounds.width - 20, request.x));
+    motion?.move({ x, y: bounds.y, durationMs: request.durationMs });
+  });
+  ipcMain.on('pet:move-cancel', (event) => { if (trusted(event)) motion?.cancel(); });
   ipcMain.on('pet:hit', (event, value: unknown) => {
     if (!trusted(event) || typeof value !== 'boolean' || smoke) return;
     hit = value;
@@ -182,9 +250,12 @@ async function start(): Promise<void> {
   });
   ipcMain.on('pet:drag-start', (event) => {
     if (!trusted(event) || smoke || !hit || !win || gesture) return;
-    gesture = beginGesture(screen.getCursorScreenPoint(), performance.now());
+    motion?.cancel();
+    gesture = beginGesture(screen.getCursorScreenPoint(), performance.now(), win.getBounds().width);
+    win.webContents.send('pet:press', true);
     const { x, y } = win.getBounds();
     dragOrigin = { x, y };
+    dragSample = { point: { x, y }, time: performance.now() };
     applyHit();
   });
   ipcMain.on('pet:drag-end', (event, cancelled: unknown) => {
@@ -200,15 +271,15 @@ async function start(): Promise<void> {
     applyHit();
     makeTray();
     cursorTimer = setInterval(() => {
-      if (!win || win.isDestroyed()) return;
+      if (!win || win.isDestroyed() || !win.isVisible()) return;
+      const now = performance.now();
+      if (!gesture && now - lastCursorSentAt < 50) return;
+      lastCursorSentAt = now;
       const point = screen.getCursorScreenPoint();
-      if (gesture && dragOrigin) {
-        updateGesture(gesture, point);
-        if (gesture.dragged) win.setPosition(Math.round(dragOrigin.x + point.x - gesture.start.x),
-          Math.round(dragOrigin.y + point.y - gesture.start.y));
-      }
-      win.webContents.send('pet:cursor', { point, bounds: win.getBounds() });
-    }, 50);
+      dragPosition(point, performance.now());
+      const bounds = win.getBounds();
+      win.webContents.send('pet:cursor', { point, bounds, workArea: screen.getDisplayMatching(bounds).workArea });
+    }, 1000 / 60);
     win.on('move', () => {
       clearTimeout(moveSaveTimer);
       if (gesture) return;
@@ -233,6 +304,7 @@ app.whenReady().then(start).catch((error) => {
 app.on('before-quit', () => {
   clearTimeout(watchdog);
   clearInterval(cursorTimer);
+  motion?.cancel();
   clearTimeout(moveSaveTimer);
   if (!smoke) { finishDrag(true); save(); }
   tray?.destroy();
