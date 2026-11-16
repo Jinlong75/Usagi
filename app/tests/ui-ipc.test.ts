@@ -10,6 +10,8 @@ const host = vi.hoisted(() => ({
   start: undefined as (() => Promise<void>) | undefined,
   invokes: new Map<string, (...args: any[]) => any>(), sends: new Map<string, (...args: any[]) => any>(),
   appEvents: new Map<string, (...args: any[]) => any>(), windows: [] as any[], menu: [] as any[],
+  powerEvents: new Map<string, () => void>(), routineConstruct: vi.fn(), exit: vi.fn(),
+  routine: undefined as import('../src/main/routine').Routine | undefined,
   emit: (_event: ChatEvent) => {}, send: vi.fn(() => 'request-1'), stop: vi.fn(), save: vi.fn(),
   keySave: vi.fn(async (_key: string) => ({ persisted: false, reason: '仅本次有效' })),
   flush: vi.fn(async () => {}), sessionFlush: vi.fn(async () => {}),
@@ -37,11 +39,12 @@ vi.mock('electron', () => {
     setAlwaysOnTop = vi.fn(); setVisibleOnAllWorkspaces = vi.fn(); setIgnoreMouseEvents = vi.fn();
     loadFile = vi.fn(async () => {}); loadURL = vi.fn(async () => {});
   }
-  return { BrowserWindow, powerMonitor: { getSystemIdleTime: () => host.idle },
+  return { BrowserWindow, powerMonitor: { getSystemIdleTime: () => host.idle,
+    on: (name: string, fn: () => void) => host.powerEvents.set(name, fn) },
     app: { commandLine: { getSwitchValue: vi.fn(() => ''), appendSwitch: vi.fn() },
       whenReady: () => ({ then: (start: () => Promise<void>) => { host.start = start; return { catch: vi.fn() }; } }),
       on: (name: string, fn: (...args: any[]) => any) => host.appEvents.set(name, fn),
-      getPath: () => host.directory, getVersion: () => '0.1.0', dock: { hide: vi.fn() }, quit: host.quit },
+      getPath: () => host.directory, getVersion: () => '0.1.0', dock: { hide: vi.fn() }, quit: host.quit, exit: host.exit },
     ipcMain: { handle: (name: string, fn: (...args: any[]) => any) => host.invokes.set(name, fn),
       on: (name: string, fn: (...args: any[]) => any) => host.sends.set(name, fn) },
     Menu: { buildFromTemplate: (template: any[]) => Object.assign(template, { popup: host.popup }) },
@@ -56,6 +59,12 @@ vi.mock('electron', () => {
 vi.mock('../src/main/config', async importOriginal => {
   const original = await importOriginal<typeof import('../src/main/config')>();
   return { ...original, readConfig: () => structuredClone(original.DEFAULT_CONFIG), writeConfig: host.save };
+});
+vi.mock('../src/main/routine', async importOriginal => {
+  const original = await importOriginal<typeof import('../src/main/routine')>();
+  return { ...original, Routine: class extends original.Routine {
+    constructor(options: import('../src/main/routine').RoutineOptions) { host.routineConstruct(); super(options); host.routine = this; }
+  } };
 });
 vi.mock('../src/main/fps', () => ({ FpsLog: class { record = host.fpsRecord; } }));
 vi.mock('../src/main/ipc/keys', () => ({ AsyncKeyStore: class {
@@ -76,6 +85,14 @@ const invoke = (channel: string, win: any, ...args: any[]) => host.invokes.get(c
 const send = (channel: string, win: any, ...args: any[]) => host.sends.get(channel)!(event(win), ...args);
 const item = (label: string) => host.menu.find(entry => entry.label === label)!;
 async function open(label: string): Promise<any> { item(label).click(); await vi.advanceTimersByTimeAsync(0); return host.windows.at(-1)!; }
+async function atWithTicks(hour: number): Promise<void> {
+  const target = new Date(2026, 10, 16, hour), priorIdle = host.idle;
+  host.idle = 60;
+  while (target.getTime() - Date.now() >= 30 * 60_000) {
+    vi.setSystemTime(Date.now() + 29 * 60_000); await host.routine!.tick();
+  }
+  vi.setSystemTime(target); host.idle = priorIdle;
+}
 
 describe('008 主进程接线：原生窗口替身，无 GUI', () => {
   beforeEach(async () => {
@@ -83,12 +100,46 @@ describe('008 主进程接线：原生窗口替身，无 GUI', () => {
     host.directory = mkdtempSync(join(tmpdir(), 'usagi-ui-routine-')); host.idle = 0;
     host.appendAssistant.mockResolvedValue();
     vi.stubGlobal('__dirname', fileURLToPath(new URL('../out', import.meta.url)));
-    host.windows = []; host.invokes.clear(); host.sends.clear(); host.appEvents.clear();
+    host.windows = []; host.invokes.clear(); host.sends.clear(); host.appEvents.clear(); host.powerEvents.clear();
     host.confirm.mockResolvedValue({ response: 0 }); host.flush.mockImplementation(async () => {});
     host.sessionFlush.mockImplementation(async () => {}); host.save.mockReset();
     await import('../src/main/index'); await host.start!(); pet().emit('ready-to-show');
   });
-  afterEach(() => { rmSync(host.directory, { recursive: true, force: true }); vi.clearAllTimers(); vi.useRealTimers(); vi.unstubAllGlobals(); });
+  afterEach(() => { rmSync(host.directory, { recursive: true, force: true }); vi.restoreAllMocks(); vi.clearAllTimers(); vi.useRealTimers(); vi.unstubAllGlobals(); });
+  it('R4-1 Routine 构造抛错时主进程继续启动，不启动作息定时器且设置和聊天仍可用', async () => {
+    vi.clearAllTimers(); host.windows = [];
+    const { Routine } = await import('../src/main/routine');
+    const start = vi.spyOn(Routine.prototype, 'start');
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const failure = new Error('routine constructor failed');
+    host.routineConstruct.mockImplementationOnce(() => { throw failure; });
+    await expect(host.start!()).resolves.toBeUndefined(); pet().emit('ready-to-show');
+    expect(host.exit).not.toHaveBeenCalled(); expect(host.quit).not.toHaveBeenCalled();
+    expect(start).not.toHaveBeenCalled();
+    expect(error).toHaveBeenCalledExactlyOnceWith('作息初始化失败，已停用作息', failure);
+    expect(pet().loadFile).toHaveBeenCalled(); expect(pet().visible).toBe(true);
+    const settings = await open('设置…'); const initial = await invoke('settings:load', settings);
+    expect(initial.config.routine.enabled).toBe(true);
+    expect((await invoke('settings:save', settings, initial.config)).ok).toBe(true);
+    const chat = await open('和乌萨奇聊天'); expect(chat.visible).toBe(true);
+    expect(start).not.toHaveBeenCalled();
+    vi.setSystemTime(new Date(2026, 10, 16, 13));
+    vi.advanceTimersByTime(30_000); await vi.advanceTimersByTimeAsync(0);
+    expect(pet().webContents.send.mock.calls.some(([channel]: any[]) => channel === 'routine:state')).toBe(false);
+  });
+  it.each(['suspend', 'lock-screen'])('R4-3 powerMonitor %s 后 idle 为零仍打回来招呼', async name => {
+    item('自言自语').click({ checked: false });
+    vi.setSystemTime(new Date(2026, 10, 16, 14, 30));
+    vi.advanceTimersByTime(30_000); await vi.advanceTimersByTimeAsync(0);
+    expect(host.windows).toHaveLength(1);
+    host.powerEvents.get(name)!();
+    vi.advanceTimersByTime(30_000); await vi.advanceTimersByTimeAsync(0);
+    const bubble = host.windows.at(-1)!;
+    expect(bubble.webContents.send).toHaveBeenCalledWith('bubble:text', expect.objectContaining({
+      visible: true, question: false, text: expect.stringMatching(/回来啦/),
+    }));
+    expect(pet().webContents.send).toHaveBeenCalledWith('pet:play-sound', 'idle_talk');
+  });
   it('菜单/设置双向同步并广播，不允许设置快照回退桌宠位置', async () => {
     const settings = await open('设置…');
     const initial = await invoke('settings:load', settings);
@@ -136,12 +187,12 @@ describe('008 主进程接线：原生窗口替身，无 GUI', () => {
     expect(host.appendAssistant.mock.calls[0]![0]).toMatch(/^(早上好～早饭吃了什么？|起床啦～早饭吃了没？|天亮了！早饭吃了什么呀？)$/);
     const chat = host.windows.at(-1)!; expect(chat.visible).toBe(true);
     expect(bubble.setIgnoreMouseEvents).toHaveBeenLastCalledWith(true);
-    chat.hide(); vi.setSystemTime(new Date(2026, 10, 16, 12)); await vi.advanceTimersByTimeAsync(30_000);
+    chat.hide(); await atWithTicks(12); await vi.advanceTimersByTimeAsync(30_000);
     await invoke('bubble:answer', bubble);
     expect(host.appendAssistant).toHaveBeenCalledTimes(2);
     expect(chat.webContents.send).toHaveBeenCalledWith('chat:history-changed');
     expect(chat.webContents.reload).not.toHaveBeenCalled();
-    chat.hide(); vi.setSystemTime(new Date(2026, 10, 16, 18)); await vi.advanceTimersByTimeAsync(30_000);
+    chat.hide(); await atWithTicks(18); await vi.advanceTimersByTimeAsync(30_000);
     expect(bubble.setIgnoreMouseEvents).toHaveBeenLastCalledWith(false);
     await vi.advanceTimersByTimeAsync(10_000);
     expect(bubble.setIgnoreMouseEvents).toHaveBeenLastCalledWith(true);
@@ -153,7 +204,7 @@ describe('008 主进程接线：原生窗口替身，无 GUI', () => {
     item('鼠标穿透').click({ checked: true }); await vi.advanceTimersByTimeAsync(0);
     expect(bubble.setIgnoreMouseEvents).toHaveBeenLastCalledWith(true);
     await invoke('bubble:answer', bubble); expect(host.appendAssistant).not.toHaveBeenCalled();
-    vi.setSystemTime(new Date(2026, 10, 16, 12)); await vi.advanceTimersByTimeAsync(30_000);
+    await atWithTicks(12); await vi.advanceTimersByTimeAsync(30_000);
     host.appendAssistant.mockRejectedValueOnce(new Error('聊天记录读写失败：ENOSPC'));
     await invoke('bubble:answer', bubble);
     expect(bubble.webContents.send).toHaveBeenLastCalledWith('bubble:text', expect.objectContaining({ question: false, text: '聊天记录读写失败：ENOSPC' }));

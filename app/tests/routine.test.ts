@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -6,9 +6,17 @@ import { DEFAULT_CONFIG, normalizeConfig } from '../src/main/config';
 import { BEDTIME_LINES, inRange, insertWeather, logicalDay, questionText, Routine, ROUTINE_LINES } from '../src/main/routine';
 import { SelfTalk } from '../src/main/selfTalk';
 
+vi.mock('node:fs', async importOriginal => {
+  const original = await importOriginal<typeof import('node:fs')>();
+  return { ...original, renameSync: vi.fn(original.renameSync), writeFileSync: vi.fn(original.writeFileSync) };
+});
+
 let directory: string;
 beforeEach(() => { vi.useFakeTimers(); directory = mkdtempSync(join(tmpdir(), 'usagi-routine-')); });
-afterEach(() => { vi.clearAllTimers(); vi.useRealTimers(); rmSync(directory, { recursive: true, force: true }); });
+afterEach(() => {
+  vi.mocked(renameSync).mockReset(); vi.mocked(writeFileSync).mockReset(); vi.restoreAllMocks();
+  vi.clearAllTimers(); vi.useRealTimers(); rmSync(directory, { recursive: true, force: true });
+});
 const date = (hour: number, minute = 0, day = 16) => new Date(2026, 10, day, hour, minute);
 function setup(hour = 7, minute = 0) {
   let now = date(hour, minute), idle = 0, blocked = false, fullscreen = false;
@@ -18,8 +26,17 @@ function setup(hour = 7, minute = 0) {
     idleSeconds: () => idle, blocked: () => blocked, fullscreen: () => fullscreen,
     show, sound, state, weatherLine, random: () => 0 };
   const routine = new Routine(options);
+  const observe = routine.tick.bind(routine);
   return { routine, options, config, show, sound, state, weatherLine,
     at: (hour: number, minute = 0, day = 16) => { now = date(hour, minute, day); },
+    // Model continued polling when a scenario skips time without simulating suspend.
+    atWithTicks: async (hour: number, minute = 0, day = 16) => {
+      const target = date(hour, minute, day), priorIdle = idle; idle = 60;
+      while (target.getTime() - now.getTime() >= 30 * 60_000) {
+        now = new Date(now.getTime() + 29 * 60_000); await observe();
+      }
+      now = target; idle = priorIdle;
+    },
     idle: (value: number) => { idle = value; }, block: (value: boolean) => { blocked = value; },
     fullscreen: (value: boolean) => { fullscreen = value; } };
 }
@@ -46,7 +63,7 @@ describe('作息调度，假时钟与临时状态文件', () => {
     await vi.advanceTimersByTimeAsync(30_000); expect(tick).toHaveBeenCalledTimes(1);
     await vi.advanceTimersByTimeAsync(3000); expect(c.show).toHaveBeenCalledOnce();
     await vi.advanceTimersByTimeAsync(27_000); expect(tick).toHaveBeenCalledTimes(2);
-    c.at(7, 0, 17); c.weatherLine.mockImplementationOnce(() => new Promise(() => {}));
+    await c.atWithTicks(7, 0, 17); c.weatherLine.mockImplementationOnce(() => new Promise(() => {}));
     await vi.advanceTimersByTimeAsync(30_000); expect(tick).toHaveBeenCalledTimes(3);
     c.routine.start(); await vi.advanceTimersByTimeAsync(3000); expect(c.show).toHaveBeenCalledOnce();
     await vi.advanceTimersByTimeAsync(27_000); expect(tick).toHaveBeenCalledTimes(4);
@@ -54,7 +71,7 @@ describe('作息调度，假时钟与临时状态文件', () => {
   });
   it('错过时段不补，起止相同关闭，跨午夜区间正确', async () => {
     const c = setup(10); await c.routine.tick(); expect(c.show).not.toHaveBeenCalled();
-    c.config.lunch = ['12:00', '12:00']; c.at(12); await c.routine.tick(); expect(c.show).not.toHaveBeenCalled();
+    c.config.lunch = ['12:00', '12:00']; await c.atWithTicks(12); await c.routine.tick(); expect(c.show).not.toHaveBeenCalled();
     expect(inRange(date(23), ['22:00', '02:00'])).toBe(true);
     expect(inRange(date(2), ['22:00', '02:00'])).toBe(false);
   });
@@ -65,7 +82,7 @@ describe('作息调度，假时钟与临时状态文件', () => {
   it.each(['block', 'fullscreen'] as const)('%s 推迟至解除，若已错过整个时段则不补', async key => {
     const c = setup(); c[key](true); await c.routine.tick(); expect(c.show).not.toHaveBeenCalled();
     c[key](false); await c.routine.tick(); expect(c.show).toHaveBeenCalledOnce();
-    c.at(12); c[key](true); await c.routine.tick(); c.at(14, 30); c[key](false);
+    await c.atWithTicks(12); c[key](true); await c.routine.tick(); await c.atWithTicks(14, 30); c[key](false);
     await c.routine.tick(); expect(c.show).toHaveBeenCalledOnce();
   });
   it('bedtime 每 30 分钟依次提醒，重启保留次数，第四次不出', async () => {
@@ -131,9 +148,9 @@ describe('作息调度，假时钟与临时状态文件', () => {
     const tick = c.routine.tick(); await vi.advanceTimersByTimeAsync(2999); expect(c.show).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(1); await tick;
     expect(c.show).toHaveBeenCalledWith(ROUTINE_LINES.morning[0], 10_000, true);
-    c.at(7, 0, 17); c.weatherLine.mockResolvedValueOnce('今天晴，12～20°C。'); await c.routine.tick();
+    await c.atWithTicks(7, 0, 17); c.weatherLine.mockResolvedValueOnce('今天晴，12～20°C。'); await c.routine.tick();
     expect(c.show).toHaveBeenLastCalledWith('呀哈呀哈！（起床啦～今天晴，12～20°C。早饭吃了没？）', 10_000, true);
-    c.at(7, 0, 18); c.weatherLine.mockRejectedValueOnce(new Error('offline')); await c.routine.tick();
+    await c.atWithTicks(7, 0, 18); c.weatherLine.mockRejectedValueOnce(new Error('offline')); await c.routine.tick();
     expect(c.show).toHaveBeenLastCalledWith(ROUTINE_LINES.morning[0], 10_000, true);
     expect(insertWeather(ROUTINE_LINES.morning[2]!, '晴。')).toBe('哈？（天亮了！晴。早饭吃了什么呀？）');
     expect(questionText('呀哈！（早上好～今天晴。早饭吃了什么？）')).toBe('早上好～今天晴。早饭吃了什么？');
@@ -153,6 +170,65 @@ describe('作息调度，假时钟与临时状态文件', () => {
       const c = setup(); writeFileSync(c.options.path, raw); await new Routine(c.options).tick();
       expect(c.show).toHaveBeenCalledOnce(); expect(readdirSync(directory).some(name => /routine-state\.broken-\d+\.json/.test(name))).toBe(true);
     }
+  });
+  it('R4-1 损坏状态隔离 rename 抛 EACCES 时构造不抛，写盘失败也不抛，恢复后仍问候', async () => {
+    const c = setup(); writeFileSync(c.options.path, '{oops');
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const denied = () => { throw new Error('EACCES'); };
+    vi.mocked(renameSync).mockImplementationOnce(denied).mockImplementationOnce(denied);
+    let routine!: Routine;
+    expect(() => { routine = new Routine(c.options); }).not.toThrow();
+    await expect(routine.tick()).resolves.toBeUndefined();
+    expect(c.show).not.toHaveBeenCalled(); expect(c.sound).not.toHaveBeenCalled();
+    expect(error).toHaveBeenCalledTimes(1);
+    await routine.tick();
+    expect(c.show).toHaveBeenCalledExactlyOnceWith(ROUTINE_LINES.morning[0], 10_000, true);
+    expect(c.sound).toHaveBeenCalledOnce(); expect(error).toHaveBeenCalledTimes(1);
+  });
+  it.each(['period', 'bedtime', 'welcome'] as const)('R4-2 ENOSPC 恢复后 %s 不消耗去重状态，失败不显示且同错只记录一次', async kind => {
+    const c = kind === 'period' ? setup() : kind === 'bedtime' ? setup(22, 30) : setup(14, 30);
+    if (kind === 'welcome') { c.idle(1800); await c.routine.tick(); c.idle(0); }
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const full = () => { throw new Error('ENOSPC'); };
+    vi.mocked(writeFileSync).mockImplementationOnce(full).mockImplementationOnce(full);
+    await expect(c.routine.tick()).resolves.toBeUndefined();
+    await expect(c.routine.tick()).resolves.toBeUndefined();
+    expect(c.show).not.toHaveBeenCalled(); expect(c.sound).not.toHaveBeenCalled();
+    expect(error).toHaveBeenCalledTimes(1);
+    expect(readdirSync(directory)).toEqual([]);
+    await c.routine.tick(); await c.routine.tick();
+    const line = kind === 'period' ? ROUTINE_LINES.morning[0] : kind === 'bedtime' ? BEDTIME_LINES[0] : ROUTINE_LINES.welcome[0];
+    expect(c.show).toHaveBeenCalledExactlyOnceWith(line, kind === 'period' ? 10_000 : 3200, kind === 'period');
+    expect(c.sound).toHaveBeenCalledOnce(); expect(error).toHaveBeenCalledTimes(1);
+    const saved = JSON.parse(readFileSync(c.options.path, 'utf8'));
+    if (kind === 'period') expect(saved.days.morning).toBe('2026-11-16');
+    else if (kind === 'bedtime') expect(saved.bedtime).toEqual({ day: '2026-11-16', count: 1, lastAt: date(22, 30).getTime() });
+    else expect(saved.lastWelcome).toBe(date(14, 30).getTime());
+  });
+  it('R4-3 14:30 至 16:30 无 tick 且 idle 为零，恢复后仍打回来招呼', async () => {
+    const c = setup(14, 30); await c.routine.tick(); expect(c.show).not.toHaveBeenCalled();
+    c.at(16, 30); await c.routine.tick();
+    expect(c.show).toHaveBeenCalledExactlyOnceWith(ROUTINE_LINES.welcome[0], 3200, false);
+    await c.routine.tick(); expect(c.show).toHaveBeenCalledOnce();
+  });
+  it('R4-3 tick 间隔达到 30 分钟才算离开', async () => {
+    const c = setup(14, 30); await c.routine.tick(); c.at(14, 59); await c.routine.tick();
+    expect(c.show).not.toHaveBeenCalled(); c.at(15, 29); await c.routine.tick();
+    expect(c.show).toHaveBeenCalledExactlyOnceWith(ROUTINE_LINES.welcome[0], 3200, false);
+  });
+  it('R4-3 markAway 后 idle 为零会招呼，2 小时冷却内不打，冷却到期可再打', async () => {
+    const c = setup(14, 30); c.routine.markAway(); await c.routine.tick();
+    expect(c.show).toHaveBeenCalledExactlyOnceWith(ROUTINE_LINES.welcome[0], 3200, false);
+    c.at(16, 29); c.routine.markAway(); await c.routine.tick(); expect(c.show).toHaveBeenCalledOnce();
+    c.at(16, 30); c.routine.markAway(); await c.routine.tick();
+    expect(c.show).toHaveBeenCalledTimes(2);
+    expect(c.show).toHaveBeenLastCalledWith(ROUTINE_LINES.welcome[1], 3200, false);
+  });
+  it.each([13, 0])('R4-3 markAway 后 %s 点休息期间不打回来招呼', async hour => {
+    const c = setup(hour); c.routine.markAway(); await c.routine.tick();
+    expect(c.show).toHaveBeenCalledOnce();
+    expect(c.show.mock.calls.some(([line]) => ROUTINE_LINES.welcome.includes(line))).toBe(false);
+    expect(c.state).toHaveBeenLastCalledWith(hour === 13 ? 'nap' : 'sleep');
   });
   it('非法时间回落默认，合法相等时间保持以关闭时段', () => {
     const c = normalizeConfig({ routine: { morning: ['24:00', '09:60'], lunch: ['6:00', null], nap: ['13:00', '13:00'],

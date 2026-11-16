@@ -333,14 +333,23 @@ async function start(): Promise<void> {
   ui = new UiController({ pet: win, root, smoke, config: () => config, update: updateConfig, ...dependencies });
   const blocked = () => !win?.isVisible() || !!gesture?.dragged || ui.blocked || ui.bubble.occupied || isForegroundFullscreen();
   const sound = () => win?.webContents.send('pet:play-sound', 'idle_talk');
-  if (!smoke) routine = new Routine({
-    path: join(app.getPath('userData'), 'routine-state.json'), config: () => config.routine,
-    now: () => new Date(), idleSeconds: () => powerMonitor.getSystemIdleTime(), blocked,
-    show: (text, duration, question) => ui.showRoutine(text, duration, question), sound,
-    state: state => win?.webContents.send('routine:state', state),
-    weatherLine: async () => null, // 021 injects weather here.
-    onError: error => console.error('作息调度失败', error),
-  });
+  if (!smoke) {
+    try {
+      routine = new Routine({
+        path: join(app.getPath('userData'), 'routine-state.json'), config: () => config.routine,
+        now: () => new Date(), idleSeconds: () => powerMonitor.getSystemIdleTime(), blocked,
+        show: (text, duration, question) => ui.showRoutine(text, duration, question), sound,
+        state: state => win?.webContents.send('routine:state', state),
+        weatherLine: async () => null, // 021 injects weather here.
+        onError: error => console.error('作息调度失败', error),
+      });
+      powerMonitor.on('suspend', () => routine?.markAway());
+      powerMonitor.on('lock-screen', () => routine?.markAway());
+    } catch (error) {
+      routine = undefined;
+      console.error('作息初始化失败，已停用作息', error);
+    }
+  }
   selfTalk = new SelfTalk({ config: () => config.selfTalk,
     blocked: () => blocked() || !!routine?.resting,
     show: (text, duration) => { void ui.bubble.showBubble(text, duration); },

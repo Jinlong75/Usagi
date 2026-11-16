@@ -44,7 +44,7 @@ interface StoredState {
   lastWelcome: number | null;
 }
 const fresh = (): StoredState => ({ days: {}, bedtime: { day: '', count: 0, lastAt: 0 }, lastWelcome: null });
-function readState(path: string): StoredState {
+function readState(path: string, onError: (error: unknown) => void): StoredState {
   if (!existsSync(path)) return fresh();
   let value: StoredState | undefined;
   try { value = JSON.parse(readFileSync(path, 'utf8')); } catch { /* Quarantine below, as for config.json. */ }
@@ -54,7 +54,8 @@ function readState(path: string): StoredState {
     && value.bedtime && typeof value.bedtime.day === 'string' && Number.isInteger(value.bedtime.count)
     && value.bedtime.count >= 0 && value.bedtime.count <= 3 && Number.isFinite(value.bedtime.lastAt)
     && (value.lastWelcome === null || (typeof value.lastWelcome === 'number' && Number.isFinite(value.lastWelcome)))) return value;
-  renameSync(path, path.replace(/\.json$/, '') + `.broken-${Date.now()}.json`);
+  try { renameSync(path, path.replace(/\.json$/, '') + `.broken-${Date.now()}.json`); }
+  catch (error) { onError(error); }
   return fresh();
 }
 export interface RoutineOptions {
@@ -71,11 +72,21 @@ export class Routine {
   private previous = new Map<string, string>();
   private current: RoutineState = 'awake';
   private away = false;
+  private lastTickAt?: number;
+  private errors = new Set<string>();
   private busy = false;
   private running = false;
   private generation = 0;
   private timer?: unknown;
-  constructor(private options: RoutineOptions) { this.saved = readState(options.path); }
+  constructor(private options: RoutineOptions) { this.saved = readState(options.path, error => this.report(error)); }
+  private report(error: unknown): void {
+    const message = error instanceof Error ? error.message : String(error);
+    if (this.errors.has(message)) return;
+    this.errors.add(message);
+    console.error('作息状态读写失败', error);
+  }
+  /** Power events can arrive after the idle counter has already reset. */
+  markAway(): void { this.away = true; }
   private get clock(): TalkClock { return this.options.clock ?? { set: (fn, delay) => setTimeout(fn, delay), clear: timer => clearTimeout(timer as ReturnType<typeof setTimeout>) }; }
   get resting(): boolean {
     const config = this.options.config(), now = this.options.now();
@@ -96,15 +107,21 @@ export class Routine {
     if (this.timer !== undefined) this.clock.clear(this.timer);
     this.timer = undefined;
   }
-  private persist(): void {
+  private persist(candidate: StoredState): void {
     mkdirSync(dirname(this.options.path), { recursive: true });
-    writeFileSync(`${this.options.path}.tmp`, JSON.stringify(this.saved, null, 2) + '\n', 'utf8');
+    writeFileSync(`${this.options.path}.tmp`, JSON.stringify(candidate, null, 2) + '\n', 'utf8');
     renameSync(`${this.options.path}.tmp`, this.options.path);
+  }
+  private commit(candidate: StoredState, clearAway = false): boolean {
+    try { this.persist(candidate); }
+    catch (error) { this.report(error); return false; }
+    this.saved = candidate;
+    if (clearAway) this.away = false;
+    return true;
   }
   private blocked(): boolean { return this.options.blocked() || (this.options.fullscreen ?? isForegroundFullscreen)(); }
   private line(key: Period | 'welcome'): string {
-    const line = chooseLine(ROUTINE_LINES[key], this.previous.get(key), this.options.random ?? Math.random);
-    this.previous.set(key, line); return line;
+    return chooseLine(ROUTINE_LINES[key], this.previous.get(key), this.options.random ?? Math.random);
   }
   private async weather(): Promise<string | null> {
     let timer: unknown;
@@ -125,23 +142,29 @@ export class Routine {
     try {
       const config = this.options.config(); if (!config.enabled) return;
       const now = this.options.now(), idle = this.options.idleSeconds();
-      if (idle >= 1800) this.away = true;
+      if (idle >= 1800 || (this.lastTickAt !== undefined && now.getTime() - this.lastTickAt >= HALF_HOUR)) this.markAway();
+      this.lastTickAt = now.getTime();
       // TODO(lead): Confirm overlap priority for custom times; sleep currently precedes nap and meals.
       const state: RoutineState = inRange(now, config.sleep) ? 'sleep' : inRange(now, config.nap) ? 'nap' : 'awake';
       if (state !== this.current) { this.current = state; this.options.state(state); }
       // State transitions follow the clock even while quiet, idle, hidden or in another window.
       if (idle >= 60 || this.blocked()) return;
       if (this.away) {
-        this.away = false;
         if (state === 'awake' && (this.saved.lastWelcome === null || now.getTime() - this.saved.lastWelcome >= 4 * HALF_HOUR)) {
-          this.saved.lastWelcome = now.getTime(); this.persist(); await this.display(this.line('welcome')); return;
+          const candidate = { ...this.saved, lastWelcome: now.getTime() };
+          if (!this.commit(candidate, true)) return;
+          const line = this.line('welcome'); this.previous.set('welcome', line);
+          await this.display(line); return;
         }
+        // Even a suppressed welcome only consumes the away marker after a successful write.
+        if (!this.commit({ ...this.saved }, true)) return;
       }
       for (const key of ['sleep', 'nap', 'morning', 'lunch', 'dinner'] as const) {
         if (!inRange(now, config[key])) continue;
         const day = key === 'sleep' || key === 'nap' ? periodDay(now, config[key]) : logicalDay(now);
         if (this.saved.days[key] === day) continue;
-        let line = this.line(key);
+        const originalLine = this.line(key);
+        let line = originalLine;
         if (key === 'morning' && !config.quiet) {
           const weather = await this.weather();
           if (weather) line = insertWeather(line, weather);
@@ -150,7 +173,9 @@ export class Routine {
           if (generation !== this.generation || !latest.enabled || !inRange(this.options.now(), latest[key])
             || logicalDay(this.options.now()) !== day || this.options.idleSeconds() >= 60 || this.blocked()) return;
         }
-        this.saved.days[key] = day; this.persist();
+        const candidate = { ...this.saved, days: { ...this.saved.days, [key]: day } };
+        if (!this.commit(candidate)) return;
+        this.previous.set(key, originalLine);
         await this.display(line, ['morning', 'lunch', 'dinner'].includes(key)); return;
       }
       const start = new Date(now), from = minutes(config.bedtime);
@@ -160,7 +185,8 @@ export class Routine {
       if (elapsed < 0 || elapsed >= 3 * HALF_HOUR) return;
       const prior = this.saved.bedtime.day === day ? this.saved.bedtime : { day, count: 0, lastAt: 0 };
       if (prior.count >= 3 || (prior.count > 0 && now.getTime() - prior.lastAt < HALF_HOUR)) return;
-      this.saved.bedtime = { day, count: prior.count + 1, lastAt: now.getTime() }; this.persist();
+      const candidate = { ...this.saved, bedtime: { day, count: prior.count + 1, lastAt: now.getTime() } };
+      if (!this.commit(candidate)) return;
       await this.display(BEDTIME_LINES[prior.count]!);
     } finally { this.busy = false; }
   }
