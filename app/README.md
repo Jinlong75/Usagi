@@ -25,6 +25,15 @@ npm test
 npm run smoke
 ```
 
+在仓库根目录、且命令不经过 shell 解释时（例如 AgentRouter 门禁按参数数组运行验收命令，`cd app && …` 里的 `cd`/`&&` 不会生效），改用等价的 `--prefix` 写法，每条单独运行：
+
+```sh
+npm --prefix app ci
+npm --prefix app run typecheck
+npm --prefix app test
+npm --prefix app run smoke
+```
+
 `smoke` 构建后用 `--smoke` 启动隐藏窗口，设置 `offscreen: true`，不创建托盘、不读写应用配置、不轮询鼠标，始终加载仓库里的占位模型。模型加载并渲染 60 帧后通过 `capturePage({stayHidden:true})` 获取带 alpha 的 PNG，检查非零 alpha 的占比在 2%～95%，并检查 VRM 版本为 1。60 秒超时或加载、截图失败均打印 `ok:false` JSON 并退出 1。
 
 输出为 `AR_GATE_ARTIFACT_DIR/smoke.png`，未指定时为 `app/smoke-out/smoke.png`。标准输出 JSON 包含实际模型路径、`opaqueRatio`、`vrmVersion`、`expressions`。首次运行时 Electron npm 包可能按其官方机制下载当前平台二进制；无需额外安装命令。
