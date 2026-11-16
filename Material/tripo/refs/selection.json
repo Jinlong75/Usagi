@@ -1,0 +1,8 @@
+{
+  "front_full.png": {"gif": "160c479d727476546b1c0c003d15b3f5a6628d9b.gif", "frame_zero_based": 0},
+  "back_full.png": {"gif": "dcb251595f98255a81109cfc47bc01ab1942011.gif", "frame_zero_based": 0},
+  "face.png": {"gif": "2ca57d0da1e611c5284873ecbb0fc8514a9949c6.gif", "frame_zero_based": 0},
+  "ears.png": {"gif": "7f1ef01d996e7adba46e30f233abd61f1942011.gif", "frame_zero_based": 11},
+  "side.png": {"gif": "dcb251595f98255a81109cfc47bc01ab1942011.gif", "frame_zero_based": 4},
+  "side_opposite.png": {"gif": "dcb251595f98255a81109cfc47bc01ab1942011.gif", "frame_zero_based": 6}
+}
