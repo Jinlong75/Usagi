@@ -6,6 +6,7 @@ VRM：启用 VRM Add-on for Blender，去掉 --factory-startup，其他参数相
 """
 
 import argparse
+import json
 import math
 import sys
 from array import array
@@ -18,6 +19,42 @@ import bpy
 from mathutils import Vector
 
 from common import bounds, import_model, reset_scene, run, script_args
+
+
+def landmark_points(data):
+    """只绘制位置；法线、半径、元数据不是空间关键点。"""
+    for name, value in data.items():
+        if name.startswith("_") or name == "face_normal":
+            continue
+        if isinstance(value, list) and len(value) == 3 and all(isinstance(c, (float, int)) for c in value):
+            yield name, Vector(value)
+        elif name.startswith("ear_axis_"):
+            for i, point in enumerate(value):
+                yield f"{name}_{i}", Vector(point)
+
+
+def draw_landmarks(source, destination, landmarks, camera, size):
+    """在 PNG 缓冲区投影红点，内部骨骼点也可见；不污染普通预览。"""
+    from bpy_extras.object_utils import world_to_camera_view
+    picture = bpy.data.images.load(str(source), check_existing=False)
+    try:
+        pixels = array("f", [0.0]) * (size * size * 4)
+        picture.pixels.foreach_get(pixels)
+        radius = max(2, round(size / 160))
+        for _, point in landmark_points(landmarks):
+            projected = world_to_camera_view(bpy.context.scene, camera, point)
+            x, y = round(projected.x * (size - 1)), round(projected.y * (size - 1))
+            for dy in range(-radius, radius + 1):
+                for dx in range(-radius, radius + 1):
+                    if dx * dx + dy * dy <= radius * radius and 0 <= x + dx < size and 0 <= y + dy < size:
+                        index = ((y + dy) * size + x + dx) * 4
+                        pixels[index:index + 4] = array("f", (1, 0, 0, 1))
+        picture.pixels.foreach_set(pixels)
+        picture.filepath_raw = str(destination)
+        picture.file_format = "PNG"
+        picture.save()
+    finally:
+        bpy.data.images.remove(picture)
 
 
 def positive_int(value):
@@ -173,6 +210,7 @@ def render(args):
     out_dir = Path(args.out_dir).resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
     paths = []
+    landmark_data = json.loads(Path(args.landmarks).read_text(encoding="utf-8")) if args.landmarks else None
     views = {"front": (0, -1, 0), "left": (-1, 0, 0), "back": (0, 1, 0),
              "right": (1, 0, 0), "34": (1, -1, math.sqrt(2))}
     for name, direction in views.items():
@@ -189,6 +227,9 @@ def render(args):
         scene.render.filepath = str(path)
         bpy.ops.render.render(write_still=True)
         paths.append(path)
+        if landmark_data is not None and name in {"front", "left"}:
+            draw_landmarks(path, out_dir / f"{args.prefix}_landmarks_{name}.png",
+                           landmark_data, camera, args.size)
     make_sheet(paths, out_dir / f"{args.prefix}_sheet.png", args.size)
     print(f"已输出五视图与拼图：{out_dir}")
 
@@ -199,6 +240,7 @@ def main():
     parser.add_argument("--out-dir", required=True)
     parser.add_argument("--size", type=positive_int, default=768)
     parser.add_argument("--prefix", default="preview")
+    parser.add_argument("--landmarks", help="Blender 坐标 JSON；额外输出 front/left 红点标记图")
     render(parser.parse_args(script_args()))
 
 

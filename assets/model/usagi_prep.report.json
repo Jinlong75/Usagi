@@ -1,0 +1,108 @@
+{
+  "input": "usagi_3d.glb",
+  "output": "usagi_base.glb",
+  "cleanup": {
+    "objects_joined": 1,
+    "verts_before": 5276,
+    "faces_before": 10278,
+    "merged_verts": 0,
+    "removed_degenerate": 0,
+    "removed_loose": {
+      "verts": 0,
+      "edges": 0
+    },
+    "islands_total": 8,
+    "islands_removed": 0,
+    "island_faces_removed": 0,
+    "normals_flipped_estimate": {
+      "before": 768,
+      "after": 768,
+      "method": "approximate: face normal dot (face center - per-island vertex center); unreliable for concave/open surfaces"
+    },
+    "non_manifold_edges": 258,
+    "verts_after": 5276,
+    "faces_after": 10278,
+    "bbox_min": [
+      -0.28993648290634155,
+      -0.3451392352581024,
+      0.0
+    ],
+    "bbox_max": [
+      0.28993648290634155,
+      0.3451392352581024,
+      1.0
+    ],
+    "height": 1.0,
+    "materials": [
+      "tripo_4a3539f4_003f_480a_af21_f8f231ab2026"
+    ],
+    "textures": []
+  },
+  "rotation_degrees": -90.0,
+  "front_before": [
+    0.9999969601631165,
+    -0.0024734039325267076,
+    0.0
+  ],
+  "front_after": [
+    -0.0024734477046877146,
+    -0.9999969601631165,
+    0.0
+  ],
+  "orientation_feature_islands": 4,
+  "removed_feature_islands": 7,
+  "removed_feature_faces": 2296,
+  "face": {
+    "vertices_processed": 10,
+    "vertices_checked": 309,
+    "max_deviation_before": 0.012488642966535624,
+    "max_deviation_after": 0.0037196068691934536,
+    "tolerance": 0.004,
+    "iterations": 4,
+    "method": "local least-squares sphere, radius-0.08m neighborhood, weak global-center regularization; front-depth projection with X/Z pinned"
+  },
+  "waist": {
+    "enabled": true,
+    "iterations": 100,
+    "center_z": 0.26224464178085327,
+    "half_width": 0.06,
+    "trunk_x_limit": 0.25622862577438354,
+    "vertices_processed": 313,
+    "max_inward_depth_before": 0.021469797506685262,
+    "max_inward_depth_after": 0.006585155582237517,
+    "volume_before": 0.13259153089428127,
+    "volume_after": 0.13259153093536427,
+    "method": "radial Laplacian relaxation toward angular Dirichlet harmonic profiles; signed-volume compensation with sin^2 boundary taper; Z/azimuth/arms pinned; depth vs interpolated fitted boundary ellipses"
+  },
+  "material_face_counts": {
+    "Body": 28591,
+    "EarInner": 2272,
+    "Tail": 594
+  },
+  "colors_srgb": {
+    "Body": "#FFF1C1",
+    "EarInner": "#F7B8C4",
+    "Tail": "#FFFFFF"
+  },
+  "vertex_groups": {
+    "Body": 1,
+    "EarInner": 2,
+    "Tail": 4
+  },
+  "vertex_groups_storage": "_USAGI_REGION point attribute bitmask + usagi_vertex_groups extras; common.import_model restores Blender groups",
+  "vertices": 15810,
+  "faces": 31457,
+  "profile": {
+    "height": 1.0,
+    "head_top": 0.7132388949394226,
+    "head_width": 0.32706400752067566,
+    "arm_z": 0.26224464178085327,
+    "trunk_width": 0.25622862577438354,
+    "tail_center": [
+      -8.872988473740406e-06,
+      0.20941011607646942,
+      0.20667800307273865
+    ],
+    "tail_radius": 0.03892275061538674
+  }
+}

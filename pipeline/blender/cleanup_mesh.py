@@ -75,7 +75,8 @@ def remove_loose(bm):
     return {"verts": vert_count, "edges": edge_count}
 
 
-def clean(args):
+def clean(args, *, write_output=True):
+    """清理并返回 (对象, 报告)；prep 可复用内存结果而不产生中间 GLB。"""
     if Path(args.input).resolve() in {Path(args.output).resolve(), Path(args.report).resolve()}:
         raise ValueError("输入、输出和报告必须使用不同路径")
     if Path(args.output).resolve() == Path(args.report).resolve():
@@ -158,11 +159,13 @@ def clean(args):
                 if node.type == "TEX_IMAGE" and node.image:
                     textures[node.image.name] = {"name": node.image.name, "size": list(node.image.size)}
     report["textures"] = list(textures.values())
-    export_glb(args.output)
-    report_path = Path(args.report).resolve()
-    report_path.parent.mkdir(parents=True, exist_ok=True)
-    report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(json.dumps(report, ensure_ascii=False))
+    if write_output:
+        export_glb(args.output)
+        report_path = Path(args.report).resolve()
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print(json.dumps(report, ensure_ascii=False))
+    return obj, report
 
 
 def main():
