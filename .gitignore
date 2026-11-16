@@ -1,1 +1,5 @@
 .agent-runs/
+app/node_modules/
+app/dist/
+app/out/
+app/smoke-out/
