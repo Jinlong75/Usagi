@@ -231,6 +231,20 @@ def render(args):
             draw_landmarks(path, out_dir / f"{args.prefix}_landmarks_{name}.png",
                            landmark_data, camera, args.size)
     make_sheet(paths, out_dir / f"{args.prefix}_sheet.png", args.size)
+    if landmark_data is not None:
+        # prep 专用聚焦证据，目标区域占画面高度约 80%。
+        ear_bottom = min(landmark_data[f"ear_base_{side}"][2] for side in ("l", "r"))
+        ear_top = max(landmark_data[f"ear_tip_{side}"][2] for side in ("l", "r"))
+        tail = Vector(landmark_data["tail"])
+        closeups = (("ears_closeup_front", Vector((0, 0, (ear_bottom + ear_top) / 2)),
+                     Vector((0, -1, 0)), (ear_top - ear_bottom) / .8),
+                    ("tail_closeup_back", tail, Vector((0, 1, 0)), .20 * landmark_data["height"]))
+        for name, target, direction, scale in closeups:
+            camera.location = target + direction * radius * 4
+            camera.rotation_euler = (target - camera.location).to_track_quat("-Z", "Y").to_euler()
+            camera_data.ortho_scale = scale
+            scene.render.filepath = str(out_dir / f"{name}.png")
+            bpy.ops.render.render(write_still=True)
     print(f"已输出五视图与拼图：{out_dir}")
 
 

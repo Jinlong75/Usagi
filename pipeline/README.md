@@ -93,8 +93,16 @@ sh pipeline/build_usagi.sh prep
 
 - `assets/model/usagi_base.glb`：保留腰线的正式底模，含三种材质与顶点组数据。
 - `assets/model/usagi_landmarks.json`、`usagi_prep.report.json`：正式底模的关键点与处理报告。
-- `assets/model/preview/`：正式底模的六张预览，以及正面、左侧两张关键点叠图。
+- `assets/model/preview/`：正式底模的六张预览、正面/左侧关键点叠图，以及 `ears_closeup_front.png`、`tail_closeup_back.png` 两张聚焦特写。
 - `assets/model/preview_nosmooth/`：沿用历史目录名，内容为 `--smooth-waist on` 的**平滑版对照**六张预览。对照模型、关键点和报告只写临时目录，生成预览后清理，不覆盖正式产物。
+
+分区沿连续标量的零等值线切网格：耳朵保持原长椭圆的 60% 横向宽度、0.43 半长、0.51 中心和 0.08～0.94 高度参数，前侧法线与位置条件也进入连续标量。沿共享边二分求交点，再拆三角面；按原面上线性标量的中心值确定碎片归属，避免瘦长外侧碎片因非线性曲率被重新染色。交点共享，最后清理退化边并三角化；三种材质、顶点组和 `_USAGI_REGION` 位掩码不变。
+
+保留原有耳朵局部四等分（`cuts=3`），另仅对尾巴边界 0.025 m 邻域四等分，全部为线性细分，不移动原表面。尾巴的球面与背面半空间原本直接取 max，会在交界处形成几何尖角；改为宽 0.002 m 的紧支撑 smooth-max，在交界最多向内收 0.0005 m，且始终同时满足球内与背面限制。球心、半径及颜色值保持原定义。处理报告 `region_boundary` 记录细分/切分面数、连通块、零面积面、两耳与尾巴闭环段数/最大三维转角及粉色面法线 Y 最大值。
+
+`test_prep_usagi.py` 新增合成三角格平面和正式底模的闭环、每个相邻段转角 <35° 检查。正式底模存在时，还从 Tripo 原始模型临时重建一次并检查相同断言，避免静态产物掩盖分区代码回退。比较基线与反向实验结果保存在 `assets/model/usagi_boundary.report.json`。
+
+014 的边界转角测试（`test_08_synthetic_cut_ellipse_closed_and_smooth`、`test_09_real_product_boundaries`）在 `test_prep_usagi.py` 中，随 `sh pipeline/run_tests.sh` 运行，重建文件写入临时目录。执行者启动 Blender 前先运行 `ar gui check Blender --headless`；`BLENDER` 可指定 Blender 可执行文件。
 
 `render_preview.py --landmarks <json>` 可额外输出 `<prefix>_landmarks_front.png` 和 `<prefix>_landmarks_left.png`。关键点使用米、Blender Z 向上、正面 -Y、角色左侧 +X；`neck` 取手臂根部上方 0.01～0.07 米的中央躯干最窄 X 截面。卡通模型没有清晰解剖颈部，`hips`、`chest`、`neck` 与四肢根部为绑骨参考值，绑定前需结合预览确认。
 

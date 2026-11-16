@@ -1,0 +1,272 @@
+{
+  "before": {
+    "boundaries": {
+      "ear_r": [
+        {
+          "segments": 128,
+          "closed": true,
+          "max_turn_degrees": 136.40390474438377
+        }
+      ],
+      "ear_l": [
+        {
+          "segments": 124,
+          "closed": true,
+          "max_turn_degrees": 144.5516100845353
+        }
+      ],
+      "tail": [
+        {
+          "segments": 34,
+          "closed": true,
+          "max_turn_degrees": 118.48346911712962
+        }
+      ]
+    },
+    "faces": 31457,
+    "rig_weights": {
+      "per_bone_vertex_count": {
+        "Hips": 774,
+        "Spine": 372,
+        "Chest": 547,
+        "Neck": 0,
+        "Head": 2508,
+        "EarL_1": 1600,
+        "EarL_2": 2048,
+        "EarL_3": 2367,
+        "EarL_4": 3759,
+        "EarL_Tip": 0,
+        "EarR_1": 1606,
+        "EarR_2": 2044,
+        "EarR_3": 2376,
+        "EarR_4": 3772,
+        "EarR_Tip": 0,
+        "LeftShoulder": 0,
+        "LeftUpperArm": 156,
+        "LeftLowerArm": 129,
+        "LeftHand": 92,
+        "RightShoulder": 0,
+        "RightUpperArm": 155,
+        "RightLowerArm": 128,
+        "RightHand": 92,
+        "LeftUpperLeg": 205,
+        "LeftLowerLeg": 150,
+        "LeftFoot": 134,
+        "RightUpperLeg": 205,
+        "RightLowerLeg": 150,
+        "RightFoot": 134,
+        "Tail": 349,
+        "TailTip": 0
+      },
+      "max_influences": 3,
+      "unnormalized_vertices": 0,
+      "zero_weight_vertices": 0,
+      "constraint_failures": {
+        "ear_region": 0,
+        "ear_tip": 0,
+        "tail_region": 0,
+        "limb_isolation": 0,
+        "face_region": 0
+      },
+      "constraint_samples": {
+        "ear_region": 12880,
+        "ear_tip": 4022,
+        "tail_region": 349,
+        "limb_isolation": 1173,
+        "face_region": 89
+      },
+      "region_counts": {
+        "arm_l": 248,
+        "arm_r": 247,
+        "ear_l": 6433,
+        "ear_r": 6447,
+        "face": 89,
+        "leg_l": 339,
+        "leg_r": 339,
+        "tail": 349,
+        "trunk": 1605
+      },
+      "valid": true
+    }
+  },
+  "negative_experiment": {
+    "file": "pipeline/blender/prep_usagi.py",
+    "find": "    boundary_cut = split_region_boundaries(obj, profile, ears)",
+    "replace": "    boundary_cut = {}\n    for face in obj.data.polygons:\n        face.material_index = list(COLORS).index(classify_region(face.center, face.normal, profile, ears))",
+    "command": "sh pipeline/run_tests.sh",
+    "exit_code": 1,
+    "expect": "nonzero",
+    "assertions": [
+      "AssertionError: 90.00000250447816 not less than 35 : {'ear_l': [{'segments': 254, 'closed': True, 'max_turn_degrees': 90.00000250447816}]}",
+      "AssertionError: 118.48346911712962 not less than 35 : {'ear_r': [{'segments': 128, 'closed': True, 'max_turn_degrees': 136.40390474438377}], 'ear_l': [{'segments': 124, 'closed': True, 'max_turn_degrees': 144.5516100845353}], 'tail': [{'segments': 34, 'closed': True, 'max_turn_degrees': 118.48346911712962}]}"
+    ],
+    "failed_tests": [
+      "test_08_synthetic_cut_ellipse_closed_and_smooth",
+      "test_09_real_product_boundaries"
+    ],
+    "restored_and_reverified": true
+  },
+  "after": {
+    "boundaries": {
+      "ear_l": [
+        {
+          "segments": 217,
+          "closed": true,
+          "max_turn_degrees": 26.345289553357293
+        }
+      ],
+      "ear_r": [
+        {
+          "segments": 213,
+          "closed": true,
+          "max_turn_degrees": 25.923766136277248
+        }
+      ],
+      "tail": [
+        {
+          "segments": 262,
+          "closed": true,
+          "max_turn_degrees": 23.882343829218204
+        }
+      ]
+    },
+    "faces": 44286,
+    "subdivision": {
+      "faces_before_tail_subdivision": 31616,
+      "faces_before_cut": 42902,
+      "faces_after_cut": 44286,
+      "tail_halfspace_blend_m": 0.002,
+      "connected_components": 1,
+      "zero_area_faces": 0,
+      "method": "shared-edge exact implicit zero crossing, triangle face split; continuous interpolated normal and front/back halfspaces",
+      "faces_before_subdivision": 7982,
+      "faces_after_subdivision": 31457,
+      "ear_faces_before_subdivision": 1565,
+      "ear_faces_after_subdivision": 25040,
+      "boundaries": {
+        "ear_l": [
+          {
+            "segments": 217,
+            "closed": true,
+            "max_turn_degrees": 26.345289553357293
+          }
+        ],
+        "ear_r": [
+          {
+            "segments": 213,
+            "closed": true,
+            "max_turn_degrees": 25.923766136277248
+          }
+        ],
+        "tail": [
+          {
+            "segments": 262,
+            "closed": true,
+            "max_turn_degrees": 23.882343829218204
+          }
+        ]
+      },
+      "ear_inner_max_face_normal_y": -0.598377525806427
+    },
+    "rig_weights": {
+      "per_bone_vertex_count": {
+        "Hips": 1688,
+        "Spine": 1599,
+        "Chest": 860,
+        "Neck": 0,
+        "Head": 2693,
+        "EarL_1": 1695,
+        "EarL_2": 2188,
+        "EarL_3": 2522,
+        "EarL_4": 3908,
+        "EarL_Tip": 0,
+        "EarR_1": 1693,
+        "EarR_2": 2175,
+        "EarR_3": 2525,
+        "EarR_4": 3919,
+        "EarR_Tip": 0,
+        "LeftShoulder": 0,
+        "LeftUpperArm": 156,
+        "LeftLowerArm": 129,
+        "LeftHand": 92,
+        "RightShoulder": 0,
+        "RightUpperArm": 155,
+        "RightLowerArm": 128,
+        "RightHand": 92,
+        "LeftUpperLeg": 205,
+        "LeftLowerLeg": 150,
+        "LeftFoot": 134,
+        "RightUpperLeg": 205,
+        "RightLowerLeg": 150,
+        "RightFoot": 134,
+        "Tail": 5255,
+        "TailTip": 0
+      },
+      "max_influences": 3,
+      "unnormalized_vertices": 0,
+      "zero_weight_vertices": 0,
+      "constraint_failures": {
+        "ear_region": 0,
+        "ear_tip": 0,
+        "tail_region": 0,
+        "limb_isolation": 0,
+        "face_region": 0
+      },
+      "constraint_samples": {
+        "ear_region": 13488,
+        "ear_tip": 4073,
+        "tail_region": 5255,
+        "limb_isolation": 1173,
+        "face_region": 89
+      },
+      "region_counts": {
+        "arm_l": 248,
+        "arm_r": 247,
+        "ear_l": 6743,
+        "ear_r": 6745,
+        "face": 89,
+        "leg_l": 339,
+        "leg_r": 339,
+        "tail": 5255,
+        "trunk": 2832
+      },
+      "valid": true
+    }
+  },
+  "verification": [
+    {
+      "command": "sh pipeline/build_usagi.sh prep",
+      "exit_code": 0
+    },
+    {
+      "command": "sh pipeline/build_usagi.sh rig",
+      "exit_code": 0
+    },
+    {
+      "command": "sh pipeline/build_usagi.sh face",
+      "exit_code": 0
+    },
+    {
+      "command": "sh pipeline/run_tests.sh",
+      "exit_code": 0,
+      "passed": {
+        "pipeline": 9,
+        "prep": 9,
+        "rig": 9,
+        "atlas": 2,
+        "face": 6,
+        "three_vrm_runtime": true
+      }
+    }
+  ],
+  "previews": [
+    "assets/model/preview/ears_closeup_front.png",
+    "assets/model/preview/tail_closeup_back.png",
+    "assets/model/preview_face/expression_sheet.png"
+  ],
+  "model_sha256": {
+    "assets/model/usagi_base.glb": "ee738488de2ec42aaf5b3b340a01c4466262d58af350c927b79358f4c1b2b170",
+    "assets/model/usagi_body.vrm": "1709d01108559124320d0b7285473be84c4b86d1f618d3974a9fc92ae0c527b0",
+    "assets/model/usagi.vrm": "4f8be77036e24a32a1008490a6a86c91560eebc1c7962965d2baae029247c027"
+  }
+}
