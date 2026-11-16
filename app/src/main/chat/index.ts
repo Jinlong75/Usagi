@@ -1,0 +1,14 @@
+export { DeepSeekClient, streamChat, listModels, chatEndpoint, modelsEndpoint } from './client';
+export type { StreamOptions } from './client';
+export { ChatError } from './errors';
+export { SSEParser } from './sse';
+export { DEFAULT_PERSONA } from './persona';
+export { buildMessages, formatTime } from './prompt';
+export type { PromptOptions } from './prompt';
+export { parseEmotion, EmotionStreamFilter } from './emotion';
+export { KeyStore, maskKey } from './keyStore';
+export type { Encryption, KeyResult, SaveKeyResult } from './keyStore';
+export { SessionStore } from './sessionStore';
+export { ChatService } from './service';
+export type { ChatClient, ChatEvent, ChatServiceOptions } from './service';
+export type { ChatSettings, ChatMessage, Emotion, Message, Session, StreamEvent } from './types';
