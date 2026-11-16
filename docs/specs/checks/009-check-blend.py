@@ -27,20 +27,32 @@ for need in ("Body", "EarInner", "Tail"):
     if counts.get(need, 0) == 0:
         fail("材质 %s 没有分到面" % need)
 bm = bmesh.new(); bm.from_mesh(ob.data); bm.faces.ensure_lookup_table()
-seen = set(); islands = 0
+seen = set(); groups = []
 for f in bm.faces:
     if f.index in seen:
         continue
-    islands += 1
+    group = [f]
     stack = [f]; seen.add(f.index)
     while stack:
         c = stack.pop()
         for e in c.edges:
             for g in e.link_faces:
                 if g.index not in seen:
-                    seen.add(g.index); stack.append(g)
-if islands != 1:
-    fail("连通块应为 1，实际 %d" % islands)
+                    seen.add(g.index); stack.append(g); group.append(g)
+    groups.append(group)
+# D12（2026-11-16）：用户新模型 usagi3d2.glb 的尾巴是独立网格块，允许"主体 + 一块尾巴"。
+# 第二块必须很小（< 5% 面数）、位于身体背面（正面朝 -Y，背面 y > 0）、且以 Tail 材质为主。
+groups.sort(key=len, reverse=True)
+if len(groups) > 2:
+    fail("连通块应为 1（或主体 + 尾巴共 2），实际 %d" % len(groups))
+if len(groups) == 2:
+    small = groups[1]
+    total = sum(len(g) for g in groups)
+    cy = sum(f.calc_center_median().y for f in small) / len(small)
+    tail_share = sum(1 for f in small if ob.material_slots[f.material_index].material and
+                     ob.material_slots[f.material_index].material.name.startswith("Tail")) / len(small)
+    if len(small) >= total * 0.05 or cy <= 0 or tail_share < 0.5:
+        fail("第二个连通块不像尾巴：面数 %d/%d，中心 y=%.4f，Tail 材质占比 %.2f" % (len(small), total, cy, tail_share))
 lm = json.load(open(lm_path))
 fields = ["height", "feet_bottom", "hips", "chest", "neck", "head_center", "head_top",
           "arm_root_l", "arm_root_r", "arm_tip_l", "arm_tip_r", "leg_root_l", "leg_root_r",
