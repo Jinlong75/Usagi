@@ -5,3 +5,5 @@ body { padding: 10px 12px 14px; font: 14px/1.55 -apple-system, BlinkMacSystemFon
 #bubble::after { content: ''; position: absolute; width: 10px; height: 10px; background: white; border-right: 2px solid #4A2A1A; border-bottom: 2px solid #4A2A1A; bottom: -7px; left: calc(50% - 6px); transform: rotate(45deg); }
 #bubble[data-side=left]::after { left: auto; right: -7px; bottom: calc(50% - 6px); transform: rotate(-45deg); }
 #bubble[data-side=right]::after { left: -7px; bottom: calc(50% - 6px); transform: rotate(135deg); }
+
+#bubble.question { cursor: pointer; }

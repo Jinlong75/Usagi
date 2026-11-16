@@ -6,6 +6,19 @@ declare global { interface Window { settings: SettingsBridge } }
 const field = <T extends HTMLElement>(id: string) => document.getElementById(id)! as T;
 const value = (id: string) => field<HTMLInputElement>(id);
 const key = value('key'), warning = field('key-warning'), status = field('save-status');
+const ranges = ['morning', 'lunch', 'nap', 'dinner', 'sleep'] as const;
+// Keep the routine controls in the settings renderer, alongside the existing cards.
+field('self-talk').closest('section')!.insertAdjacentHTML('beforebegin', `
+  <fieldset id="routine"><legend>作息</legend>
+  <label class="check"><input id="routine-enabled" type="checkbox">按作息问候</label>
+  <label class="check"><input id="routine-quiet" type="checkbox">免打扰</label>
+  ${[['morning', '早上'], ['lunch', '中午'], ['nap', '午睡'], ['dinner', '晚饭'], ['sleep', '睡觉']].map(([id, label]) => `
+    <div class="row"><label>${label}开始<input id="routine-${id}-start" type="time"></label>
+    <label>${label}结束<input id="routine-${id}-end" type="time"></label></div>`).join('')}
+  <label>催睡<input id="routine-bedtime" type="time"></label>
+  <p class="hint">开始与结束相同时关闭该时段。免打扰时只切换休息状态，不显示作息气泡或播放叫声。</p>
+  </fieldset>`);
+
 let config: Config;
 let dirtyKey = false, revealed = false, loaded = false;
 let maskedKey = '';
@@ -18,14 +31,22 @@ function display(next: Config): void {
   value('temperature').value = String(next.chat.temperature); value('thinking').checked = next.chat.thinking === 'enabled';
   value('self-talk').checked = next.selfTalk.enabled; value('min-sec').value = String(next.selfTalk.minSec);
   value('max-sec').value = String(next.selfTalk.maxSec); value('lines').value = next.selfTalk.lines.join('\n');
-  value('volume').value = String(next.volume); syncCustom(); outputs();
+  value('volume').value = String(next.volume);
+  value('routine-enabled').checked = next.routine.enabled; value('routine-quiet').checked = next.routine.quiet;
+  for (const key of ranges) {
+    value(`routine-${key}-start`).value = next.routine[key][0]; value(`routine-${key}-end`).value = next.routine[key][1];
+  }
+  value('routine-bedtime').value = next.routine.bedtime; syncCustom(); outputs();
 }
 function outputs(): void {
   field('temperature-value').textContent = value('temperature').value;
   field('volume-value').textContent = `${Math.round(Number(value('volume').value) * 100)}%`;
 }
 function collect(): Config {
-  return { ...config, chat: { ...config.chat,
+  const routine = { ...config.routine, enabled: value('routine-enabled').checked, quiet: value('routine-quiet').checked,
+    bedtime: value('routine-bedtime').value };
+  for (const key of ranges) routine[key] = [value(`routine-${key}-start`).value, value(`routine-${key}-end`).value];
+  return { ...config, routine, chat: { ...config.chat,
     model: value('model').value === 'custom' ? value('custom-model').value.trim() : value('model').value,
     baseUrl: value('base-url').value.trim(), temperature: Number(value('temperature').value),
     thinking: value('thinking').checked ? 'enabled' : 'disabled' },
@@ -76,7 +97,8 @@ window.settings.onConfig(next => {
   // Menu changes must survive a later settings save without overwriting edits in progress.
   if (!loaded) return;
   if (next.selfTalk.enabled !== config.selfTalk.enabled) value('self-talk').checked = next.selfTalk.enabled;
-  config = { ...config, selfTalk: { ...config.selfTalk, enabled: next.selfTalk.enabled }, alwaysOnTop: next.alwaysOnTop, size: next.size, position: next.position, mousePassthrough: next.mousePassthrough };
+  if (next.routine.quiet !== config.routine.quiet) value('routine-quiet').checked = next.routine.quiet;
+  config = { ...config, routine: { ...config.routine, quiet: next.routine.quiet }, selfTalk: { ...config.selfTalk, enabled: next.selfTalk.enabled }, alwaysOnTop: next.alwaysOnTop, size: next.size, position: next.position, mousePassthrough: next.mousePassthrough };
 });
 window.settings.onSaveClose(() => { void save().then(() => window.settings.closeReady()).catch(() => {}); });
 void window.settings.load().then(snapshot => {

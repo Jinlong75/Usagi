@@ -77,14 +77,19 @@ export class Routine {
   private timer?: unknown;
   constructor(private options: RoutineOptions) { this.saved = readState(options.path); }
   private get clock(): TalkClock { return this.options.clock ?? { set: (fn, delay) => setTimeout(fn, delay), clear: timer => clearTimeout(timer as ReturnType<typeof setTimeout>) }; }
-  get resting(): boolean { return this.options.config().enabled && this.current !== 'awake'; }
+  get resting(): boolean {
+    const config = this.options.config(), now = this.options.now();
+    return config.enabled && (inRange(now, config.sleep) || inRange(now, config.nap));
+  }
   start(): void {
     this.stop(); this.running = true;
-    const check = async () => {
-      try { await this.tick(); } catch (error) { this.options.onError?.(error); }
-      if (this.running) this.timer = this.clock.set(() => { void check(); }, 30_000);
+    const generation = this.generation;
+    const check = () => {
+      if (!this.running || generation !== this.generation) return;
+      this.timer = this.clock.set(check, 30_000);
+      void this.tick().catch(error => this.options.onError?.(error));
     };
-    void check();
+    this.timer = this.clock.set(check, 30_000);
   }
   stop(): void {
     this.running = false; ++this.generation;
@@ -121,6 +126,7 @@ export class Routine {
       const config = this.options.config(); if (!config.enabled) return;
       const now = this.options.now(), idle = this.options.idleSeconds();
       if (idle >= 1800) this.away = true;
+      // TODO(lead): Confirm overlap priority for custom times; sleep currently precedes nap and meals.
       const state: RoutineState = inRange(now, config.sleep) ? 'sleep' : inRange(now, config.nap) ? 'nap' : 'awake';
       if (state !== this.current) { this.current = state; this.options.state(state); }
       // State transitions follow the clock even while quiet, idle, hidden or in another window.

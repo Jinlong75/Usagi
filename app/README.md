@@ -176,3 +176,15 @@ npm --prefix app run smoke:packaged -- /绝对路径/Usagi.app/Contents/MacOS/Us
 点击、聊天、转圈、拖动统一使用互斥的二值情绪（happy/surprised/angry/sad/relaxed）。喊叫只设 angry，不叠 aa；整段拖动保持 surprised，优先于聊天情绪。平静不改变当前情绪。blink 输出二值，由模型自身的 overrideBlink 阻止；结束/打断时复位所有动作骨骼（含 Neck、Hips 位移）、缩放和表情。
 
 TODO(lead): 门禁生成截图后核对五官贴片、耳朵碰撞与动作观感，并在 mac 实际拖动走查；本任务执行者不运行 GUI 冒烟，不以 CPU 偏角代替截图观感结论。
+
+### 作息与问候
+
+默认每 30 秒读取本机时钟与系统空闲秒数。早上 06:00–10:00 问好和问早饭，中午 11:30–13:00 问午饭，13:00–14:00 午睡，17:30–19:00 问晚饭；从 22:30 起每 30 分钟催睡一次，最多三次，00:00–06:00 睡觉。设置页“作息”可改时间、关闭整个调度或开启免打扰，开始时间等于结束时间表示关闭该时段。托盘和角色右键菜单也能切换免打扰。免打扰只抑制作息气泡和对应叫声，仍切换休息状态；关闭作息则不发送状态事件。午睡和睡觉期间暂停自言自语，本任务尚不改变角色动作与眼睛。
+
+用户空闲达到 60 秒，或桌宠隐藏、拖动、聊天/设置窗口打开、聊天气泡占用时，问候推迟到条件解除；错过整个时段不补。离开电脑至少 30 分钟后恢复活动会招呼，间隔至少两小时，午睡/睡觉期间不招呼。晨间天气接口目前返回空值，不联网。
+
+早上、中午、晚饭的问话气泡可点击，10 秒后消失。点击会把括号里的中文原文作为 assistant 消息存入当前聊天记录，再打开聊天窗口，用户可直接回答；已有聊天窗口会重读记录。普通气泡仍穿透鼠标。未填 Key 时沿用聊天发送后的设置提示。
+
+去重文件位于 userData/routine-state.json，采用临时文件加 rename 原子写入，损坏文件改名为 routine-state.broken-时间戳.json。逻辑日以本地 05:00 为界，跨越该边界的一段连续睡眠仍只说一次晚安，重启不会重复。主进程 Routine 注入 now、idleSeconds、blocked、weatherLine、state、show、sound；天气最多等 3 秒。preload 的 onRoutine 订阅 routine:state（nap、sleep、awake），角色渲染层留待动作任务接入。
+
+本任务聚焦自测：`npm --prefix app test -- tests/routine.test.ts tests/ui.test.ts tests/ui-ipc.test.ts tests/config.test.ts tests/settings-renderer.test.ts tests/renderer-cursor.test.ts tests/chat/service.test.ts`。完整 typecheck/test/smoke 由门禁运行，设置截图沿用 `AR_GATE_ARTIFACT_DIR/smoke-settings.png`（默认 `app/smoke-out/smoke-settings.png`），新增作息卡片可滚动查看。

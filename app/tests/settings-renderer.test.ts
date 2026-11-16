@@ -5,6 +5,7 @@ import type { SettingsBridge } from '../src/shared/ui';
 // Only the DOM fields used by settings are needed; no Electron or GUI is started.
 class Field {
   value = ''; textContent = ''; placeholder = ''; type = ''; checked = false; hidden = false; disabled = false;
+  closest() { return { insertAdjacentHTML: vi.fn() }; }
   onclick?: () => void | Promise<void>;
   listeners = new Map<string, () => void>();
   classes = new Set<string>();
@@ -60,6 +61,20 @@ describe('设置页保存失败，无 GUI', () => {
     expect(field('save-status').textContent).toBe('已保存，立即生效');
     expect(field('save-status').classes.has('error')).toBe(false);
     expect(field('key').value).toBe('');
+  });
+
+  it('显示默认作息并保存所有时间，菜单免打扰同步时保留正在编辑的时间', async () => {
+    expect(field('routine-enabled').checked).toBe(true); expect(field('routine-quiet').checked).toBe(false);
+    expect(field('routine-morning-start').value).toBe('06:00'); expect(field('routine-sleep-end').value).toBe('06:00');
+    field('routine-morning-start').value = '07:30'; field('routine-bedtime').value = '23:00';
+    field('routine-enabled').checked = false;
+    const onConfig = vi.mocked(bridge.onConfig).mock.calls[0]![0];
+    onConfig({ ...structuredClone(DEFAULT_CONFIG), routine: { ...structuredClone(DEFAULT_CONFIG.routine), quiet: true } });
+    expect(field('routine-quiet').checked).toBe(true); expect(field('routine-morning-start').value).toBe('07:30');
+    await field('save').onclick!();
+    await vi.waitFor(() => expect(bridge.save).toHaveBeenCalled());
+    expect(vi.mocked(bridge.save).mock.calls[0]![0].routine).toEqual({ ...DEFAULT_CONFIG.routine,
+      enabled: false, quiet: true, morning: ['07:30', '10:00'], bedtime: '23:00' });
   });
 
   it('IPC 抛错也显示具体原因并保留窗口', async () => {

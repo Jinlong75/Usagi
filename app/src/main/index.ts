@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu, nativeImage, screen, Tray, safeStorage } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, nativeImage, screen, Tray, safeStorage, powerMonitor } from 'electron';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -16,6 +16,7 @@ import { ChatService } from './chat/service';
 import { DeepSeekClient } from './chat/client';
 import { SessionStore } from './chat/sessionStore';
 import { SelfTalk } from './selfTalk';
+import { Routine, isForegroundFullscreen } from './routine';
 import { menuState } from '../shared/ui';
 import { initialBounds, windowDimensions } from '../shared/window';
 import { beginGesture, isClick, updateGesture } from '../shared/gesture';
@@ -31,6 +32,7 @@ let tray: Tray | null = null;
 let config: Config = structuredClone(DEFAULT_CONFIG);
 let ui: UiController;
 let selfTalk: SelfTalk;
+let routine: Routine | undefined;
 let sessionStore: SessionStore | undefined;
 let keyStore: AsyncKeyStore | undefined;
 let quitting = false;
@@ -155,7 +157,7 @@ function updateConfig(value: unknown): void {
   if (!saved.ok) throw new Error(saved.reason);
   config = candidate;
   win?.setAlwaysOnTop(config.alwaysOnTop, 'floating');
-  applyHit(); refreshMenu(); ui?.broadcast(); if (!quitting) selfTalk?.restart();
+  applyHit(); refreshMenu(); ui?.broadcast(); if (!quitting) { selfTalk?.restart(); routine?.start(); }
 }
 
 // 菜单里的开关直接写配置：写盘失败时恢复勾选状态并用气泡提示，不让异常冒到主进程
@@ -187,6 +189,9 @@ function petMenu(): Electron.MenuItemConstructorOptions[] {
     { label: '设置…', click: () => { void ui.settings.open(); } },
     { label: '自言自语', type: 'checkbox', checked: state.selfTalk, click: item => {
       updateFromMenu({ ...config, selfTalk: { ...config.selfTalk, enabled: item.checked } });
+    } },
+    { label: '免打扰', type: 'checkbox', checked: config.routine.quiet, click: item => {
+      updateFromMenu({ ...config, routine: { ...config.routine, quiet: item.checked } });
     } },
     { label: '鼠标穿透', type: 'checkbox', checked: state.mousePassthrough, click: item => {
       finishDrag(true);
@@ -326,10 +331,20 @@ async function start(): Promise<void> {
       store: sessionStore, keyStore, getSettings: () => config.chat }) };
   })();
   ui = new UiController({ pet: win, root, smoke, config: () => config, update: updateConfig, ...dependencies });
+  const blocked = () => !win?.isVisible() || !!gesture?.dragged || ui.blocked || ui.bubble.occupied || isForegroundFullscreen();
+  const sound = () => win?.webContents.send('pet:play-sound', 'idle_talk');
+  if (!smoke) routine = new Routine({
+    path: join(app.getPath('userData'), 'routine-state.json'), config: () => config.routine,
+    now: () => new Date(), idleSeconds: () => powerMonitor.getSystemIdleTime(), blocked,
+    show: (text, duration, question) => ui.showRoutine(text, duration, question), sound,
+    state: state => win?.webContents.send('routine:state', state),
+    weatherLine: async () => null, // 021 injects weather here.
+    onError: error => console.error('作息调度失败', error),
+  });
   selfTalk = new SelfTalk({ config: () => config.selfTalk,
-    blocked: () => !win?.isVisible() || !!gesture?.dragged || ui.active || ui.bubble.occupied,
+    blocked: () => blocked() || !!routine?.resting,
     show: (text, duration) => { void ui.bubble.showBubble(text, duration); },
-    sound: () => win?.webContents.send('pet:play-sound', 'idle_talk'),
+    sound,
   });
   const trusted = (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) =>
     event.sender === win?.webContents && event.senderFrame === win?.webContents.mainFrame;
@@ -420,6 +435,7 @@ async function start(): Promise<void> {
     applyHit();
     makeTray();
     selfTalk.restart();
+    routine?.start();
     stopCursor = startTickLoop(() => {
       if (!win || win.isDestroyed() || !win.isVisible()) return;
       const now = performance.now();
@@ -470,7 +486,7 @@ app.on('before-quit', event => {
   if (!smoke && !quitFlushed) {
     event.preventDefault();
     if (quitting) return;
-    quitting = true; selfTalk?.stop();
+    quitting = true; selfTalk?.stop(); routine?.stop();
     ui?.stopChat();
     // Session persistence starts independently of renderer responsiveness. Settings
     // and the following key flush each get 1.5s; total quit wait is at most 3s.
@@ -485,7 +501,7 @@ app.on('before-quit', event => {
     });
     return;
   }
-  selfTalk?.stop();
+  selfTalk?.stop(); routine?.stop();
   clearTimeout(watchdog);
   stopCursor?.();
   motion?.cancel();

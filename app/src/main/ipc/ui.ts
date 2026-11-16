@@ -8,7 +8,10 @@ import { emotionExpression, preview } from '../../shared/ui';
 import { BubbleWindow } from '../windows/bubble';
 import { ChatWindow } from '../windows/chat';
 import { SettingsWindow } from '../windows/settings';
+import { questionText } from '../routine';
 export interface ChatPort {
+  // The smoke service has no routine scheduler or persistence.
+  appendAssistant?: ChatService['appendAssistant'];
   send: ChatService['send']; stop: ChatService['stop']; testConnection: ChatService['testConnection']; onEvent: ChatService['onEvent'];
 }
 export interface UiOptions {
@@ -63,7 +66,7 @@ export class UiController {
         if (!config || typeof config !== 'object' || Array.isArray(config)) throw new Error('设置格式不正确');
         const settings = config as Partial<Config>;
         // The settings page owns these controls only; tray-owned switches cannot be rewound by a stale snapshot.
-        options.update({ ...options.config(), chat: settings.chat, selfTalk: settings.selfTalk, volume: settings.volume });
+        options.update({ ...options.config(), chat: settings.chat, selfTalk: settings.selfTalk, volume: settings.volume, routine: settings.routine });
         const saved = typeof key === 'string' ? await options.keys.save(key.trim()) : undefined;
         const loaded = await options.keys.load();
         return { ok: true, config: options.config(), key: saved, maskedKey: loaded.apiKey ? maskKey(loaded.apiKey) : '' };
@@ -73,9 +76,25 @@ export class UiController {
     });
     handle('settings:test', () => this.settings.window, () => options.service.testConnection());
     ipcMain.on('settings:close-ready', event => { if (trusted(event, this.settings.window)) this.settings.closeReady(); });
+    handle('bubble:answer', () => this.bubble.window, () => this.bubble.answer());
     ipcMain.on('bubble:resize', (event, height: unknown) => {
       if (trusted(event, this.bubble.window)) this.bubble.resize(event.sender, height);
     });
+  }
+  get blocked(): boolean { return this.active || !!this.chat.window?.isVisible() || !!this.settings.window?.isVisible(); }
+  async showRoutine(text: string, duration: number, question: boolean): Promise<void> {
+    await this.bubble.showBubble(text, duration, false, question ? async () => {
+      if (this.active) return;
+      try {
+        if (!this.options.service.appendAssistant) throw new Error('聊天记录存储不可用');
+        await this.options.service.appendAssistant(questionText(text));
+        // An existing hidden chat page must reload the newly persisted question too.
+        this.chat.window?.webContents.reload();
+        await this.chat.open();
+      } catch (error) {
+        await this.bubble.showBubble(error instanceof Error ? error.message : '聊天记录保存失败，请稍后重试。', 4000);
+      }
+    } : undefined);
   }
   send(text: unknown): { requestId?: string; message?: string } {
     if (typeof text !== 'string' || !text.trim() || text.length > 100000) return { message: '请输入 1～100000 字的消息。' };

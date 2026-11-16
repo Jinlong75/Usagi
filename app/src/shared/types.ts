@@ -1,3 +1,4 @@
+import type { BubbleBridge } from './ui';
 export type Size = 'small' | 'medium' | 'large';
 export interface Point { x: number; y: number }
 export interface Rect extends Point { width: number; height: number }
@@ -60,3 +61,9 @@ export type SoundUse = 'click_happy' | 'click_surprise' | 'click_shout' | 'drag'
 export type SmokeBehavior = 'idle' | 'walk' | 'happy' | 'surprised' | 'shout' | 'stretch' | 'drag' | 'ear-shake';
 
 export type PetExpression = 'happy' | 'surprised' | 'angry' | 'sad';
+
+/** Question bubbles share the ordinary bubble payload and add a trusted answer action. */
+export interface QuestionBubbleBridge extends BubbleBridge {
+  onText(callback: (value: { text: string; side: import('./ui').BubbleSide; visible: boolean; question: boolean }) => void): () => void;
+  answer(): Promise<void>;
+}

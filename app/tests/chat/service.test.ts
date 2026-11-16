@@ -34,6 +34,22 @@ async function terminal(events: ChatEvent[]) {
 }
 
 describe('ChatService', () => {
+  it('作息问题作为 assistant 原子落盘，重启可读且进入下一次请求上下文；无 Key 也能追加', async () => {
+    const c = setup(); c.keyStore.load.mockResolvedValue({ apiKey: '', needsReentry: false });
+    await c.service.appendAssistant('早上好～早饭吃了什么？');
+    expect(c.keyStore.load).not.toHaveBeenCalled(); expect(c.events).toEqual([]);
+    const saved = await new SessionStore(directory, now).load();
+    expect(saved.messages).toEqual([expect.objectContaining({ role: 'assistant', content: '早上好～早饭吃了什么？', createdAt: now().toISOString() })]);
+    c.keyStore.load.mockResolvedValue({ apiKey: 'unit-secret', needsReentry: false });
+    c.service.send('吃了面包'); await terminal(c.events);
+    const request = vi.mocked(c.client.streamChat).mock.calls[0]![0];
+    expect(request.messages).toContainEqual({ role: 'assistant', content: '早上好～早饭吃了什么？' });
+  });
+  it('追加作息问题落盘失败也使用已有 storage 错误提示', async () => {
+    const c = setup(); vi.spyOn(c.store, 'append').mockRejectedValueOnce(Object.assign(new Error('disk full'), { code: 'ENOSPC' }));
+    await expect(c.service.appendAssistant('午饭吃什么呀？')).rejects.toMatchObject({ code: 'storage', message: '聊天记录读写失败：ENOSPC。请检查磁盘空间和文件权限。' });
+    expect((await c.store.load()).messages).toEqual([]);
+  });
   it('persists user before calling the client, filters emotion, emits ordered events and persists only the final assistant', async () => {
     const context = setup();
     await context.store.append({ id: 'old', role: 'assistant', content: '上一条', createdAt: new Date(now().getTime() - 20 * 60000).toISOString() });

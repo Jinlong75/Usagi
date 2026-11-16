@@ -1,7 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { ChatEvent } from '../src/main/chat/service';
 const host = vi.hoisted(() => ({
+  directory: '', idle: 0,
+  appendAssistant: vi.fn(async (_text: string) => {}),
   start: undefined as (() => Promise<void>) | undefined,
   invokes: new Map<string, (...args: any[]) => any>(), sends: new Map<string, (...args: any[]) => any>(),
   appEvents: new Map<string, (...args: any[]) => any>(), windows: [] as any[], menu: [] as any[],
@@ -16,7 +21,7 @@ vi.mock('electron', () => {
     options: any; visible = false; destroyed = false;
     bounds = { x: 300, y: 300, width: 320, height: 420 };
     events = new Map<string, ((...args: any[]) => any)[]>();
-    webContents = { mainFrame: {}, send: vi.fn(), on: vi.fn(), setWindowOpenHandler: vi.fn() };
+    webContents = { mainFrame: {}, reload: vi.fn(), send: vi.fn(), on: vi.fn(), setWindowOpenHandler: vi.fn() };
     constructor(options: any) { this.options = options; this.bounds = { ...this.bounds, ...options }; host.windows.push(this); }
     on(name: string, fn: (...args: any[]) => any) { this.events.set(name, [...(this.events.get(name) ?? []), fn]); }
     once(name: string, fn: (...args: any[]) => any) { this.on(name, fn); }
@@ -32,11 +37,11 @@ vi.mock('electron', () => {
     setAlwaysOnTop = vi.fn(); setVisibleOnAllWorkspaces = vi.fn(); setIgnoreMouseEvents = vi.fn();
     loadFile = vi.fn(async () => {}); loadURL = vi.fn(async () => {});
   }
-  return { BrowserWindow,
+  return { BrowserWindow, powerMonitor: { getSystemIdleTime: () => host.idle },
     app: { commandLine: { getSwitchValue: vi.fn(() => ''), appendSwitch: vi.fn() },
       whenReady: () => ({ then: (start: () => Promise<void>) => { host.start = start; return { catch: vi.fn() }; } }),
       on: (name: string, fn: (...args: any[]) => any) => host.appEvents.set(name, fn),
-      getPath: () => '/unused-ui-fixture', getVersion: () => '0.1.0', dock: { hide: vi.fn() }, quit: host.quit },
+      getPath: () => host.directory, getVersion: () => '0.1.0', dock: { hide: vi.fn() }, quit: host.quit },
     ipcMain: { handle: (name: string, fn: (...args: any[]) => any) => host.invokes.set(name, fn),
       on: (name: string, fn: (...args: any[]) => any) => host.sends.set(name, fn) },
     Menu: { buildFromTemplate: (template: any[]) => Object.assign(template, { popup: host.popup }) },
@@ -61,6 +66,7 @@ vi.mock('../src/main/chat/sessionStore', () => ({ SessionStore: class {
 } }));
 vi.mock('../src/main/chat/service', () => ({ ChatService: class {
   onEvent(fn: (event: ChatEvent) => void) { host.emit = fn; return () => {}; }
+  appendAssistant = host.appendAssistant;
   send = host.send; stop = host.stop;
   testConnection = async () => ({ ok: true, models: ['deepseek-flash'] });
 } }));
@@ -73,14 +79,16 @@ async function open(label: string): Promise<any> { item(label).click(); await vi
 
 describe('008 主进程接线：原生窗口替身，无 GUI', () => {
   beforeEach(async () => {
-    vi.useFakeTimers(); vi.resetModules(); vi.clearAllMocks();
+    vi.useFakeTimers(); vi.setSystemTime(new Date(2026, 10, 16, 10, 30)); vi.resetModules(); vi.clearAllMocks();
+    host.directory = mkdtempSync(join(tmpdir(), 'usagi-ui-routine-')); host.idle = 0;
+    host.appendAssistant.mockResolvedValue();
     vi.stubGlobal('__dirname', fileURLToPath(new URL('../out', import.meta.url)));
     host.windows = []; host.invokes.clear(); host.sends.clear(); host.appEvents.clear();
     host.confirm.mockResolvedValue({ response: 0 }); host.flush.mockImplementation(async () => {});
     host.sessionFlush.mockImplementation(async () => {}); host.save.mockReset();
     await import('../src/main/index'); await host.start!(); pet().emit('ready-to-show');
   });
-  afterEach(() => { vi.clearAllTimers(); vi.useRealTimers(); vi.unstubAllGlobals(); });
+  afterEach(() => { rmSync(host.directory, { recursive: true, force: true }); vi.clearAllTimers(); vi.useRealTimers(); vi.unstubAllGlobals(); });
   it('菜单/设置双向同步并广播，不允许设置快照回退桌宠位置', async () => {
     const settings = await open('设置…');
     const initial = await invoke('settings:load', settings);
@@ -102,6 +110,70 @@ describe('008 主进程接线：原生窗口替身，无 GUI', () => {
     const preventDefault = vi.fn(); settings.emit('close', { preventDefault });
     expect(preventDefault).toHaveBeenCalled(); expect(settings.webContents.send).toHaveBeenCalledWith('settings:save-close');
     send('settings:close-ready', settings); expect(settings.visible).toBe(false);
+  });
+  it('免打扰菜单写盘广播，设置可修改所有作息字段', async () => {
+    const settings = await open('设置…');
+    const initial = await invoke('settings:load', settings);
+    item('免打扰').click({ checked: true });
+    expect(item('免打扰').checked).toBe(true);
+    expect(settings.webContents.send).toHaveBeenCalledWith('config:changed', expect.objectContaining({ routine: expect.objectContaining({ quiet: true }) }));
+    const routine = { ...initial.config.routine, quiet: true, enabled: false, morning: ['07:00', '09:00'] };
+    const result = await invoke('settings:save', settings, { ...initial.config, routine });
+    expect(result.config.routine).toEqual(routine);
+    expect(host.save).toHaveBeenLastCalledWith(expect.any(String), expect.objectContaining({ routine }));
+  });
+  it('作息问话仅 10 秒可点，可信点击一次追加中文并打开聊天；已有聊天刷新上下文', async () => {
+    vi.setSystemTime(new Date(2026, 10, 16, 7));
+    await vi.advanceTimersByTimeAsync(30_000);
+    const bubble = host.windows.at(-1)!;
+    expect(bubble.webContents.send).toHaveBeenLastCalledWith('bubble:text', expect.objectContaining({ question: true, visible: true }));
+    expect(bubble.setIgnoreMouseEvents).toHaveBeenLastCalledWith(false);
+    expect(bubble.options.acceptFirstMouse).toBe(true);
+    expect(() => invoke('bubble:answer', pet())).toThrow('未授权');
+    expect(() => host.invokes.get('bubble:answer')!({ sender: bubble.webContents, senderFrame: {} })).toThrow('未授权');
+    await invoke('bubble:answer', bubble); await invoke('bubble:answer', bubble);
+    expect(host.appendAssistant).toHaveBeenCalledTimes(1);
+    expect(host.appendAssistant.mock.calls[0]![0]).toMatch(/^(早上好～早饭吃了什么？|起床啦～早饭吃了没？|天亮了！早饭吃了什么呀？)$/);
+    const chat = host.windows.at(-1)!; expect(chat.visible).toBe(true);
+    expect(bubble.setIgnoreMouseEvents).toHaveBeenLastCalledWith(true);
+    chat.hide(); vi.setSystemTime(new Date(2026, 10, 16, 12)); await vi.advanceTimersByTimeAsync(30_000);
+    await invoke('bubble:answer', bubble);
+    expect(host.appendAssistant).toHaveBeenCalledTimes(2); expect(chat.webContents.reload).toHaveBeenCalledOnce();
+    chat.hide(); vi.setSystemTime(new Date(2026, 10, 16, 18)); await vi.advanceTimersByTimeAsync(30_000);
+    expect(bubble.setIgnoreMouseEvents).toHaveBeenLastCalledWith(false);
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(bubble.setIgnoreMouseEvents).toHaveBeenLastCalledWith(true);
+    await invoke('bubble:answer', bubble); expect(host.appendAssistant).toHaveBeenCalledTimes(2);
+  });
+  it('普通气泡替换问话后恢复穿透且无法追加问题，落盘失败可见错误', async () => {
+    vi.setSystemTime(new Date(2026, 10, 16, 7)); await vi.advanceTimersByTimeAsync(30_000);
+    const bubble = host.windows.at(-1)!;
+    item('鼠标穿透').click({ checked: true }); await vi.advanceTimersByTimeAsync(0);
+    expect(bubble.setIgnoreMouseEvents).toHaveBeenLastCalledWith(true);
+    await invoke('bubble:answer', bubble); expect(host.appendAssistant).not.toHaveBeenCalled();
+    vi.setSystemTime(new Date(2026, 10, 16, 12)); await vi.advanceTimersByTimeAsync(30_000);
+    host.appendAssistant.mockRejectedValueOnce(new Error('聊天记录读写失败：ENOSPC'));
+    await invoke('bubble:answer', bubble);
+    expect(bubble.webContents.send).toHaveBeenLastCalledWith('bubble:text', expect.objectContaining({ question: false, text: '聊天记录读写失败：ENOSPC' }));
+    expect(bubble.setIgnoreMouseEvents).toHaveBeenLastCalledWith(true);
+  });
+  it('设置/聊天窗口可见时推迟作息；午睡与夜间发状态并阻止自言自语', async () => {
+    const settings = await open('设置…'); vi.setSystemTime(new Date(2026, 10, 16, 7));
+    await vi.advanceTimersByTimeAsync(30_000); expect(host.windows).toHaveLength(2);
+    settings.hide(); await vi.advanceTimersByTimeAsync(30_000);
+    expect(host.windows.at(-1)!.setIgnoreMouseEvents).toHaveBeenLastCalledWith(false);
+    const chat = await open('和乌萨奇聊天'); vi.setSystemTime(new Date(2026, 10, 16, 12));
+    const bubble = host.windows.find(win => win.options.focusable === false && win !== pet())!;
+    bubble.webContents.send.mockClear(); await vi.advanceTimersByTimeAsync(30_000);
+    expect(bubble.webContents.send.mock.calls.some(([, value]: any[]) => value?.question)).toBe(false);
+    chat.hide(); vi.setSystemTime(new Date(2026, 10, 16, 13)); await vi.advanceTimersByTimeAsync(30_000);
+    expect(pet().webContents.send).toHaveBeenCalledWith('routine:state', 'nap');
+    bubble.webContents.send.mockClear(); await vi.advanceTimersByTimeAsync(60_000);
+    expect(bubble.webContents.send.mock.calls.some(([, value]: any[]) => value?.visible)).toBe(false);
+    vi.setSystemTime(new Date(2026, 10, 16, 14)); await vi.advanceTimersByTimeAsync(30_000);
+    expect(pet().webContents.send).toHaveBeenCalledWith('routine:state', 'awake');
+    vi.setSystemTime(new Date(2026, 10, 17, 0)); await vi.advanceTimersByTimeAsync(30_000);
+    expect(pet().webContents.send).toHaveBeenCalledWith('routine:state', 'sleep');
   });
   it('整窗穿透不 forward；右键仅命中且穿透关闭时可弹出', async () => {
     send('pet:hit', pet(), true); send('pet:context-menu', pet()); expect(host.popup).toHaveBeenCalledTimes(1);
