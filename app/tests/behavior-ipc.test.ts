@@ -7,6 +7,7 @@ import type { MoveRequest, MoveResult, Point, Rect } from '../src/shared/types';
 const host = vi.hoisted(() => ({
   start: undefined as undefined | (() => Promise<void>),
   handlers: new Map<string, (...args: any[]) => any>(),
+  invokes: new Map<string, (...args: any[]) => any>(),
   events: new Map<string, (...args: any[]) => any>(),
   listeners: new Map<string, (() => void)[]>(),
   menu: [] as any[],
@@ -49,7 +50,8 @@ vi.mock('electron', () => {
     app: { whenReady: () => ({ then: (start: () => Promise<void>) => {
       host.start = start; return { catch: vi.fn() };
     } }), on: vi.fn(), getPath: () => '/unused-fixture', dock: { hide: vi.fn() } },
-    ipcMain: { on: (name: string, callback: (...args: any[]) => any) => host.handlers.set(name, callback), handle: vi.fn() },
+    ipcMain: { on: (name: string, callback: (...args: any[]) => any) => host.handlers.set(name, callback),
+      handle: (name: string, callback: (...args: any[]) => any) => host.invokes.set(name, callback) },
     Menu: { buildFromTemplate: (menu: any[]) => menu },
     Tray: class { setContextMenu(menu: any[]) { host.menu = menu; } setToolTip() {} },
     nativeImage: { createFromBitmap: () => ({ setTemplateImage: vi.fn() }), createFromPath: () => ({ setTemplateImage: vi.fn() }) },
@@ -70,7 +72,7 @@ const request: MoveRequest = { x: 520, y: 90, durationMs: 2000 };
 
 async function boot(): Promise<void> {
   vi.clearAllTimers(); vi.resetModules();
-  host.handlers.clear(); host.events.clear(); host.listeners.clear(); host.send.mockClear(); host.save.mockClear();
+  host.handlers.clear(); host.invokes.clear(); host.events.clear(); host.listeners.clear(); host.send.mockClear(); host.save.mockClear();
   await import('../src/main/index');
   await host.start!();
   host.events.get('ready-to-show')!();
@@ -169,5 +171,38 @@ describe('可见性与移动 IPC（原生窗口替身，无 GUI）', () => {
     send('pet:framed', { aspect: 1.0175, headTop: 0.1 });
     expect(host.bounds).toEqual({ x: 1080, y: 546, width: 320, height: 314 });
     expect(host.bounds.y + host.bounds.height).toBe(bottom);
+  });
+
+  it.each([{ x: 300, y: 546 }, { x: 1400, y: 200 }])('首次取景前配置保留保存位置 %j，取景后才回写实际位置', async (position) => {
+    host.area = { x: 0, y: 0, width: 1440, height: 900 };
+    host.savedPosition = position;
+    await boot();
+    const config = () => host.invokes.get('pet:config')!({ sender: host.contents, senderFrame: host.frame });
+    host.listeners.get('move')?.forEach(callback => callback());
+    vi.advanceTimersByTime(250);
+    expect(config().position).toEqual(position);
+    expect(host.save).not.toHaveBeenCalled();
+    send('pet:framed', { aspect: 1.0175, headTop: 0.1 });
+    const expected = position.x === 300 ? position : { x: 1080, y: 546 };
+    expect(config().position).toEqual(expected);
+    if (position.x === 300) expect(host.save).not.toHaveBeenCalled();
+    else expect(host.save).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ position: expected }));
+  });
+
+  it('首次取景采用期间实际移动的位置，不回退到启动快照', () => {
+    const config = () => host.invokes.get('pet:config')!({ sender: host.contents, senderFrame: host.frame });
+    for (const position of [{ x: 100, y: 200 }, { x: 340, y: 90 }]) {
+      host.bounds = { ...host.bounds, ...position };
+      host.listeners.get('move')?.forEach(callback => callback());
+      expect(config().position).toEqual(position);
+      vi.advanceTimersByTime(250);
+      expect(host.save).toHaveBeenLastCalledWith(expect.any(String), expect.objectContaining({ position }));
+    }
+    host.bounds = { ...host.bounds, x: 110, y: 210 };
+    host.listeners.get('move')?.forEach(callback => callback());
+    // Framing can arrive before the debounced disk save.
+    send('pet:framed', { aspect: 1.0175, headTop: 0.1 });
+    expect(host.bounds).toEqual({ x: 110, y: 210, width: 320, height: 314 });
+    expect(config().position).toEqual({ x: 110, y: 210 });
   });
 });

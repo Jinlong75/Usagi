@@ -277,7 +277,6 @@ async function start(): Promise<void> {
   }
   // The temporary window uses the legacy height; validate the saved position only
   // once the renderer has measured the model's actual dimensions.
-  const startupPosition = config.position;
   if (process.platform === 'darwin') app.dock?.hide();
   win = new BrowserWindow({
     ...currentBounds(), show: false, transparent: true, backgroundColor: '#00000000',
@@ -343,10 +342,15 @@ async function start(): Promise<void> {
     const area = screen.getDisplayMatching(previous).workArea;
     const position = { x: previous.x, y: previous.y + previous.height - dimensions.height };
     if (firstFrame) {
-      win.setBounds(initialBounds(config.size, startupPosition, screen.getPrimaryDisplay().workArea,
+      win.setBounds(initialBounds(config.size, config.position, screen.getPrimaryDisplay().workArea,
         screen.getAllDisplays().map(display => display.workArea), modelAspect));
     } else if (dimensions.width !== previous.width || dimensions.height !== previous.height) {
       win.setBounds(initialBounds(config.size, position, area, [area], modelAspect));
+    }
+    const actual = win.getBounds();
+    if (config.position?.x !== actual.x || config.position?.y !== actual.y) {
+      config.position = { x: actual.x, y: actual.y };
+      save();
     }
     ui.bubble.anchor(value.headTop!);
   });
@@ -412,9 +416,19 @@ async function start(): Promise<void> {
       const bounds = win.getBounds();
       win.webContents.send('pet:cursor', { point, bounds, workArea: screen.getDisplayMatching(bounds).workArea });
     }, 1000 / 60);
+    let observedPosition = win.getBounds();
     win.on('move', () => {
       clearTimeout(moveSaveTimer);
-      if (gesture || modelAspect === undefined) return;
+      const { x, y } = win!.getBounds();
+      const changed = x !== observedPosition.x || y !== observedPosition.y;
+      observedPosition = { ...observedPosition, x, y };
+      if (gesture) return;
+      if (modelAspect === undefined) {
+        // Ignore duplicate startup notifications for the temporary legacy bounds,
+        // but keep real moves available to settings and the first framing pass.
+        if (!changed) return;
+        config.position = { x, y };
+      }
       moveSaveTimer = setTimeout(() => {
         if (!win || win.isDestroyed()) return;
         const { x, y } = win.getBounds();
