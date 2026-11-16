@@ -4,3 +4,4 @@ app/dist/
 app/out/
 app/smoke-out/
 app/release/
+node_modules/
