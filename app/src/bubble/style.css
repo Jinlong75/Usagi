@@ -1,0 +1,7 @@
+* { box-sizing: border-box; } html, body { margin: 0; background: transparent; overflow: hidden; }
+body { padding: 10px 12px 14px; font: 14px/1.55 -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; color: #4A2A1A; }
+#bubble { position: relative; width: fit-content; max-width: 240px; min-width: 44px; margin: auto; padding: 10px 14px; border: 2px solid #4A2A1A; border-radius: 16px; background: white; overflow-wrap: anywhere; white-space: pre-wrap; opacity: 0; transition: opacity 150ms; }
+#bubble.visible { opacity: 1; }
+#bubble::after { content: ''; position: absolute; width: 10px; height: 10px; background: white; border-right: 2px solid #4A2A1A; border-bottom: 2px solid #4A2A1A; bottom: -7px; left: calc(50% - 6px); transform: rotate(45deg); }
+#bubble[data-side=left]::after { left: auto; right: -7px; bottom: calc(50% - 6px); transform: rotate(-45deg); }
+#bubble[data-side=right]::after { left: -7px; bottom: calc(50% - 6px); transform: rotate(135deg); }

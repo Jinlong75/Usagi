@@ -25,7 +25,7 @@ describe('配置持久化', () => {
   });
   it('原子写入后可还原全部字段，不留下临时文件', () => {
     const path = fixture();
-    const config = { modelPath: 'assets/models/custom.vrm', size: 'large' as const, position: { x: 120, y: 40 }, alwaysOnTop: false };
+    const config = { ...structuredClone(DEFAULT_CONFIG), modelPath: 'assets/models/custom.vrm', size: 'large' as const, position: { x: 120, y: 40 }, alwaysOnTop: false };
     writeConfig(path, config);
     expect(readConfig(path)).toEqual(config);
     expect(readdirSync(join(path, '..'))).toEqual(['config.json']);

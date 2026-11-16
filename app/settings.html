@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' ws://localhost:* ws://127.0.0.1:*;">
+<title>Usagi 设置</title><link rel="stylesheet" href="/src/settings/style.css"></head><body><header><h1>设置</h1><button id="save" type="button">保存</button></header>
+<main><section><h2>AI 对话</h2>
+<label>API Key<span class="row"><input id="key" type="password" autocomplete="off" spellcheck="false"><button id="reveal" type="button">显示</button></span></label>
+<p class="error" id="key-warning" role="alert"></p><p class="hint">Key 在 platform.deepseek.com 创建，只保存在本机并加密。</p>
+<button id="test" type="button">测试连接</button><p id="connection" role="status"></p>
+<label>模型<select id="model"><option value="deepseek-flash">deepseek-flash（默认，快且便宜）</option><option value="deepseek-v4-pro">deepseek-v4-pro（更聪明）</option><option value="custom">自定义…</option></select></label>
+<label id="custom-label" hidden>自定义模型<input id="custom-model"></label>
+<details><summary>高级：API 地址</summary><label>API 地址<input id="base-url" type="url"></label></details>
+<label>温度 <output id="temperature-value"></output><input id="temperature" type="range" min="0" max="1.5" step="0.05"></label>
+<label class="check"><input id="thinking" type="checkbox">深度思考</label></section>
+<section><h2>桌宠</h2><label class="check"><input id="self-talk" type="checkbox">自言自语</label>
+<div class="row"><label>最短间隔（秒）<input id="min-sec" type="number" min="5"></label><label>最长间隔（秒）<input id="max-sec" type="number" min="5"></label></div>
+<label>自定义台词<textarea id="lines" rows="3" placeholder="每行一句，空则用内置台词"></textarea></label>
+<label>音量 <output id="volume-value"></output><input id="volume" type="range" min="0" max="1" step="0.01"></label></section>
+<section><h2>关于</h2><p id="version"></p><p>素材来自《Chiikawa》，仅供个人使用。</p></section>
+<p id="save-status" role="status"></p></main>
+<script type="module" src="/src/settings/index.ts"></script></body></html>

@@ -1,0 +1,7 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' ws://localhost:* ws://127.0.0.1:*;">
+<title>乌萨奇</title><link rel="stylesheet" href="/src/chat-window/style.css"></head><body><header><strong>乌萨奇</strong><span id="status" role="status">就绪</span><button id="clear">清空对话</button></header>
+<main id="messages" aria-label="聊天消息" aria-live="polite"></main>
+<form id="composer"><textarea id="input" rows="3" placeholder="和乌萨奇说点什么…" aria-label="消息"></textarea><button id="send" type="submit">发送</button></form>
+<script type="module" src="/src/chat-window/index.ts"></script></body></html>
