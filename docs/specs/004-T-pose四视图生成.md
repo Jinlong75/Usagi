@@ -1,0 +1,91 @@
+---
+id: 004
+title: 截取参考帧并以原图为底图生成 Usagi T-pose 四视图（供 Tripo 多视图图生 3D）
+type: chore
+worker: codex
+worktree: true
+effort: high
+allowed_paths:
+  - Material/tripo/**
+  - tools/views/**
+verify:
+  - test -f Material/tripo/views/front.png && test -f Material/tripo/views/back.png && test -f Material/tripo/views/left.png && test -f Material/tripo/views/right.png
+  - test -f Material/tripo/views/sheet.png && test -f Material/tripo/refs/README.md && test -f Material/tripo/views/README.md
+  - for f in front back left right; do sips -g pixelWidth -g pixelHeight Material/tripo/views/$f.png | grep -q "pixelWidth: 1024" && sips -g pixelHeight Material/tripo/views/$f.png | grep -q "pixelHeight: 1024" || exit 1; done
+expect_commit: true
+verify_timeout_min: 5
+---
+
+## 目标
+
+用 `Material/` 里的原作 GIF 截出参考帧，再**以这些原图为底图**（图生图，上传参考图让模型只改姿势和视角），用你自带的生图功能（`image_generation`，读参考图用 `view_image`）生成 Usagi 的 T-pose 四视图：正面、背面、左侧、右侧，脸上无五官。四张图统一成 1024×1024、同样大小和地平线，放到 `Material/tripo/views/`，用户直接拿去 Tripo 做多视图图生 3D。
+
+还原度是第一要求：用户要的是"完全还原的乌萨奇"，不是"像 Usagi 的兔子"。
+
+## 范围 / 不做什么
+
+- 做：截参考帧、生成四视图（含候选）、对齐统一尺寸、拼一张对照图、两份 README。
+- 不做：调用 Tripo、生成 3D、画五官贴片、改 `Material/` 下已有的 GIF 和视频。
+- **不要只用文字描述凭空生成**：每次生成都要附参考图（原作截帧，或已经确认的 T-pose 正面图）。
+
+## 参照
+
+- 用户要求：`.agent-router/target.md` 的 D2、D3（图生 3D；无五官，五官后面照原作描成贴片）。
+- 操作思路与角色特征核对表：`docs/guides/01-Tripo建模.md` 的"准备"和"第一步"（提示词可以直接用或改进）。
+- 主参考：
+  - 正面全身：`Material/160c479d727476546b1c0c003d15b3f5a6628d9b.gif`
+  - 背面全身：`Material/dcb251595f98255a81109cfc47bc01ab1942011.gif`
+  - 正脸与身体比例：`Material/a694b860e187ac78192c5f0e502fad2a1942011.gif`、`Material/2ca57d0da1e611c5284873ecbb0fc8514a9949c6.gif`
+  - 耳朵：`Material/7f1ef01d996e7adba46e30f233abd61f1942011.gif`
+  - 其他 GIF 也可以翻，找侧面、全身更清楚的帧。
+- 角色特征：奶黄色（接近 `#FFF1C1`）、深棕色细描边；头身几乎连成一个圆团，下半身略宽；头顶两只细长直立、略分开的耳朵，耳长约等于头高，内侧粉色；手是身体两侧的小短突起；脚是两个小圆头；背后下半部中间一个白色毛绒圆尾巴。
+
+## 要求
+
+### 1. 截参考帧 → `Material/tripo/refs/`
+
+- 从 GIF 里挑姿势最端正、无动作模糊、角色最完整的帧，存成 PNG（保留原分辨率）。至少：`front_full.png`（正面全身）、`back_full.png`（背面全身）、`face.png`（正脸）、`ears.png`（耳朵清楚）；找得到侧面就加 `side.png`。
+- 截帧工具自己选：可以在仓库外（例如 `/tmp` 下）建 Python 虚拟环境装 Pillow，或者用 macOS 自带的 `sips`、`ffmpeg`（本机没有 ffmpeg）。**不要**把虚拟环境、缓存放进仓库。
+- 截帧和对齐脚本放在 `tools/views/`（Python，带中文文件头说明、运行方法），以后可以重跑。
+- `Material/tripo/refs/README.md`：每张参考图取自哪个 GIF 的第几帧、为什么选它。
+
+### 2. 生成四视图
+
+- 先生成 **T-pose 正面**，附 `front_full.png`（加上 `face.png`、`ears.png` 帮助比例）作为参考图：正交正视角、双臂水平向两侧伸直、两脚略分开站直、**无眼睛无嘴无腮红**（脸部只留底色）、耳朵完整直立且内侧粉色保留、纯白背景、无阴影、全身入画、耳朵尖不被裁切、配色和描边与原图一致。
+- 正面至少出 **3 张候选**，存为 `Material/tripo/views/candidates/front_1.png` 等；按"角色特征核对表"逐条打分（写进 views/README.md），选最还原的一张做后续的参考。
+- 再以选中的正面图为参考，生成**背面**（同时附 `back_full.png`，尾巴位置照原图）、**左侧**、**右侧**；每个视角至少 2 张候选，同样存进 `candidates/` 并挑选。
+- 侧面方向约定：`left.png` 是相机在角色左手边拍到的样子（画面里角色面朝右）；`right.png` 相机在角色右手边（角色面朝左）。在 README 里写明，标 `TODO(lead): 核对 Tripo 的左右约定`。
+- 四张图里：同一个角色、同样的比例、耳朵长度和间距一致、手臂都是水平伸直；侧面要能看出耳朵是扁平的、尾巴微微凸出背后。
+
+### 3. 统一尺寸与对齐
+
+- 用 `tools/views/` 下的脚本把四张选中图处理成：1024×1024 PNG、纯白背景（RGB 255,255,255，近白背景要清理成纯白）、角色按包围盒居中、**四张图角色高度一致**（耳朵尖到脚底占画面高度 85%）、脚底在同一条水平线上。
+- 生图模型如果输出了透明背景，填成纯白。
+- 输出：`Material/tripo/views/front.png`、`back.png`、`left.png`、`right.png`；再拼一张 `sheet.png`（四张横排 + 下面一排原作参考帧，方便主导对照）。
+
+### 4. 说明文档
+
+`Material/tripo/views/README.md` 写：每张最终图来自哪个候选、用了哪些参考图、实际使用的提示词全文、核对表打分、已知偏差（哪里和原作不一样）。
+
+## 验收标准
+
+- verify 全部通过（文件齐全、四张都是 1024×1024）。
+- 主导会逐张对照原作看 `sheet.png`，检查：无五官、T-pose、四视图一致、颜色与原作一致、耳朵和尾巴正确。不过就打回重生成，所以 README 里的已知偏差要写实。
+
+## 自测
+
+自己用 `view_image` 看最终的四张图和 `sheet.png`，按核对表逐条检查后再提交。
+
+## 受影响的已有测试
+
+无（只新增图片、脚本和说明，不改代码）。搜过的关键词：Material/tripo、tools/views。
+
+## 换环境
+
+无（脚本只在本机用；Pillow 装在仓库外的临时虚拟环境，README 写明怎么重建）。
+
+## 汇报要回答的问题
+
+1. 生图功能实际怎么用的：生成的图片默认存在哪里、你怎样把它放进仓库；是否成功附上了参考图（图生图），还是只能用文字（如果只能文字，**停下来在汇报里说明**，不要凭文字硬生成交差）。
+2. 每个视角生成了几张候选、为什么选最终那张。
+3. 你认为和原作差距最大的地方是什么。
