@@ -138,7 +138,9 @@ describe('008 主进程接线：原生窗口替身，无 GUI', () => {
     expect(bubble.setIgnoreMouseEvents).toHaveBeenLastCalledWith(true);
     chat.hide(); vi.setSystemTime(new Date(2026, 10, 16, 12)); await vi.advanceTimersByTimeAsync(30_000);
     await invoke('bubble:answer', bubble);
-    expect(host.appendAssistant).toHaveBeenCalledTimes(2); expect(chat.webContents.reload).toHaveBeenCalledOnce();
+    expect(host.appendAssistant).toHaveBeenCalledTimes(2);
+    expect(chat.webContents.send).toHaveBeenCalledWith('chat:history-changed');
+    expect(chat.webContents.reload).not.toHaveBeenCalled();
     chat.hide(); vi.setSystemTime(new Date(2026, 10, 16, 18)); await vi.advanceTimersByTimeAsync(30_000);
     expect(bubble.setIgnoreMouseEvents).toHaveBeenLastCalledWith(false);
     await vi.advanceTimersByTimeAsync(10_000);
@@ -158,21 +160,26 @@ describe('008 主进程接线：原生窗口替身，无 GUI', () => {
     expect(bubble.setIgnoreMouseEvents).toHaveBeenLastCalledWith(true);
   });
   it('设置/聊天窗口可见时推迟作息；午睡与夜间发状态并阻止自言自语', async () => {
+    // Synchronous advancement avoids yielding once per 60 Hz cursor poll; flush
+    // the async routine/bubble work at each observation, keeping the same clock and assertions.
+    const advance = async (milliseconds: number) => {
+      vi.advanceTimersByTime(milliseconds); await vi.advanceTimersByTimeAsync(0);
+    };
     const settings = await open('设置…'); vi.setSystemTime(new Date(2026, 10, 16, 7));
-    await vi.advanceTimersByTimeAsync(30_000); expect(host.windows).toHaveLength(2);
-    settings.hide(); await vi.advanceTimersByTimeAsync(30_000);
+    await advance(30_000); expect(host.windows).toHaveLength(2);
+    settings.hide(); await advance(30_000);
     expect(host.windows.at(-1)!.setIgnoreMouseEvents).toHaveBeenLastCalledWith(false);
     const chat = await open('和乌萨奇聊天'); vi.setSystemTime(new Date(2026, 10, 16, 12));
     const bubble = host.windows.find(win => win.options.focusable === false && win !== pet())!;
-    bubble.webContents.send.mockClear(); await vi.advanceTimersByTimeAsync(30_000);
+    bubble.webContents.send.mockClear(); await advance(30_000);
     expect(bubble.webContents.send.mock.calls.some(([, value]: any[]) => value?.question)).toBe(false);
-    chat.hide(); vi.setSystemTime(new Date(2026, 10, 16, 13)); await vi.advanceTimersByTimeAsync(30_000);
+    chat.hide(); vi.setSystemTime(new Date(2026, 10, 16, 13)); await advance(30_000);
     expect(pet().webContents.send).toHaveBeenCalledWith('routine:state', 'nap');
-    bubble.webContents.send.mockClear(); await vi.advanceTimersByTimeAsync(60_000);
+    bubble.webContents.send.mockClear(); await advance(60_000);
     expect(bubble.webContents.send.mock.calls.some(([, value]: any[]) => value?.visible)).toBe(false);
-    vi.setSystemTime(new Date(2026, 10, 16, 14)); await vi.advanceTimersByTimeAsync(30_000);
+    vi.setSystemTime(new Date(2026, 10, 16, 14)); await advance(30_000);
     expect(pet().webContents.send).toHaveBeenCalledWith('routine:state', 'awake');
-    vi.setSystemTime(new Date(2026, 10, 17, 0)); await vi.advanceTimersByTimeAsync(30_000);
+    vi.setSystemTime(new Date(2026, 10, 17, 0)); await advance(30_000);
     expect(pet().webContents.send).toHaveBeenCalledWith('routine:state', 'sleep');
   });
   it('整窗穿透不 forward；右键仅命中且穿透关闭时可弹出', async () => {

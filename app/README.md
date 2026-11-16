@@ -183,8 +183,8 @@ TODO(lead): 门禁生成截图后核对五官贴片、耳朵碰撞与动作观�
 
 用户空闲达到 60 秒，或桌宠隐藏、拖动、聊天/设置窗口打开、聊天气泡占用时，问候推迟到条件解除；错过整个时段不补。离开电脑至少 30 分钟后恢复活动会招呼，间隔至少两小时，午睡/睡觉期间不招呼。晨间天气接口目前返回空值，不联网。
 
-早上、中午、晚饭的问话气泡可点击，10 秒后消失。点击会把括号里的中文原文作为 assistant 消息存入当前聊天记录，再打开聊天窗口，用户可直接回答；已有聊天窗口会重读记录。普通气泡仍穿透鼠标。未填 Key 时沿用聊天发送后的设置提示。
+早上、中午、晚饭的问话气泡可点击，10 秒后消失。点击会把括号里的中文原文作为 assistant 消息存入当前聊天记录，再打开聊天窗口，用户可直接回答；已有聊天窗口通过 chat:history-changed 重读记录并保留输入草稿，读取完成前暂时禁止发送。普通气泡仍穿透鼠标。未填 Key 时沿用聊天发送后的设置提示。
 
 去重文件位于 userData/routine-state.json，采用临时文件加 rename 原子写入，损坏文件改名为 routine-state.broken-时间戳.json。逻辑日以本地 05:00 为界，跨越该边界的一段连续睡眠仍只说一次晚安，重启不会重复。主进程 Routine 注入 now、idleSeconds、blocked、weatherLine、state、show、sound；天气最多等 3 秒。preload 的 onRoutine 订阅 routine:state（nap、sleep、awake），角色渲染层留待动作任务接入。
 
-本任务聚焦自测：`npm --prefix app test -- tests/routine.test.ts tests/ui.test.ts tests/ui-ipc.test.ts tests/config.test.ts tests/settings-renderer.test.ts tests/renderer-cursor.test.ts tests/chat/service.test.ts`。完整 typecheck/test/smoke 由门禁运行，设置截图沿用 `AR_GATE_ARTIFACT_DIR/smoke-settings.png`（默认 `app/smoke-out/smoke-settings.png`），新增作息卡片可滚动查看。
+本任务聚焦自测：`npm --prefix app test -- tests/routine.test.ts tests/ui.test.ts tests/ui-ipc.test.ts tests/config.test.ts tests/settings-renderer.test.ts tests/renderer-cursor.test.ts tests/chat/service.test.ts tests/chat/renderer.test.ts`。完整 typecheck/test/smoke 由门禁运行，设置截图沿用 `AR_GATE_ARTIFACT_DIR/smoke-settings.png`（默认 `app/smoke-out/smoke-settings.png`），新增作息卡片可滚动查看。

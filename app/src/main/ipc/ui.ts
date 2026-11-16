@@ -88,8 +88,8 @@ export class UiController {
       try {
         if (!this.options.service.appendAssistant) throw new Error('聊天记录存储不可用');
         await this.options.service.appendAssistant(questionText(text));
-        // An existing hidden chat page must reload the newly persisted question too.
-        this.chat.window?.webContents.reload();
+        // Refresh the persisted question without replacing an existing page or its draft.
+        this.chat.window?.webContents.send('chat:history-changed');
         await this.chat.open();
       } catch (error) {
         await this.bubble.showBubble(error instanceof Error ? error.message : '聊天记录保存失败，请稍后重试。', 4000);
