@@ -42,7 +42,7 @@ class ShapeTests(unittest.TestCase):
         obj, = import_model(PROJECT / 'assets/model/usagi_base.glb')
         lm = json.loads((PROJECT / 'assets/model/usagi_landmarks.json').read_text())
         ids = independent_tail_vertices(obj)
-        self.assertGreater(len(ids), 353)
+        self.assertEqual(len(ids), 353)  # 整块 Tail 材质，无切线拆点或细分。
         labels = regions(obj, lm)
         for index in ids:
             self.assertEqual(labels[index], 'tail')

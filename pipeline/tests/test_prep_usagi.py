@@ -232,20 +232,7 @@ class PrepTests(unittest.TestCase):
             self.skipTest("正式产物尚未生成")
         reset_scene()
         obj, = import_model(product)
-        self.assert_smooth_boundaries(obj, {"ear_l", "ear_r", "tail"})
-        bm = bmesh.new()
-        try:
-            bm.from_mesh(obj.data)
-            bmesh.ops.remove_doubles(bm, verts=list(bm.verts), dist=1e-7)
-            islands = sorted(face_islands(bm), key=len, reverse=True)
-            self.assertEqual(len(islands), 2)
-            tail = islands[1]
-            self.assertLess(len(tail), len(bm.faces) * .05)
-            self.assertGreater(sum(f.calc_center_median().y for f in tail) / len(tail), 0)
-            self.assertGreaterEqual(sum(f.material_index == 2 for f in tail) / len(tail), .5)
-            self.assertFalse(any(face.calc_area() <= 1e-14 for face in bm.faces))
-        finally:
-            bm.free()
+        self.assert_real_regions(obj)
         # 同时从正式原始模型临时重建，防止已提交的旧 GLB 掩盖分区代码回退。
         source = BLENDER_DIR.parents[1] / "Material/tripo/usagi3d2.glb"
         regenerated = self.root / "real-regenerated.glb"
@@ -253,9 +240,16 @@ class PrepTests(unittest.TestCase):
                        landmarks=str(self.root / "real-landmarks.json"),
                        report=str(self.root / "real-report.json"),
                        smooth_waist="off", waist_iterations=100))
+        report = json.loads((self.root / "real-report.json").read_text())
+        components = report["region_boundary"]["ear_components"]
+        self.assertEqual(sum(c["kept"] for c in components), 2, components)
+        for component in components:
+            self.assertEqual(component["kept"], component["mean_normal_y"] < -.25)
         reset_scene()
         obj, = import_model(regenerated)
-        self.assert_smooth_boundaries(obj, {"ear_l", "ear_r", "tail"})
+        self.assert_real_regions(obj)
+
+    def assert_real_regions(self, obj):
         bm = bmesh.new()
         try:
             bm.from_mesh(obj.data)
@@ -265,10 +259,13 @@ class PrepTests(unittest.TestCase):
             tail = islands[1]
             self.assertLess(len(tail), len(bm.faces) * .05)
             self.assertGreater(sum(f.calc_center_median().y for f in tail) / len(tail), 0)
-            self.assertGreaterEqual(sum(f.material_index == 2 for f in tail) / len(tail), .5)
+            self.assertEqual(len(tail), 702)  # 原始独立网格不细分、不改形状。
+            self.assertEqual({f for f in bm.faces if f.material_index == 2}, set(tail))
+            self.assertEqual(sum(f.material_index == 2 for f in islands[0]), 0)
             self.assertFalse(any(face.calc_area() <= 1e-14 for face in bm.faces))
         finally:
             bm.free()
+        self.assert_smooth_boundaries(obj, {"ear_l", "ear_r"})
 
     def test_07_face_sphere_local_bump(self):
         reset_scene()

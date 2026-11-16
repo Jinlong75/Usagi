@@ -19,6 +19,10 @@ export const MOTION_SECONDS: Record<MotionName, number> = {
 };
 /** 2026-11-16 用户：“那个形状就是最标准的形状”。静止不旋转上臂，保持 Tripo 原始姿态。 */
 export const ARM_REST = 0;
+/** 0.05 rad steps; smallest lifts with 0.01H clearance in the real Tripo rig. */
+// TODO(lead): 0.75 satisfies height clearance but the unchanged silhouette test fails;
+// no allowed 0.05-rad step satisfies all three geometric requirements on this rig.
+export const ARM_RAISE = { stretch: 0.75, shout: 0.75 } as const;
 export function neutralPose(): Pose {
   return { position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1], bones: {}, expressions: {} };
 }
@@ -56,10 +60,10 @@ export function sampleMotion(name: MotionName, t: number, options: MotionOptions
     // Usagi's arm is a ~0.075H stub rooted at the body side (y≈0.26H) under a huge
     // head (neck y≈0.30H): it cannot reach above the head. Turning the shoulder swings
     // the arm root into the head and bulges the body, so only the upper arm abducts:
-    // the hands poke out sideways-up past the silhouette (主导 2026-11-16 定).
+    // raise the hands sideways-up (主导 2026-11-16 定).
     // VRM 1.0 normalized arms extend along ±X: opposite Z turns raise both sides.
-    // Absolute raise above horizontal: 0.4 (stretch) / 0.3 (shout) sits the hands in the head–body notch, where they show most.
-    const upperArm = ARM_REST + (name === 'stretch' ? 0.4 : 0.3);
+    // 主导 2026-11-16 补充：按真实小手高度选择带 0.01H 余量的最小角。
+    const upperArm = ARM_REST + ARM_RAISE[name];
     pose.bones.leftUpperArm = [-0.06 * weight, 0, upperArm * weight];
     pose.bones.rightUpperArm = [-0.06 * weight, 0, -upperArm * weight];
     pose.bones.chest = [-0.1 * weight, 0, 0];

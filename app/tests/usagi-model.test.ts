@@ -4,7 +4,7 @@ import { Box3, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { VRMLoaderPlugin } from '@pixiv/three-vrm';
 import type { VRM } from '@pixiv/three-vrm';
-import { ARM_REST, MotionRig, sampleMotion } from '../src/renderer/motion';
+import { ARM_RAISE, ARM_REST, MotionRig, sampleMotion } from '../src/renderer/motion';
 import { DragSprings } from '../src/renderer/motion/springs';
 import { frameBounds, measureMotionBounds, motionAspect, springEnvelope } from '../src/renderer/motion/framing';
 
@@ -107,6 +107,26 @@ describe('真实 Usagi 资源的无界面验证', () => {
     arms[0]!.rotation.z = -ARM_REST; arms[1]!.rotation.z = ARM_REST;
     vrm.update(0); vrm.scene.updateMatrixWorld(true);
     const resting = [world('leftHand', true), world('rightHand', true)];
+    // Measure every allowed step on the deployed skeleton, preserving the visual
+    // requirements below and demanding an extra 0.01H for both height checks.
+    const candidates = [];
+    for (let step = 1; step <= 24; step++) {
+      rig.reset();
+      const pose = sampleMotion(name, age);
+      pose.bones.leftUpperArm![2] = ARM_REST + step * 0.05;
+      pose.bones.rightUpperArm![2] = -ARM_REST - step * 0.05;
+      rig.apply(pose); vrm.update(0); vrm.scene.updateMatrixWorld(true);
+      const hands = (['leftHand', 'rightHand'] as const).map(bone => world(bone, true));
+      candidates.push({ angle: step * 0.05,
+        lift: Math.min(...hands.map((hand, i) => (hand.y - resting[i]!.y) / height)),
+        neckClearance: Math.min(...hands.map(hand => (hand.y - world('neck', true).y) / height)),
+        silhouette: Math.min(...hands.map(hand => (Math.abs(hand.x) - halfWidth(hand.y)) / height)) });
+    }
+    const minimum = candidates.find(candidate => candidate.lift >= 0.06 && candidate.neckClearance >= -0.01);
+    process.stdout.write(JSON.stringify({ armRaise: name, minimum, candidates }) + '\n');
+    expect(minimum).toBeDefined();
+    expect(ARM_RAISE[name]).toBeCloseTo(minimum!.angle);
+    rig.reset();
     rig.apply(sampleMotion(name, age));
     vrm.update(0); vrm.scene.updateMatrixWorld(true);
     for (const [i, bone] of (['leftHand', 'rightHand'] as const).entries()) {

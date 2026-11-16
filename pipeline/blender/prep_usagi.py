@@ -346,7 +346,7 @@ def ear_sections(points, profile, side):
 
 
 def ear_inner_field(point, normal, sections):
-    """同一长椭圆的连续隐式量；保留 60%/.43/.51/.08..94 和前侧限制。"""
+    """只按椭圆/位置切线；法线在切割后的整个连通分量上筛选。"""
     z0, z1 = sections[0]["center"].z, sections[-1]["center"].z
     t = (point.z - z0) / max(z1 - z0, 1e-8)
     sample = max(0, min(1, t))
@@ -356,11 +356,11 @@ def ear_inner_field(point, normal, sections):
     center = a["center"].lerp(b["center"], alpha)
     width = a["half_width"] * (1 - alpha) + b["half_width"] * alpha
     ellipse = ((point.x - center.x) / (width * .60)) ** 2 + ((t - .51) / .43) ** 2 - 1
-    return max(ellipse, .08 - t, t - .94, (point.y - center.y) / width, normal.y + .25)
+    return max(ellipse, .08 - t, t - .94, (point.y - center.y) / width)
 
 
 def ear_inner_region(point, normal, sections):
-    return ear_inner_field(point, normal, sections) < 0
+    return ear_inner_field(point, normal, sections) < 0 and normal.y < -.25
 
 
 def tail_field(point, normal, profile):
@@ -433,35 +433,69 @@ def cut_isocontour(bm, field, material_index):
 
 
 def split_region_boundaries(obj, profile, ears):
-    # TODO(lead): usagi3d2 在既有分区规则下有多闭环及 >35° 转角；
-    # 022 禁止改耳朵/尾巴规则，需主导确认后续处理；保留边界测试断言。
+    # TODO(lead): position-only ear loops are closed, but the unchanged raw ear
+    # surface has creases where the 3D contour still turns >35 degrees.
     bm = bmesh.new()
     try:
         bm.from_mesh(obj.data)
         # Marching triangles has at most two intersections per face.
         bmesh.ops.triangulate(bm, faces=list(bm.faces))
         before = len(bm.faces)
-        # 只细分跨越尾巴等值线的边，不再把整块独立尾巴四等分。
-        tail_edges = [e for e in bm.edges if
-            (tail_field(e.verts[0].co, e.verts[0].normal, profile) < 0) !=
-            (tail_field(e.verts[1].co, e.verts[1].normal, profile) < 0)]
-        bmesh.ops.subdivide_edges(bm, edges=tail_edges, cuts=1, use_grid_fill=True)
-        bmesh.ops.triangulate(bm, faces=list(bm.faces))
-        after_local = len(bm.faces)
+        islands = sorted(face_islands(bm), key=len, reverse=True)
+        # 主导 2026-11-16：独立尾巴整块着色，不在主体切尾巴等值线。
+        tail_faces = {f for island in islands[1:]
+                      if len(island) < before * .05
+                      and average(f.calc_center_median() for f in island).y > 0
+                      for f in island}
+        for face in bm.faces:
+            face.material_index = 0
         bm.normal_update()
         for sections in ears.values():
             cut_isocontour(bm, lambda p, n: ear_inner_field(p, n, sections), 1)
-        cut_isocontour(bm, lambda p, n: tail_field(p, n, profile), 2)
+        # 相邻的 EarInner 面构成一个分量，面积加权平均法线才决定朝向。
+        pending = {f for f in bm.faces if f.material_index == 1}
+        ear_components = []
+        while pending:
+            seed = pending.pop()
+            component, queue = {seed}, [seed]
+            while queue:
+                for edge in queue.pop().edges:
+                    for neighbor in edge.link_faces:
+                        if neighbor in pending:
+                            pending.remove(neighbor)
+                            component.add(neighbor)
+                            queue.append(neighbor)
+            area = sum(f.calc_area() for f in component)
+            normal_y = sum(f.normal.y * f.calc_area() for f in component) / max(area, 1e-14)
+            keep = normal_y < -.25
+            if not keep:
+                for face in component:
+                    face.material_index = 0
+            ear_components.append({"faces": len(component), "mean_normal_y": normal_y, "kept": keep})
+        if tail_faces:
+            for face in tail_faces:
+                face.material_index = 2
+        else:
+            # 历史合成夹具的尾巴和身体相连；保留其原有区域算法。
+            cut_isocontour(bm, lambda p, n: tail_field(p, n, profile), 2)
         bmesh.ops.dissolve_degenerate(bm, edges=list(bm.edges), dist=1e-8)
         remove_loose(bm)
         bmesh.ops.triangulate(bm, faces=list(bm.faces))
         bmesh.ops.dissolve_degenerate(bm, edges=list(bm.edges), dist=1e-7)
+        # Degenerate-edge dissolution can recreate n-gons with collinear points.
+        # Triangulate here so glTF's later tessellation cannot emit zero-area faces.
+        bmesh.ops.triangulate(bm, faces=list(bm.faces))
+        degenerate = [f for f in bm.faces if f.calc_area() <= 1e-14]
+        if degenerate:
+            bmesh.ops.delete(bm, geom=degenerate, context="FACES_ONLY")
+            remove_loose(bm)
         bm.normal_update()
-        report = {"faces_before_tail_subdivision": before, "faces_before_cut": after_local, "faces_after_cut": len(bm.faces),
-                  "tail_halfspace_blend_m": .002 * profile["height"],
+        report = {"faces_before_cut": before, "faces_after_cut": len(bm.faces),
+                  "independent_tail_faces": len(tail_faces), "ear_components": ear_components,
+                  "removed_zero_area_faces_after_triangulation": len(degenerate),
                   "connected_components": len(face_islands(bm)),
                   "zero_area_faces": sum(f.calc_area() <= 1e-14 for f in bm.faces),
-                  "method": "shared-edge exact implicit zero crossing, triangle face split; continuous interpolated normal and front/back halfspaces"}
+                  "method": "position-only ear isocontour on original triangles; component mean normal < -0.25; entire independent rear tail"}
         bm.to_mesh(obj.data)
         obj.data.update()
         return report
@@ -610,7 +644,7 @@ def prep(args):
             for suffix, side in (("l", 1), ("r", -1))}
     counts = assign_regions(obj, profile, ears)
     from region_boundary import boundary_metrics
-    boundary_report = dict(obj["usagi_boundary_cut"])
+    boundary_report = obj["usagi_boundary_cut"].to_dict()
     boundary_report.update(faces_before_subdivision=subdivision_before,
                            faces_after_subdivision=subdivision_after,
                            ear_faces_before_subdivision=ear_faces_before,

@@ -40,8 +40,8 @@
         "TailTip": 0
       },
       "max_influences": 0,
-      "unnormalized_vertices": 20356,
-      "zero_weight_vertices": 20356,
+      "unnormalized_vertices": 19695,
+      "zero_weight_vertices": 19695,
       "constraint_failures": {
         "ear_region": 0,
         "ear_tip": 1147,
@@ -50,22 +50,22 @@
         "face_region": 168
       },
       "constraint_samples": {
-        "ear_region": 13304,
+        "ear_region": 13208,
         "ear_tip": 1147,
-        "tail_region": 921,
+        "tail_region": 353,
         "limb_isolation": 2549,
         "face_region": 168
       },
       "region_counts": {
         "arm_l": 863,
         "arm_r": 866,
-        "ear_l": 6686,
-        "ear_r": 6618,
+        "ear_l": 6612,
+        "ear_r": 6596,
         "face": 168,
         "leg_l": 413,
         "leg_r": 407,
-        "tail": 921,
-        "trunk": 3414
+        "tail": 353,
+        "trunk": 3417
       },
       "valid": false
     }
@@ -73,19 +73,19 @@
   "weight_method": "geometry",
   "weights": {
     "per_bone_vertex_count": {
-      "Hips": 1213,
-      "Spine": 714,
+      "Hips": 1216,
+      "Spine": 717,
       "Chest": 1486,
       "Neck": 0,
       "Head": 6408,
-      "EarL_1": 3133,
-      "EarL_2": 2468,
-      "EarL_3": 2642,
+      "EarL_1": 3125,
+      "EarL_2": 2394,
+      "EarL_3": 2576,
       "EarL_4": 2430,
       "EarL_Tip": 0,
-      "EarR_1": 3110,
-      "EarR_2": 2397,
-      "EarR_3": 2594,
+      "EarR_1": 3098,
+      "EarR_2": 2375,
+      "EarR_3": 2584,
       "EarR_4": 2446,
       "EarR_Tip": 0,
       "LeftShoulder": 0,
@@ -102,7 +102,7 @@
       "RightUpperLeg": 310,
       "RightLowerLeg": 200,
       "RightFoot": 97,
-      "Tail": 921,
+      "Tail": 353,
       "TailTip": 0
     },
     "max_influences": 3,
@@ -116,22 +116,22 @@
       "face_region": 0
     },
     "constraint_samples": {
-      "ear_region": 13304,
+      "ear_region": 13208,
       "ear_tip": 1147,
-      "tail_region": 921,
+      "tail_region": 353,
       "limb_isolation": 2549,
       "face_region": 168
     },
     "region_counts": {
       "arm_l": 863,
       "arm_r": 866,
-      "ear_l": 6686,
-      "ear_r": 6618,
+      "ear_l": 6612,
+      "ear_r": 6596,
       "face": 168,
       "leg_l": 413,
       "leg_r": 407,
-      "tail": 921,
-      "trunk": 3414
+      "tail": 353,
+      "trunk": 3417
     },
     "valid": true
   },
@@ -592,32 +592,32 @@
     },
     {
       "name": "Tail",
-      "length": 0.07999998331069946,
+      "length": 0.08000001311302185,
       "parent": "Hips",
       "head": [
-        0.002280124695971608,
-        0.18143153190612793,
-        0.20517776906490326
+        0.0023071172181516886,
+        0.17099261283874512,
+        0.20474779605865479
       ],
       "tail": [
-        0.002280124695971608,
-        0.2614315152168274,
-        0.20517776906490326
+        0.0023071172181516886,
+        0.25099262595176697,
+        0.20474779605865479
       ]
     },
     {
       "name": "TailTip",
-      "length": 0.012000024318695068,
+      "length": 0.01199999451637268,
       "parent": "Tail",
       "head": [
-        0.002280124695971608,
-        0.2614315152168274,
-        0.20517776906490326
+        0.0023071172181516886,
+        0.25099262595176697,
+        0.20474779605865479
       ],
       "tail": [
-        0.002280124695971608,
-        0.27343153953552246,
-        0.20517776906490326
+        0.0023071172181516886,
+        0.26299262046813965,
+        0.20474779605865479
       ]
     }
   ],

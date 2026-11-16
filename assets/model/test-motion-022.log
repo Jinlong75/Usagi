@@ -1,14 +1,37 @@
 npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
 
 > usagi-desktop-pet@0.1.0 test
-> vitest run --run tests/behavior-motion.test.ts
+> vitest run --run tests/behavior-motion.test.ts tests/usagi-model.test.ts
 
 
- RUN  v5.1.0 app
+ RUN  v5.1.0 <PROJECT>/app
+
+{"armRaise":"stretch","minimum":{"angle":0.75,"lift":0.07445833763963507,"neckClearance":-0.00938993606428205,"silhouette":0.003266514753421129},"candidates":[{"angle":0.05,"lift":0.029353034715397134,"neckClearance":-0.054495266075966386,"silhouette":0.005922917240976722},{"angle":0.1,"lift":0.0329275876949259,"neckClearance":-0.05092071309643762,"silhouette":0.005608128839556576},{"angle":0.15000000000000002,"lift":0.03648214163707722,"neckClearance":-0.047366159154286304,"silhouette":0.009599449844259722},{"angle":0.2,"lift":0.040007810363327026,"neckClearance":-0.04384048878319188,"silhouette":0.01631633015712693},{"angle":0.25,"lift":0.04349578303189985,"neckClearance":-0.040352514322948556,"silhouette":0.02236910050515069},{"angle":0.30000000000000004,"lift":0.046937341549759024,"neckClearance":-0.03691095389320491,"silhouette":0.028646173826124624},{"angle":0.35000000000000003,"lift":0.05032388381293897,"neckClearance":-0.033524409602705196,"silhouette":0.025979821084000897},{"angle":0.4,"lift":0.05364694522945871,"neckClearance":-0.030201346048497696,"silhouette":0.024609072965435158},{"angle":0.45,"lift":0.05689821987639395,"neckClearance":-0.02695006915884963,"silhouette":0.0230718052883334},{"angle":0.5,"lift":0.06006958126035848,"neckClearance":-0.023778705432753018,"silhouette":0.020537484708704205},{"angle":0.55,"lift":0.06315310262950544,"neckClearance":-0.020695181627908708,"silhouette":0.012185700590449383},{"angle":0.6000000000000001,"lift":0.06614107678627888,"neckClearance":-0.01770720494796081,"silhouette":0.010173544262123045},{"angle":0.65,"lift":0.06902603535139372,"neckClearance":-0.014822243778500827,"silhouette":0.008012634028501848},{"angle":0.7000000000000001,"lift":0.07180076743089454,"neckClearance":-0.012047509019993744,"silhouette":0.005708371039789618},{"angle":0.75,"lift":0.07445833763963507,"neckClearance":-0.00938993606428205,"silhouette":0.003266514753421129},{"angle":0.8,"lift":0.0769921034361293,"neckClearance":-0.006856167459717606,"silhouette":-0.00019071792926979455},{"angle":0.8500000000000001,"lift":0.07939573172544578,"neckClearance":-0.0044525363082505804,"silhouette":-0.008844525439914356},{"angle":0.9,"lift":0.08166321468864655,"neckClearance":-0.0021850504359729505,"silhouette":-0.011661242856462903},{"angle":0.9500000000000001,"lift":0.0837888847992059,"neckClearance":-0.00005937737668145588,"silhouette":-0.01458923324466399},{"angle":1,"lift":0.0857674289888752,"neckClearance":0.0019191697940047752,"silhouette":-0.017621178153415},{"angle":1.05,"lift":0.08759390192758583,"neckClearance":0.00374564573856642,"silhouette":-0.020749499299450472},{"angle":1.1,"lift":0.08926373838420011,"neckClearance":0.005415485218352522,"silhouette":-0.023966377509103423},{"angle":1.1500000000000001,"lift":0.09077276463721026,"neckClearance":0.006924514504298965,"silhouette":-0.027263772262167436},{"angle":1.2000000000000002,"lift":0.09211720890686952,"neckClearance":0.008268961809078329,"silhouette":-0.03063344178901004}]}
+{"armRaise":"shout","minimum":{"angle":0.75,"lift":0.07445833763963507,"neckClearance":-0.00938993606428205,"silhouette":0.003266514753421129},"candidates":[{"angle":0.05,"lift":0.029353034715397134,"neckClearance":-0.054495266075966386,"silhouette":0.005922917240976722},{"angle":0.1,"lift":0.0329275876949259,"neckClearance":-0.05092071309643762,"silhouette":0.005608128839556576},{"angle":0.15000000000000002,"lift":0.03648214163707722,"neckClearance":-0.047366159154286304,"silhouette":0.009599449844259722},{"angle":0.2,"lift":0.040007810363327026,"neckClearance":-0.04384048878319188,"silhouette":0.01631633015712693},{"angle":0.25,"lift":0.04349578303189985,"neckClearance":-0.040352514322948556,"silhouette":0.02236910050515069},{"angle":0.30000000000000004,"lift":0.046937341549759024,"neckClearance":-0.03691095389320491,"silhouette":0.028646173826124624},{"angle":0.35000000000000003,"lift":0.05032388381293897,"neckClearance":-0.033524409602705196,"silhouette":0.025979821084000897},{"angle":0.4,"lift":0.05364694522945871,"neckClearance":-0.030201346048497696,"silhouette":0.024609072965435158},{"angle":0.45,"lift":0.05689821987639395,"neckClearance":-0.02695006915884963,"silhouette":0.0230718052883334},{"angle":0.5,"lift":0.06006958126035848,"neckClearance":-0.023778705432753018,"silhouette":0.020537484708704205},{"angle":0.55,"lift":0.06315310262950544,"neckClearance":-0.020695181627908708,"silhouette":0.012185700590449383},{"angle":0.6000000000000001,"lift":0.06614107678627888,"neckClearance":-0.01770720494796081,"silhouette":0.010173544262123045},{"angle":0.65,"lift":0.06902603535139372,"neckClearance":-0.014822243778500827,"silhouette":0.008012634028501848},{"angle":0.7000000000000001,"lift":0.07180076743089454,"neckClearance":-0.012047509019993744,"silhouette":0.005708371039789618},{"angle":0.75,"lift":0.07445833763963507,"neckClearance":-0.00938993606428205,"silhouette":0.003266514753421129},{"angle":0.8,"lift":0.0769921034361293,"neckClearance":-0.006856167459717606,"silhouette":-0.00019071792926979455},{"angle":0.8500000000000001,"lift":0.07939573172544578,"neckClearance":-0.0044525363082505804,"silhouette":-0.008844525439914356},{"angle":0.9,"lift":0.08166321468864655,"neckClearance":-0.0021850504359729505,"silhouette":-0.011661242856462903},{"angle":0.9500000000000001,"lift":0.0837888847992059,"neckClearance":-0.00005937737668145588,"silhouette":-0.01458923324466399},{"angle":1,"lift":0.0857674289888752,"neckClearance":0.0019191697940047752,"silhouette":-0.017621178153415},{"angle":1.05,"lift":0.08759390192758583,"neckClearance":0.00374564573856642,"silhouette":-0.020749499299450472},{"angle":1.1,"lift":0.08926373838420011,"neckClearance":0.005415485218352522,"silhouette":-0.023966377509103423},{"angle":1.1500000000000001,"lift":0.09077276463721026,"neckClearance":0.006924514504298965,"silhouette":-0.027263772262167436},{"angle":1.2000000000000002,"lift":0.09211720890686952,"neckClearance":0.008268961809078329,"silhouette":-0.03063344178901004}]}
+{"usagiPhysics":{"shakeDegrees":39.87580522398438,"dragDegrees":7.201560027547096,"settledDegrees":0,"aspect":1.019075449975269,"mediumHeight":314}}
+ ❯ tests/usagi-model.test.ts (5 tests | 2 failed) 314ms
+   ❯ 真实 Usagi 资源的无界面验证 (5)
+     × stretch 的两只小手向两侧斜上举、伸出身体轮廓，结束后回中性 43ms
+     × shout 的两只小手向两侧斜上举、伸出身体轮廓，结束后回中性 34ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/usagi-model.test.ts > 真实 Usagi 资源的无界面验证 > stretch 的两只小手向两侧斜上举、伸出身体轮廓，结束后回中性
+ FAIL  tests/usagi-model.test.ts > 真实 Usagi 资源的无界面验证 > shout 的两只小手向两侧斜上举、伸出身体轮廓，结束后回中性
+AssertionError: expected 0.003266514390497577 to be greater than 0.024999997222394668
+ ❯ tests/usagi-model.test.ts:138:52
+    136|       expect(hand.y).toBeGreaterThan(world('neck', true).y - height * …
+    137|       // Pokes out past the body/head outline at that height, so the f…
+    138|       expect(Math.abs(hand.x) - halfWidth(hand.y)).toBeGreaterThan(hei…
+       |                                                    ^
+    139|     }
+    140|     rig.reset(); rig.apply(sampleMotion(name, name === 'stretch' ? 2.2…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
 
 
- Test Files  1 passed (1)
-      Tests  31 passed (31)
-   Start at  23:12:51
-   Duration  1.01s (transform 43%, import 29%, tests 27%)
+ Test Files  1 failed | 1 passed (2)
+      Tests  2 failed | 34 passed (36)
+   Start at  23:43:22
+   Duration  553ms (tests 56%, transform 28%, import 15%, worker 1%)
 

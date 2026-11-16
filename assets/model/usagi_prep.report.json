@@ -41,11 +41,11 @@
   "rotation_degrees": -90.0,
   "front_before": [
     0.9999957084655762,
-    0.002931566908955574,
+    0.0029319110326468945,
     0.0
   ],
   "front_after": [
-    0.002931523136794567,
+    0.0029318672604858875,
     -0.9999957084655762,
     0.0
   ],
@@ -219,61 +219,51 @@
     "method": "radial Laplacian relaxation toward angular Dirichlet harmonic profiles; signed-volume compensation with sin^2 boundary taper; Z/azimuth/arms pinned; depth vs interpolated fitted boundary ellipses"
   },
   "region_boundary": {
-    "faces_before_tail_subdivision": 37334,
-    "faces_before_cut": 37608,
-    "faces_after_cut": 39149,
-    "tail_halfspace_blend_m": 0.002,
+    "faces_before_cut": 37334,
+    "faces_after_cut": 38351,
+    "independent_tail_faces": 702,
+    "ear_components": [
+      {
+        "faces": 2713,
+        "mean_normal_y": -0.9619406367446891,
+        "kept": true
+      },
+      {
+        "faces": 2675,
+        "mean_normal_y": -0.9619201384141479,
+        "kept": true
+      }
+    ],
+    "removed_zero_area_faces_after_triangulation": 5,
     "connected_components": 2,
     "zero_area_faces": 0,
-    "method": "shared-edge exact implicit zero crossing, triangle face split; continuous interpolated normal and front/back halfspaces",
+    "method": "position-only ear isocontour on original triangles; component mean normal < -0.25; entire independent rear tail",
     "faces_before_subdivision": 19130,
     "faces_after_subdivision": 37187,
     "ear_faces_before_subdivision": 6019,
     "ear_faces_after_subdivision": 24076,
     "boundaries": {
-      "ear_r": [
-        {
-          "segments": 264,
-          "closed": true,
-          "max_turn_degrees": 110.5455803580917
-        }
-      ],
       "ear_l": [
         {
-          "segments": 266,
+          "segments": 258,
           "closed": true,
-          "max_turn_degrees": 154.70271919127828
-        },
-        {
-          "segments": 29,
-          "closed": true,
-          "max_turn_degrees": 171.71200758325273
+          "max_turn_degrees": 82.28471644068014
         }
       ],
-      "tail": [
+      "ear_r": [
         {
-          "segments": 81,
+          "segments": 253,
           "closed": true,
-          "max_turn_degrees": 102.96493098321297
-        },
-        {
-          "segments": 96,
-          "closed": true,
-          "max_turn_degrees": 29.160854038682043
-        },
-        {
-          "segments": 37,
-          "closed": true,
-          "max_turn_degrees": 33.12571054998275
+          "max_turn_degrees": 79.66257949755557
         }
       ]
     },
-    "ear_inner_max_face_normal_y": 0.0
+    "ear_inner_max_face_normal_y": 0.03218091279268265
   },
   "material_face_counts": {
-    "Body": 32736,
-    "EarInner": 5651,
-    "Tail": 762
+    "Body": 32008,
+    "EarInner": 5641,
+    "Tail": 702
   },
   "colors_srgb": {
     "Body": "#FFF1C1",
@@ -286,8 +276,8 @@
     "Tail": 4
   },
   "vertex_groups_storage": "_USAGI_REGION point attribute bitmask + usagi_vertex_groups extras; common.import_model restores Blender groups",
-  "vertices": 19583,
-  "faces": 39149,
+  "vertices": 19184,
+  "faces": 38351,
   "profile": {
     "height": 1.0,
     "head_top": 0.7155061960220337,

@@ -1,35 +1,35 @@
-INFO Draco is available, use library at <home>/Applications/Blender.app/Contents/Resources/5.2/scripts/addons_core/io_scene_gltf2/libbf_intern_draco_bridge.dylib
-INFO MeshOptimizer is available, use library at <home>/Applications/Blender.app/Contents/Resources/5.2/scripts/addons_core/io_scene_gltf2/libbf_intern_meshopt_bridge.dylib
-23:13:29 | INFO: Starting glTF 2.0 export
-23:13:29 | INFO: Extracting primitive: Sphere
-23:13:30 | INFO: Primitives created: 1
-23:13:30 | INFO: Extracting primitive: Sphere.005
-23:13:30 | INFO: Primitives created: 1
-23:13:30 | INFO: Extracting primitive: Sphere.006
-23:13:30 | INFO: Primitives created: 1
-23:13:30 | INFO: Extracting primitive: Sphere.007
-23:13:30 | INFO: Primitives created: 1
-23:13:30 | INFO: Finished glTF 2.0 export in 0.750389814376831 s
+INFO Draco is available, use library at <USER_HOME>/Applications/Blender.app/Contents/Resources/5.2/scripts/addons_core/io_scene_gltf2/libbf_intern_draco_bridge.dylib
+INFO MeshOptimizer is available, use library at <USER_HOME>/Applications/Blender.app/Contents/Resources/5.2/scripts/addons_core/io_scene_gltf2/libbf_intern_meshopt_bridge.dylib
+23:41:45 | INFO: Starting glTF 2.0 export
+23:41:45 | INFO: Extracting primitive: Sphere
+23:41:45 | INFO: Primitives created: 1
+23:41:45 | INFO: Extracting primitive: Sphere.005
+23:41:45 | INFO: Primitives created: 1
+23:41:45 | INFO: Extracting primitive: Sphere.006
+23:41:45 | INFO: Primitives created: 1
+23:41:45 | INFO: Extracting primitive: Sphere.007
+23:41:45 | INFO: Primitives created: 1
+23:41:45 | INFO: Finished glTF 2.0 export in 0.03289198875427246 s
 
-23:13:30 | INFO: Data are loaded, start creating Blender stuff
-23:13:30 | INFO: Blender create Mesh node Sphere
-23:13:30 | INFO: Blender create Mesh node Sphere.005
-23:13:30 | INFO: Blender create Mesh node Sphere.006
-23:13:30 | INFO: Blender create Mesh node Sphere.007
-23:13:30 | INFO: glTF import finished in 0.32s
-23:13:38 | INFO: Starting glTF 2.0 export
-23:13:38 | INFO: Extracting primitive: Sphere.008
-23:13:38 | INFO: Primitives created: 3
-23:13:38 | INFO: Finished glTF 2.0 export in 0.24965596199035645 s
+23:41:45 | INFO: Data are loaded, start creating Blender stuff
+23:41:45 | INFO: Blender create Mesh node Sphere
+23:41:45 | INFO: Blender create Mesh node Sphere.005
+23:41:45 | INFO: Blender create Mesh node Sphere.006
+23:41:45 | INFO: Blender create Mesh node Sphere.007
+23:41:45 | INFO: glTF import finished in 0.03s
+23:41:45 | INFO: Starting glTF 2.0 export
+23:41:45 | INFO: Extracting primitive: Sphere.008
+23:41:45 | INFO: Primitives created: 3
+23:41:45 | INFO: Finished glTF 2.0 export in 0.010902643203735352 s
 test_01_orientation_deletion_and_groups_roundtrip (__main__.PrepTests.test_01_orientation_deletion_and_groups_roundtrip) ... 
-{"input": "source.glb", "output": "prepared.glb", "cleanup": {"objects_joined": 4, "verts_before": 26358, "faces_before": 13704, "merged_verts": 19498, "removed_degenerate": 0, "removed_loose": {"verts": 0, "edges": 0}, "islands_total": 4, "islands_removed": 0, "island_faces_removed": 0, "normals_flipped_estimate": {"before": 409, "after": 409, "method": "approximate: face normal dot (face center - per-island vertex center); unreliable for concave/open surfaces"}, "non_manifold_edges": 0, "verts_after": 6860, "faces_after": 13704, "bbox_min": [-0.30195215344429016, -0.31866905093193054, 0.0], "bbox_max": [0.30195215344429016, 0.31866905093193054, 1.0], "height": 1.0, "materials": [], "textures": []}, "rotation_degrees": -90.0, "front_before": [1.0, 2.6982132794728386e-07, 0.0], "front_after": [2.261099467659733e-07, -1.0, 0.0], "orientation_feature_islands": 3, "removed_feature_islands": 3, "removed_feature_faces": 360, "feature_regions": [{"min": [-0.1312681463956833, -0.30795215344429017, 0.4277884783744812], "max": [-0.06916095787286758, -0.24584494256973266, 0.4898956892490387], "vertices": 62, "faces": 120}, {"min": [0.0691606747508049, -0.30795215344429017, 0.4277884783744812], "max": [0.1312678781747818, -0.24584494256973266, 0.4898956892490387], "vertices": 62, "faces": 120}, {"min": [-0.03105371533334255, -0.30795215344429017, 0.3375955047607422], "max": [0.031053482502698897, -0.24584494256973266, 0.3997027156352997], "vertices": 62, "faces": 120}], "feature_margin_m": 0.006, "retained_rear_islands": 0, "face": {"vertices_processed": 0, "vertices_checked": 62, "max_deviation_before": 0.0007558706796245152, "max_deviation_after": 0.0007558706796245152, "tolerance": 0.004, "iterations": 0, "method": "local least-squares sphere, radius-0.08m neighborhood, weak global-center regularization; front-depth projection with X/Z pinned"}, "waist": {"enabled": true, "iterations": 100, "center_z": 0.3413672149181366, "half_width": 0.06, "trunk_x_limit": 0.2644953122735023, "vertices_processed": 783, "max_inward_depth_before": 0.0010631705503909017, "max_inward_depth_after": 0.0010613599071094826, "volume_before": 0.13178593880259742, "volume_after": 0.13178593888628523, "method": "radial Laplacian relaxation toward angular Dirichlet harmonic profiles; signed-volume compensation with sin^2 boundary taper; Z/azimuth/arms pinned; depth vs interpolated fitted boundary ellipses"}, "region_boundary": {"faces_before_tail_subdivision": 17724, "faces_before_cut": 17882, "faces_after_cut": 18608, "tail_halfspace_blend_m": 0.002, "connected_components": 1, "zero_area_faces": 0, "method": "shared-edge exact implicit zero crossing, triangle face split; continuous interpolated normal and front/back halfspaces", "faces_before_subdivision": 13344, "faces_after_subdivision": 17676, "ear_faces_before_subdivision": 1444, "ear_faces_after_subdivision": 5776, "boundaries": {"ear_l": [{"segments": 118, "closed": true, "max_turn_degrees": 40.399971299073044}], "ear_r": [{"segments": 120, "closed": true, "max_turn_degrees": 44.31215680658919}], "tail": [{"segments": 125, "closed": true, "max_turn_degrees": 65.18124657024039}]}, "ear_inner_max_face_normal_y": -0.8654509782791138}, "material_face_counts": {"Body": 17163, "EarInner": 826, "Tail": 619}, "colors_srgb": {"Body": "#FFF1C1", "EarInner": "#F7B8C4", "Tail": "#FFFFFF"}, "vertex_groups": {"Body": 1, "EarInner": 2, "Tail": 4}, "vertex_groups_storage": "_USAGI_REGION point attribute bitmask + usagi_vertex_groups extras; common.import_model restores Blender groups", "vertices": 9306, "faces": 18608, "profile": {"height": 1.0, "head_top": 0.7279286980628967, "head_width": 0.31866905093193054, "arm_z": 0.3413672149181366, "trunk_width": 0.2644953122735023, "tail_center": [2.8544988595058385e-10, 0.22310152649879456, 0.18841852247714996], "tail_radius": 0.07948026738213032}}
-23:13:38 | INFO: Data are loaded, start creating Blender stuff
-23:13:38 | INFO: Blender create Mesh node Sphere.008
-23:13:39 | INFO: glTF import finished in 0.26s
+{"input": "source.glb", "output": "prepared.glb", "cleanup": {"objects_joined": 4, "verts_before": 26358, "faces_before": 13704, "merged_verts": 19498, "removed_degenerate": 0, "removed_loose": {"verts": 0, "edges": 0}, "islands_total": 4, "islands_removed": 0, "island_faces_removed": 0, "normals_flipped_estimate": {"before": 409, "after": 409, "method": "approximate: face normal dot (face center - per-island vertex center); unreliable for concave/open surfaces"}, "non_manifold_edges": 0, "verts_after": 6860, "faces_after": 13704, "bbox_min": [-0.30195215344429016, -0.31866905093193054, 0.0], "bbox_max": [0.30195215344429016, 0.31866905093193054, 1.0], "height": 1.0, "materials": [], "textures": []}, "rotation_degrees": -90.0, "front_before": [1.0, -1.4109511425886012e-07, 0.0], "front_after": [-1.848065096510254e-07, -1.0, 0.0], "orientation_feature_islands": 3, "removed_feature_islands": 3, "removed_feature_faces": 360, "feature_regions": [{"min": [-0.1312681463956833, -0.30795215344429017, 0.4277884783744812], "max": [-0.06916095787286758, -0.24584494256973266, 0.4898956892490387], "vertices": 62, "faces": 120}, {"min": [0.0691606747508049, -0.30795215344429017, 0.4277884783744812], "max": [0.1312678781747818, -0.24584494256973266, 0.4898956892490387], "vertices": 62, "faces": 120}, {"min": [-0.03105371533334255, -0.30795215344429017, 0.3375955047607422], "max": [0.031053482502698897, -0.24584494256973266, 0.3997027156352997], "vertices": 62, "faces": 120}], "feature_margin_m": 0.006, "retained_rear_islands": 0, "face": {"vertices_processed": 0, "vertices_checked": 62, "max_deviation_before": 0.0007558706796245152, "max_deviation_after": 0.0007558706796245152, "tolerance": 0.004, "iterations": 0, "method": "local least-squares sphere, radius-0.08m neighborhood, weak global-center regularization; front-depth projection with X/Z pinned"}, "waist": {"enabled": true, "iterations": 100, "center_z": 0.3413672149181366, "half_width": 0.06, "trunk_x_limit": 0.2644953122735023, "vertices_processed": 783, "max_inward_depth_before": 0.0010631705503909017, "max_inward_depth_after": 0.0010613599071094826, "volume_before": 0.13178593880259742, "volume_after": 0.13178593888628523, "method": "radial Laplacian relaxation toward angular Dirichlet harmonic profiles; signed-volume compensation with sin^2 boundary taper; Z/azimuth/arms pinned; depth vs interpolated fitted boundary ellipses"}, "region_boundary": {"faces_before_cut": 17724, "faces_after_cut": 18358, "independent_tail_faces": 0, "ear_components": [{"faces": 356, "mean_normal_y": -0.9437944798749922, "kept": true}, {"faces": 357, "mean_normal_y": -0.9437610468757939, "kept": true}], "removed_zero_area_faces_after_triangulation": 0, "connected_components": 1, "zero_area_faces": 0, "method": "position-only ear isocontour on original triangles; component mean normal < -0.25; entire independent rear tail", "faces_before_subdivision": 13344, "faces_after_subdivision": 17676, "ear_faces_before_subdivision": 1444, "ear_faces_after_subdivision": 5776, "boundaries": {"ear_r": [{"segments": 120, "closed": true, "max_turn_degrees": 44.31215680658919}], "ear_l": [{"segments": 118, "closed": true, "max_turn_degrees": 40.399971299073044}], "tail": [{"segments": 79, "closed": true, "max_turn_degrees": 65.18100751361943}]}, "ear_inner_max_face_normal_y": -0.8654509782791138}, "material_face_counts": {"Body": 17035, "EarInner": 826, "Tail": 497}, "colors_srgb": {"Body": "#FFF1C1", "EarInner": "#F7B8C4", "Tail": "#FFFFFF"}, "vertex_groups": {"Body": 1, "EarInner": 2, "Tail": 4}, "vertex_groups_storage": "_USAGI_REGION point attribute bitmask + usagi_vertex_groups extras; common.import_model restores Blender groups", "vertices": 9181, "faces": 18358, "profile": {"height": 1.0, "head_top": 0.7279286980628967, "head_width": 0.31866905093193054, "arm_z": 0.3413672149181366, "trunk_width": 0.2644953122735023, "tail_center": [2.8544988595058385e-10, 0.22310152649879456, 0.18841852247714996], "tail_radius": 0.07948026738213032}}
+23:41:45 | INFO: Data are loaded, start creating Blender stuff
+23:41:45 | INFO: Blender create Mesh node Sphere.008
+23:41:45 | INFO: glTF import finished in 0.01s
 ok
-test_02_landmarks_geometry_and_surface (__main__.PrepTests.test_02_landmarks_geometry_and_surface) ... 23:13:40 | INFO: Data are loaded, start creating Blender stuff
-23:13:40 | INFO: Blender create Mesh node Sphere.008
-23:13:40 | INFO: glTF import finished in 0.06s
+test_02_landmarks_geometry_and_surface (__main__.PrepTests.test_02_landmarks_geometry_and_surface) ... 23:41:46 | INFO: Data are loaded, start creating Blender stuff
+23:41:46 | INFO: Blender create Mesh node Sphere.008
+23:41:46 | INFO: glTF import finished in 0.02s
 ok
 test_03_region_selectors_on_analytic_ear_and_tail (__main__.PrepTests.test_03_region_selectors_on_analytic_ear_and_tail) ... ok
 test_04_waist_depth_volume_and_pinned_vertices (__main__.PrepTests.test_04_waist_depth_volume_and_pinned_vertices) ... 腰线合成实验：{"enabled": true, "iterations": 100, "center_z": 0.5, "half_width": 0.3, "trunk_x_limit": null, "vertices_processed": 1104, "max_inward_depth_before": 0.04500000698687129, "max_inward_depth_after": 0.006411435697020407, "volume_before": 0.12114838648716848, "volume_after": 0.12114838649376197, "method": "radial Laplacian relaxation toward angular Dirichlet harmonic profiles; signed-volume compensation with sin^2 boundary taper; Z/azimuth/arms pinned; depth vs interpolated fitted boundary ellipses"}
@@ -39,25 +39,28 @@ test_06_landmark_overlay (__main__.PrepTests.test_06_landmark_overlay) ... ok
 test_07_face_sphere_local_bump (__main__.PrepTests.test_07_face_sphere_local_bump) ... ok
 test_08_synthetic_cut_ellipse_closed_and_smooth (__main__.PrepTests.test_08_synthetic_cut_ellipse_closed_and_smooth) ... 014 boundary metrics: {"ear_l": [{"segments": 464, "closed": true, "max_turn_degrees": 14.20118418077065}]}
 ok
-test_09_real_product_boundaries (__main__.PrepTests.test_09_real_product_boundaries) ... 23:13:49 | INFO: Data are loaded, start creating Blender stuff
-23:13:49 | INFO: Blender create Mesh node tripo_7f0710d5_2d7f_4ae2_95ba_a3929a66c6cf
-23:13:49 | INFO: glTF import finished in 0.24s
+test_09_real_product_boundaries (__main__.PrepTests.test_09_real_product_boundaries) ... 23:41:47 | INFO: Data are loaded, start creating Blender stuff
+23:41:47 | INFO: Blender create Mesh node tripo_7f0710d5_2d7f_4ae2_95ba_a3929a66c6cf
+23:41:47 | INFO: glTF import finished in 0.03s
 FAIL
 
 ======================================================================
 FAIL: test_09_real_product_boundaries (__main__.PrepTests.test_09_real_product_boundaries)
 ----------------------------------------------------------------------
 Traceback (most recent call last):
-  File "pipeline/tests/test_prep_usagi.py", line 235, in test_09_real_product_boundaries
-    self.assert_smooth_boundaries(obj, {"ear_l", "ear_r", "tail"})
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "pipeline/tests/test_prep_usagi.py", line 204, in assert_smooth_boundaries
-    self.assertEqual(len(metrics[label]), 1, metrics)
-    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AssertionError: 2 != 1 : {'ear_r': [{'segments': 264, 'closed': True, 'max_turn_degrees': 110.5455803580917}], 'ear_l': [{'segments': 29, 'closed': True, 'max_turn_degrees': 171.71200758325273}, {'segments': 266, 'closed': True, 'max_turn_degrees': 154.70271919127828}], 'tail': [{'segments': 81, 'closed': True, 'max_turn_degrees': 102.96493098321297}, {'segments': 96, 'closed': True, 'max_turn_degrees': 29.160854038682043}, {'segments': 37, 'closed': True, 'max_turn_degrees': 33.12571054998275}]}
+  File "<PROJECT>/pipeline/tests/test_prep_usagi.py", line 235, in test_09_real_product_boundaries
+    self.assert_real_regions(obj)
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "<PROJECT>/pipeline/tests/test_prep_usagi.py", line 268, in assert_real_regions
+    self.assert_smooth_boundaries(obj, {"ear_l", "ear_r"})
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<PROJECT>/pipeline/tests/test_prep_usagi.py", line 207, in assert_smooth_boundaries
+    self.assertLess(loop["max_turn_degrees"], 35, metrics)
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 79.66257949755557 not less than 35 : {'ear_r': [{'segments': 253, 'closed': True, 'max_turn_degrees': 79.66257949755557}], 'ear_l': [{'segments': 258, 'closed': True, 'max_turn_degrees': 82.28471644068014}]}
 
 ----------------------------------------------------------------------
-Ran 9 tests in 21.351s
+Ran 9 tests in 2.271s
 
 FAILED (failures=1)
-009 失败现场：<temporary failure directory>
+009 失败现场：<TMP>/usagi-prep-u1aehutb

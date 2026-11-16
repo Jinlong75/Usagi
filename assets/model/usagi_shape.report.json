@@ -147,12 +147,12 @@
   ],
   "base_to_original": {
     "region_vertices": 115,
-    "outside_vertices": 20241,
-    "max_distance": 6.109930694719878e-08,
+    "outside_vertices": 19580,
+    "max_distance": 6.064333035737945e-08,
     "max_position": [
-      0.038355596363544464,
-      -0.0471285916864872,
-      0.8231558203697205
+      -0.05971192568540573,
+      -0.035212595015764236,
+      0.9786027073860168
     ]
   },
   "original_to_base": {
