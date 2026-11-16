@@ -27,6 +27,78 @@ def positive_int(value):
     return number
 
 
+def upstream_nodes(socket):
+    """只遍历指定输入的上游，避免从整个材质里误取法线、ORM 或自发光图。"""
+    pending = [link.from_node for link in socket.links] if socket else []
+    visited = set()
+    while pending:
+        node = pending.pop(0)
+        if node.as_pointer() in visited:
+            continue
+        visited.add(node.as_pointer())
+        yield node
+        # 图像的 Vector 输入不是颜色来源；Normal/Bump 也不是基础色。
+        if node.type in {"TEX_IMAGE", "NORMAL_MAP", "BUMP"}:
+            continue
+        pending.extend(link.from_node for value in node.inputs for link in value.links)
+
+
+def base_color_source(material):
+    """返回基础色图像节点和常量颜色；不依赖导入器留下的活动图像节点。"""
+    tree = material.node_tree if material.use_nodes else None
+    if tree is None:
+        return None, material.diffuse_color[:]
+    # 当前 VRM 插件明确提供主贴图引用；不要按节点顺序猜 MToon 数据图。
+    extension = getattr(material, "vrm_addon_extension", None)
+    mtoon = getattr(extension, "mtoon1", None)
+    if mtoon and mtoon.enabled:
+        pbr = mtoon.pbr_metallic_roughness
+        texture = pbr.base_color_texture.index
+        node = tree.nodes.get(texture.get_image_texture_node_name())
+        if node is None or node.type != "TEX_IMAGE" or node.image != texture.source:
+            node = None
+        return node if node and node.image else None, tuple(pbr.base_color_factor)
+    output = next((node for node in tree.nodes
+                   if node.type == "OUTPUT_MATERIAL" and node.is_active_output), None)
+    for node in upstream_nodes(output.inputs.get("Surface") if output else None):
+        if node.type == "BSDF_PRINCIPLED":
+            color = node.inputs["Base Color"]
+        elif (node.type == "GROUP" and node.node_tree
+              and node.node_tree.get("SHADER") == "MToon_unversioned"):
+            # 旧版 VRM/MToon 节点组的主贴图和基础色输入。
+            texture = next((value for value in upstream_nodes(node.inputs.get("MainTexture"))
+                            if value.type == "TEX_IMAGE" and value.image), None)
+            color = node.inputs.get("DiffuseColor")
+            return texture, tuple(color.default_value) if color else material.diffuse_color[:]
+        else:
+            continue
+        texture = next((value for value in upstream_nodes(color)
+                        if value.type == "TEX_IMAGE" and value.image), None)
+        return texture, tuple(color.default_value)
+    return None, material.diffuse_color[:]
+
+
+def prepare_material_colors(objects):
+    """Workbench 使用选定的基础色图；无贴图时使用 MATERIAL 基础色。"""
+    textured = False
+    materials = {slot.material for obj in objects for slot in obj.material_slots if slot.material}
+    for material in materials:
+        texture, color = base_color_source(material)
+        material.diffuse_color = color
+        if material.node_tree:
+            material.node_tree.nodes.active = texture
+        if texture:
+            textured = True
+        else:
+            # 混合材质场景的 TEXTURE 模式也必须走该材质的颜色回退，
+            # 5.2 的 use_nodes=False 已无效；清空仅在预览进程中使用的
+            # 节点树，防止 Workbench 在活动节点为空时自动选其他数据图。
+            # 不导出材质，也不改写输入模型或图像。
+            if material.node_tree:
+                material.node_tree.nodes.clear()
+    return "TEXTURE" if textured else "MATERIAL"
+
+
 def make_sheet(paths, destination, size):
     """直接拼接 RGBA 缓冲区，不依赖 PIL；PNG 的色彩空间由 Blender 处理。"""
     sheet = bpy.data.images.new("PreviewSheet", width=size * len(paths), height=size, alpha=True)
@@ -81,7 +153,7 @@ def render(args):
     scene.view_settings.gamma = 1
     shading = scene.display.shading
     shading.light = "STUDIO"
-    shading.color_type = "TEXTURE"
+    shading.color_type = prepare_material_colors(objects)
     shading.show_shadows = False
     shading.show_cavity = False
     shading.show_specular_highlight = False

@@ -70,6 +70,29 @@ def split_cube(name, center, mat, inward=False):
     return obj
 
 
+def solid_texture(name, color, directory, *, non_color=False):
+    image = bpy.data.images.new(name, width=4, height=4)
+    if non_color:
+        image.colorspace_settings.name = "Non-Color"
+    image.pixels[:] = [*color, 1] * 16
+    image.filepath_raw = str(directory / f"{name}.png")
+    image.file_format = "PNG"
+    image.save()
+    image.pack()
+    return image
+
+
+def attach_normal_map(mat, image):
+    tree = mat.node_tree
+    normal = tree.nodes.new("ShaderNodeNormalMap")
+    texture = tree.nodes.new("ShaderNodeTexImage")
+    texture.image = image
+    tree.links.new(texture.outputs["Color"], normal.inputs["Color"])
+    tree.links.new(normal.outputs["Normal"], tree.nodes.get("Principled BSDF").inputs["Normal"])
+    # 故意把数据图设为活动节点，不能依赖导入器或节点创建顺序来选颜色。
+    tree.nodes.active = texture
+
+
 def corners_signature(objects, foot, scale):
     result = set()
     for obj in objects:
@@ -289,6 +312,66 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(list(obj.location), [0, 0, 0])
         self.assertEqual(list(obj.rotation_euler), [0, 0, 0])
         self.assertEqual(list(obj.scale), [1, 1, 1])
+
+    def color_preview(self, textured):
+        fresh()
+        name = "base-and-normal" if textured else "normal-only"
+        normal = solid_texture(f"{name}-normal", (.5, .5, 1), self.root, non_color=True)
+        red = material("RedBaseNoTexture", (1, 0, 0))
+        attach_normal_map(red, normal)
+        split_cube("RedCube", (.7 if textured else 0, 0, 0), red)
+        if textured:
+            green_image = solid_texture("GreenBaseTexture", (0, 1, 0), self.root)
+            # 常量设成红色，保证回退常量、错误选法线图都无法通过绿色断言。
+            green = material("GreenTextureWithNormal", (1, 0, 0), green_image)
+            attach_normal_map(green, normal)
+            split_cube("GreenCube", (-.7, 0, 0), green)
+        bpy.ops.object.select_all(action="SELECT")
+        source = self.root / f"{name}.glb"
+        export_glb(source)
+        fresh()
+        objects = import_model(source)
+        materials = {slot.material for obj in objects for slot in obj.material_slots}
+        for mat in materials:
+            bsdf = mat.node_tree.nodes.get("Principled BSDF")
+            self.assertTrue(bsdf.inputs["Normal"].is_linked, mat.name)
+            self.assertEqual(bsdf.inputs["Base Color"].is_linked,
+                             mat.name.startswith("Green"), mat.name)
+        from render_preview import prepare_material_colors
+        self.assertEqual(prepare_material_colors(objects), "TEXTURE" if textured else "MATERIAL")
+        for mat in materials:
+            if mat.name.startswith("Green"):
+                self.assertEqual(mat.node_tree.nodes.active.image.name, "GreenBaseTexture")
+            else:
+                self.assertEqual(len(mat.node_tree.nodes), 0)
+                self.assertIsNone(mat.node_tree.nodes.active)
+                self.assertEqual(tuple(mat.diffuse_color), (1, 0, 0, 1))
+        destination = self.artifacts / name
+        self.call("render_preview.py", "--in", source, "--out-dir", destination, "--size", 128)
+        image = bpy.data.images.load(str(destination / "preview_front.png"), check_existing=False)
+        try:
+            width, height = image.size
+            pixels = list(image.pixels)
+            background = pixels[:3]
+            regions = ((0, width // 2, 1), (width // 2, width, 0)) if textured else ((0, width, 0),)
+            for start_x, end_x, dominant in regions:
+                foreground = [pixels[(y * width + x) * 4:(y * width + x) * 4 + 3]
+                              for y in range(height) for x in range(start_x, end_x)
+                              if max(abs(pixels[(y * width + x) * 4 + c] - background[c])
+                                     for c in range(3)) > .03]
+                self.assertGreater(len(foreground), width * height * .05)
+                means = [sum(pixel[c] for pixel in foreground) / len(foreground) for c in range(3)]
+                for other in set(range(3)) - {dominant}:
+                    self.assertGreater(means[dominant], means[other] + .25, (name, means))
+                print(f"颜色回归 {name} 区域 {start_x}:{end_x} RGB 均值：{means}", flush=True)
+        finally:
+            bpy.data.images.remove(image)
+
+    def test_08_normal_map_does_not_replace_solid_base_color(self):
+        self.color_preview(textured=False)
+
+    def test_09_base_texture_wins_over_normal_map_and_mixed_material_fallback(self):
+        self.color_preview(textured=True)
 
 
 if __name__ == "__main__":
