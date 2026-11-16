@@ -4,7 +4,7 @@
 
 ## 一句话
 
-接回 011（五官表情）与 012（安装包）验收；两者合入后派 013 合流（换上 Usagi 调校），再跑全量验收、出正式 dmg、请用户试用。
+等 011（五官表情）验收（012 已合入）；011 合入后派 013 合流（换上 Usagi 调校），再跑全量验收、出正式 dmg、请用户试用。
 
 ## 开工必做
 
@@ -33,12 +33,11 @@
 （软件生成，`ar lead handoff --write` 更新；只改"主导判断"一列；处理完的失败任务删掉那一行）
 
 公共目录：~/.config/agent-router
-任务表生成于：2026-11-16T09:28:02Z
+任务表生成于：2026-11-16T10:12:14Z
 
 | 记录名 | 状态 | 启动方式 | 接回命令 | 主导判断 |
 |---|---|---|---|---|
-| 012-安装包打包 | 排队中 | 托管 | `ar wait 012-安装包打包` |  |
-| 011-五官贴片与表情 | 排队中 | 托管 | `ar wait 011-五官贴片与表情` |  |
+| 011-五官贴片与表情 | 运行中 | 托管 | `ar wait 011-五官贴片与表情` |  |
 | 001-Tripo建模操作指南 | 已停止 | — | `ar status 001-Tripo建模操作指南` |  |
 | 005-Usagi叫声切片 | 失败 | — | `ar status 005-Usagi叫声切片` |  |
 <!-- /ar:handoff:tasks -->
@@ -46,7 +45,7 @@
 ## 下一步
 
 1. **011-五官贴片与表情**（在跑，Codex）：门禁跑 `sh docs/specs/checks/011-check.sh`（主导维护，已用 Seed-san 验证插件属性路径）。验收看 `atlas_preview.png` 与 `preview_face/expression_sheet.png`：五官照 `Material/tripo/usagi_3d_ref.png` 正面与原作（黑椭圆眼带高光、额头两道上弯眉线、ω 嘴、粉腮红三斜线），位置落在原雕刻五官处、无串格；happy 阻止 blink。accept 时 `--ack external:<摘要>`（最新 attempts/N/external-audit.json，核对非 concurrent 项）。顺带看 010 留下的脸部正中淡竖线（左右接缝）在贴片后是否明显。完成条件：`ar accept 011-五官贴片与表情`。
-2. **012-安装包打包**（第 2 次，已补 allowed_paths：app/src/main/index.ts、app/src/settings/**）：门禁跑 `sh docs/specs/checks/012-check.sh`（dist:mac → 挂载 dmg 查资源 → 打包后 `--smoke` 要 `"ok":true`）。此时 usagi.vrm 还没进 assets/models，产物应是 `-dev` 占位包。看汇报：dist:win 在 mac 上是否成功、dmg/exe 大小、安装指南 `docs/guides/02-安装与使用.md`。完成条件：`ar accept 012-安装包打包`。
+2. **012 已合入**（16:5x，合并提交 185359f）：-dev 占位 dmg 127MB，打包冒烟 ok；图标从参考图正面裁出（主导看过，好）。遗留：`dist:win` 在本机失败——NSIS 的 makensis 是 x86_64，本机 arm64 没装 Rosetta（`Unknown system error -86`）；出正式包时主导先 `softwareupdate --install-rosetta --agree-to-license`（用户已授权装工具）再试，仍不行就交用户在 Windows 上跑 `npm --prefix app run dist:win`。EXE 资源编辑被关掉，exe/快捷方式可能是 Electron 默认图标，正式包时核对。
 3. 011、012 都合入后派 013：`ar dispatch docs/specs/013-合流换上Usagi并调校.md --detach`（先 `ar spec impact` 复核受影响测试）。验收看冒烟截图（Usagi 入画、五官、耳朵甩动、表情），主导 `npm --prefix app run dev` 实看。完成条件：013 accept。
 4. 013 合入后：`ar verify --detach` 全量验收（上次通过后已合入 4+ 个任务；首次 Electron 下载约 20 分钟，012 已配 npmmirror 镜像）；再 `npm --prefix app run dist`（或让执行者跑）出正式 dmg/exe（不含 Seed-san）；主导自己装 dmg 试；然后请用户试用并填自己的 DeepSeek Key。完成条件：正式 dmg 在 app/release/，用户收到安装说明。
 5. 收尾：Windows 实机安装与 Mate Engine 导入需要用户在 Windows 电脑上验证（Mate Engine wiki 第三方镜像称支持 VRM 0.x/1.x，未官方确认）。完成条件：把待用户验证清单交给用户。
@@ -69,6 +68,7 @@
 - 带 `--rebase` 的 retry 只重跑门禁、不让执行者动手；要执行者改东西用普通 retry --note。
 - 审查常抓真问题（丢数据、弹簧末端、取景），逐条 confirm；小修主导可在 worktree 改后 `retry --regate`。
 - DeepSeek 当前模型 ID：deepseek-flash（默认）、deepseek-v4-pro；deepseek-v4-flash 是旧名。
+- `accept --ack` 只认一个：外部改动摘要和"已知问题"确认要写进同一个字符串（`--ack "external:<摘要> 已知问题：…"`），写两个 `--ack` 只有最后一个生效。
 - 全局名额常被别的项目占满时，`ar next --dispatch` 不派；直接 `ar dispatch <说明> --detach` 能进队列。
 
 ## 已知问题与证据
