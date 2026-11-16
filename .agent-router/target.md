@@ -13,6 +13,7 @@
 - D3 五官（2026-11-16 用户确认"方案a"）：Tripo 生成**无五官**的身体（只有底色、耳朵内侧粉色、尾巴）；眼睛、嘴、腮红用贴在脸上的薄片 + 表情贴图集，表情用 VRM 的 UV 平移（textureTransformBinds）切换。理由：Tripo 烘进贴图的五官模糊且没法做表情；五官照原作正脸图描线（还原优先），不凭空画。
 - D4 Blender：本机 `~/Applications/Blender.app`（5.2.3 LTS），已装 VRM 插件（extensions: vrm）。所有 Blender 步骤写成命令行脚本（`blender -b --python …`），可重复跑、可验收；每一步出预览图供主导看。
 - D5 弹簧骨骼：两只耳朵各一串骨骼（3～4 节）做弹簧，头部和身体加碰撞球。
+- D8 模型（2026-11-16）：用户自己用 ChatGPT 生成的参考四视图（`Material/tripo/usagi_3d_ref.png`）在 Tripo 生成了 `Material/tripo/usagi_3d.glb`（无贴图、五官为独立雕刻小块、正面朝 +X）。我们自己上平涂色 + MToon 描边；雕刻五官删除改贴片；**腰线保留不平滑**（用户原话"腰线不用平滑，保留"）。
 - D6 目录：原始素材 `Material/`；Blender 脚本 `pipeline/`；中间与最终模型 `assets/`；桌宠程序 `app/`；给用户的操作指南 `docs/guides/`。占位模型 `assets/placeholder/Seed-san.vrm`（VRM Public License 1.0，VirtualCast），只供开发，不打进安装包。
 
 ## 里程碑与完成条件
