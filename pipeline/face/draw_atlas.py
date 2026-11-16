@@ -128,7 +128,8 @@ def mouth(name):
             return ((x-xmin)/(xmax-xmin)*CELL, (vmax-z)/(vmax-vmin)*CELL)
         p.curve([pos(0, .22), pos(0, .66), pos(.46, .66), pos(.5, 0)], stroke)
         p.curve([pos(.5, 0), pos(.54, .66), pos(1, .66), pos(1, .22)], stroke)
-        p.curve([pos(.5, .48), pos(.68, .67), pos(.68, 1), pos(.46, 1)], stroke)
+        # 参考图正面：尾巴从左侧弯的底部垂下，末端向右勾（主导 2026-11-16 定）。
+        p.curve([pos(.25, .5), pos(.17, .88), pos(.27, 1), pos(.47, 1)], stroke)
     elif name == 'sad':
         p.curve([(122, 300), (197, 227), (307, 227), (388, 300)], stroke)
     elif name == 'ee':
