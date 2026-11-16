@@ -4,6 +4,9 @@ directories:
   output: release
   buildResources: build
 asar: true
+npmRebuild: false # koffi ships N-API prebuilds; no compiler required
+asarUnpack:
+  - node_modules/koffi/build/koffi/**/*.node
 # 保留 root/app/dist 布局，主进程和三个辅助窗口共用既有加载入口。
 extraMetadata:
   main: app/out/main.cjs

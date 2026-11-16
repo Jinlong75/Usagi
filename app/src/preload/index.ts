@@ -35,7 +35,9 @@ const bridge: PetBridge = {
   onClick: (callback) => listen<void>('pet:click', callback),
   onReload: (callback) => listen<void>('pet:reload', callback),
   rendered: (result) => ipcRenderer.send('pet:rendered', result),
-  framed: (aspect, headTop) => ipcRenderer.send('pet:framed', { aspect, headTop }),
+  framed: (aspect, headTop, seat) => ipcRenderer.send('pet:framed', { aspect, headTop, seat }),
+  onPerch: callback => listen('pet:perch', callback),
+  perchHop: () => ipcRenderer.send('pet:perch-hop'),
   logError: (message) => ipcRenderer.send('pet:error', message),
 };
 contextBridge.exposeInMainWorld('pet', bridge);

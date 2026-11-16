@@ -30,8 +30,10 @@ function periodDay(now: Date, range: [string, string]): string {
   if (start > now) start.setDate(start.getDate() - 1);
   return logicalDay(start);
 }
-/** TODO(D10): Replace with foreground fullscreen detection when desktop absorption lands. */
-export function isForegroundFullscreen(): boolean { return false; }
+/** Updated by the native window monitor every two seconds; checks never call the OS. */
+let foregroundFullscreen = false;
+export function cacheForegroundFullscreen(value: boolean): void { foregroundFullscreen = value; }
+export function isForegroundFullscreen(): boolean { return foregroundFullscreen; }
 export function questionText(line: string): string { return line.slice(line.indexOf('（') + 1, line.lastIndexOf('）')); }
 export function insertWeather(line: string, weather: string): string {
   const opening = line.indexOf('（') + 1, greetingEnd = line.indexOf('～', opening);

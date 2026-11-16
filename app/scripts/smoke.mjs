@@ -3,14 +3,14 @@ import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import { runSmokeProcess } from './smoke-process.mjs';
 
-export const BEHAVIORS = ['idle', 'walk', 'happy', 'surprised', 'shout', 'stretch', 'drag', 'ear-shake', 'jumpRope', 'blowBubbles', 'napPillow', 'eatRiceball', 'eatWatermelon', 'iceCream', 'sneakSnack'];
+export const BEHAVIORS = ['idle', 'walk', 'happy', 'surprised', 'shout', 'stretch', 'drag', 'ear-shake', 'jumpRope', 'blowBubbles', 'napPillow', 'eatRiceball', 'eatWatermelon', 'iceCream', 'sneakSnack', 'sit'];
 export function validFocusedReport(report, only) {
-  const props = { jumpRope: ['handles', 'rope'], blowBubbles: ['wand', 'bubble'], napPillow: ['pillow'], eatRiceball: ['riceball'], eatWatermelon: ['watermelon'], iceCream: ['iceCream'], sneakSnack: ['cookie'] };
+  const props = { sit: [], jumpRope: ['handles', 'rope'], blowBubbles: ['wand', 'bubble'], napPillow: ['pillow'], eatRiceball: ['riceball'], eatWatermelon: ['watermelon'], iceCream: ['iceCream'], sneakSnack: ['cookie'] };
   const expected = BEHAVIORS.filter(name => only.includes(name));
   return only.length > 0 && only.every(name => Object.hasOwn(props, name)) && report.focused === true &&
     report.vrmVersion === '1' && JSON.stringify(report.behaviors) === JSON.stringify(expected) &&
     expected.every(name => report.behaviorOpaqueRatios?.[name] >= 0.02 && report.behaviorOpaqueRatios[name] <= 0.95 &&
-      report.propFraming?.[name] === true && props[name].every(prop => Number.isFinite(report.propOpaqueRatios?.[prop]) &&
+      (name === 'sit' || report.propFraming?.[name] === true) && props[name].every(prop => Number.isFinite(report.propOpaqueRatios?.[prop]) &&
         report.propOpaqueRatios[prop] > 0 && report.propOpaqueRatios[prop] <= 1));
 }
 export function validUiReport(report) { return JSON.stringify(report.ui) === JSON.stringify(['bubble', 'chat', 'settings']); }
