@@ -4,7 +4,7 @@
 
 ## 一句话
 
-011、012 已合入，013（合流）在跑；合入后 合流（换上 Usagi 调校），再跑全量验收、出正式 dmg、请用户试用。
+011、012 已合入，013（合流换上 Usagi）在跑；013 合入后跑全量验收、出正式 dmg、请用户试用。
 
 ## 开工必做
 
@@ -44,7 +44,7 @@
 
 ## 下一步
 
-1. **011 已合入**（合并提交 8cefaec）：第 2 次审查 pass；脚骨 TRS 与逆绑定矩阵已与输入一致（新测试覆盖），MASK 队列 0，线宽/腮红/嘴按参考图。主导随后自己微调 ω 嘴尾巴方向（1fe930a，从左弯底部垂下、末端右勾，照参考图），重出 usagi.vrm，pipeline/run_tests.sh 通过。遗留：耳朵内侧粉色边缘锯齿（010 身体贴图），013 后另开小任务。
+1. **011 已合入**（合并提交 8cefaec）：第 2 次审查 pass；脚骨 TRS 与逆绑定矩阵已与输入一致（新测试覆盖），MASK 队列 0，线宽/腮红/嘴按参考图。主导随后自己微调 ω 嘴尾巴方向（1fe930a，从左弯底部垂下、末端右勾，照参考图），重出 usagi.vrm，pipeline/run_tests.sh 通过。遗留：耳朵内侧粉色边缘锯齿（010 身体贴图），013 后另开小任务。完成条件：已完成，无需操作（`ar status 011-五官贴片与表情` 为已合并）。
 2. **012 已合入**（16:5x，合并提交 185359f）：-dev 占位 dmg 127MB，打包冒烟 ok；图标从参考图正面裁出（主导看过，好）。遗留：`dist:win` 在本机失败——NSIS 的 makensis 是 x86_64，本机 arm64 没装 Rosetta（`Unknown system error -86`）；出正式包时主导先 `softwareupdate --install-rosetta --agree-to-license`（用户已授权装工具）再试，仍不行就交用户在 Windows 上跑 `npm --prefix app run dist:win`。EXE 资源编辑被关掉，exe/快捷方式可能是 Electron 默认图标，正式包时核对。
 3. **013 在跑**（托管，Codex，17:5x 派发）：`ar wait 013-合流换上Usagi并调校`。验收看冒烟截图（Usagi 入画、五官、耳朵甩动、表情互斥），主导 `npm --prefix app run dev` 实看。完成条件：013 accept。
 4. 013 合入后：`ar verify --detach` 全量验收（上次通过后已合入 4+ 个任务；首次 Electron 下载约 20 分钟，012 已配 npmmirror 镜像）；再 `npm --prefix app run dist`（或让执行者跑）出正式 dmg/exe（不含 Seed-san）；主导自己装 dmg 试；然后请用户试用并填自己的 DeepSeek Key。完成条件：正式 dmg 在 app/release/，用户收到安装说明。
