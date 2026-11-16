@@ -4,7 +4,7 @@
 
 ## 一句话
 
-**项目暂停**（2026-11-16 20:4x，用户经 AgentRouter-dev 主导转达：其他项目收尾后暂停、全力开发 AgentRouter）。暂停时状态：全量验收通过，正式 dmg/exe 已出并交用户试用，无在跑/排队任务。恢复时先问用户试用反馈；`.agent-router/project.json` 的 taskSlots（min 3、weight 8）是否调低待用户确认。
+**恢复开发**（用户 21:0x Windows 实测后要求优先修，已和 AgentRouter-dev 主导协调好名额）：015 头身交界线、016 Windows 流畅度与焦点、017 五官形态不变、018 表情动作参考整理在跑；之后按 018 结论重做表情动作，再出新 dmg/exe 交用户 Windows 复测。
 
 ## 开工必做
 
@@ -27,28 +27,36 @@
 - 2026-11-16 "用中文和我交流"。素材在 `Material/`（GIF 参考图 + `Usagi_Voice.mp4` 声音）。
 - 目标、里程碑、已定方案 D1～D6 都在 `.agent-router/target.md`，拆任务前先读。
 
+- 2026-11-16 21:0x 用户 Windows 实测（截图 /Users/mac/Desktop/QQ20261116-220421.png）：①"模型应当是乌萨奇的头和身子之间有线，且乌撒气的手上方部位是没有凸起的……参考 material 下的 chatgpt 四视图"；②"windows上的安装版图标是electron的默认图标"；③"帧率较低……略微的掉帧感"，"除了行走以外，跟随鼠标还有其他表情都会有点卡顿，只有静止挂机不会卡顿"；④"切换了鼠标窗口焦点之后无法点击和拉动"；⑤"乌萨奇在做不同动作和表情的时候，五官的形态是不会发生变化的……只做位置的改变，表情可以调整修改"（AskUserQuestion 确认是**期望**，不是 bug）；⑥"全量查看material下的视频和动态图……参照里面的表情来做……现在的表情只能说合格但不符合乌萨奇这个角色的特点"。要求和 AgentRouter 主导沟通让 Usagi 优先（对方同意，Usagi 是公平值最低的项目，空名额先给我们，不用插队）。
+- 2026-11-16 用户要求同步 GitHub（已做，见新决定与教训）。
+
 ## 在跑与待处理任务
 
 <!-- ar:handoff:tasks -->
 （软件生成，`ar lead handoff --write` 更新；只改"主导判断"一列；处理完的失败任务删掉那一行）
 
 公共目录：~/.config/agent-router
-任务表生成于：2026-11-16T12:54:25Z
+任务表生成于：2026-11-16T14:19:56Z
 
 | 记录名 | 状态 | 启动方式 | 接回命令 | 主导判断 |
 |---|---|---|---|---|
+| 015-头身交界线 | 排队中 | 托管 | `ar wait 015-头身交界线` |  |
+| 016-Windows流畅度与焦点后无法点击 | 排队中 | 托管 | `ar wait 016-Windows流畅度与焦点后无法点击` |  |
+| 017-五官形态保持不变 | 排队中 | 托管 | `ar wait 017-五官形态保持不变` |  |
+| 018-表情动作参考整理 | 排队中 | 托管 | `ar wait 018-表情动作参考整理` |  |
 | 001-Tripo建模操作指南 | 已停止 | — | `ar status 001-Tripo建模操作指南` |  |
 | 005-Usagi叫声切片 | 失败 | — | `ar status 005-Usagi叫声切片` |  |
 <!-- /ar:handoff:tasks -->
 
 ## 下一步
 
-1. **011 已合入**（合并提交 8cefaec）：第 2 次审查 pass；脚骨 TRS 与逆绑定矩阵已与输入一致（新测试覆盖），MASK 队列 0，线宽/腮红/嘴按参考图。主导随后自己微调 ω 嘴尾巴方向（1fe930a，从左弯底部垂下、末端右勾，照参考图），重出 usagi.vrm，pipeline/run_tests.sh 通过。遗留：耳朵内侧粉色边缘锯齿（010 身体贴图），013 后另开小任务。完成条件：已完成，无需操作（`ar status 011-五官贴片与表情` 为已合并）。
-2. **012 已合入**（16:5x，合并提交 185359f）：-dev 占位 dmg 127MB，打包冒烟 ok；图标从参考图正面裁出（主导看过，好）。遗留：`dist:win` 在本机失败——NSIS 的 makensis 是 x86_64，本机 arm64 没装 Rosetta（`Unknown system error -86`）；出正式包时主导先 `softwareupdate --install-rosetta --agree-to-license`（用户已授权装工具）再试，仍不行就交用户在 Windows 上跑 `npm --prefix app run dist:win`。EXE 资源编辑被关掉，exe/快捷方式可能是 Electron 默认图标，正式包时核对。
-3. **013 已合入**（e540564，第 4 次）：位置漂移修好（回归测试覆盖）。举手 R4-1 成立、主导接手：Usagi 手臂约 0.075H、根在身体侧面、够不到头顶，转肩会把手转进头里并鼓包；改为肩不转、上臂外展 1.5/1.4（伸懒腰/喊叫），手卡在头身交界凹处伸出轮廓（fa29171，探针量过：手骨伸出轮廓约 0.06H）。完成条件：已完成；全量验收的 smoke-stretch/shout 截图里看得到小手（看不到再调 `app/src/renderer/motion/index.ts` 的 upperArm）。
-3b. **014 已合入**（第 4 次，审查 R4-1 判不成立：尾巴骨 0.55mm 漂移）：耳朵粉色边界完全平滑（最大转角 144°→26°）。主导随后把尾巴白区 1.15r→1.03r 去掉球上方白色月牙，整条流水线重出并同步 `assets/models/usagi.vrm`（81395e0），pipeline 测试、app 254 项单测、typecheck 通过。完成条件：已完成。
-4. **全量验收已通过**（20261116-202714-351d）。前两次失败是环境：npm ci 后刚解压的 Electron 首启在 macOS 上大概率 UnknownVizError（删 dist 复现 3/4），主导在 app/scripts/smoke.mjs 加了"刚下载且正是该错才重跑一次"（da36f2e，单测覆盖）。正式包：`app/release/Usagi-0.1.0-mac-arm64.dmg`（120MB，正式模型，挂载检查模型与仓库逐字节一致，装包后 --smoke ok）。Rosetta 已装，Windows 包 `Usagi-0.1.0-win-x64.exe`（119MB，打包资源核对通过，未签名）已出。完成条件：用户收到 docs/guides/02-安装与使用.md 与 dmg 路径。
-5. **等用户**：Mac 试用反馈（动作幅度、耳朵、表情、叫声音量、大小位置）→ 按反馈写说明或主导自己调。Windows 待用户验证：安装是否单击完成、自动启动、托盘图标、exe/快捷方式图标（EXE 资源编辑被关，可能是 Electron 默认图标）、走路流畅度（Windows 高频 setPosition 可能掉帧）、卸载后保留数据；Mate Engine 导入 `assets/model/usagi.vrm`（VRM 1.0，第三方说支持 0.x/1.x，未官方确认）。完成条件：用户反馈收齐。
+1. **已由主导直接修好并提交**：②Windows 图标——`app/electron-builder.yml` 打开 `signAndEditExecutable`（electron-builder 26 在 mac 上无需 wine 就能改 exe 资源，核对 win-unpacked/Usagi.exe 含 icon.ico 全部 7 个尺寸，3b036a2）；①的"手上方凸起"——手臂静止下垂 1.1→0.35（`ARM_REST`，app/src/renderer/motion/index.ts；伸懒腰/喊叫相对它计算，绝对抬角 0.4/0.3 不变；5907386）；冒烟 `UnknownVizError` 改为不论是否刚下载都重跑一次（高负载下非首启也会出，21:10 复现）。
+2. **015-头身交界线**（托管，Codex）：两侧加深腰线凹口让 MToon 描边画出头身分界线（肚子正面不加），整条流水线重出并拷到 assets/models。`ar wait 015-头身交界线`。验收看门禁冒烟 smoke-idle/walk/happy 两侧有线、无鼓包，对照参考图正面；看汇报建议的 ARM_REST。完成条件：accept。
+3. **016-Windows流畅度与焦点后无法点击**（托管）：像素比上限、关 CalculateNativeWinOcclusion、定时器按时间自校正、看向平滑、命中改由光标轮询驱动、blur 后重设穿透、加"显示帧率"诊断与 fps.log、指南加复测清单。mac 无法验证效果，验收看单测与代码，效果交用户 Windows 复测。完成条件：accept。
+4. **017-五官形态保持不变**（托管；与 016 范围有重叠可能排队）：集中开关 `FACE_EXPRESSIONS=false`、`FACE_BLINK=true`（**眨眼是否保留待问用户**），冒烟改为断言情绪/口型值全为 0。若 018 结论与"五官不变"冲突，先问用户再定。完成条件：accept。
+5. **018-表情动作参考整理**（托管，chore，worktree）：抽帧拼图在 docs/research/usagi-表情动作/。主导读 README 和拼图，按它写下一批"动作重做"说明（幅度、节奏、姿势、缺的动作），五官图案（neutral）若与参考有出入也一起调。完成条件：accept 并写出下一批说明。
+6. 全部合入后：`ar verify --detach` 全量验收 → `npm --prefix app run dist`（mac+win 都在本机打，Rosetta 已装）→ 主导核对 exe 图标与装包冒烟 → 交用户 Windows 复测（帧率数字、焦点后点击、模型线、图标、表情）→ 通知 agentrouter-dev 主导 Usagi 做完。完成条件：用户复测反馈。
+7. Windows 待用户验证（旧清单仍有效）：安装/自动启动/托盘、卸载保留数据、Mate Engine 导入 `assets/model/usagi.vrm`。
 
 ## 授权与边界
 
