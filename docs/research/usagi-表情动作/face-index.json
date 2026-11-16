@@ -1,0 +1,332 @@
+[
+  {
+    "id": "F01",
+    "name": "常态圆眼闭ω",
+    "source": "Material/2ca57d0da1e611c5284873ecbb0fc8514a9949c6.gif",
+    "frame": 0,
+    "time": 0,
+    "box": [
+      40,
+      195,
+      580,
+      530
+    ],
+    "path": "face/常态圆眼闭ω-2ca57d0d-f000.png",
+    "note": "圆眼内上白点+下白弧；高弧眉；ω双弧和偏左下短尾；粉腮三四短斜线。无声的端食物停顿。"
+  },
+  {
+    "id": "F02",
+    "name": "常态圆眼闭ω",
+    "source": "Material/Usagi_Voice.mp4",
+    "frame": 4296,
+    "time": 143.2,
+    "box": [
+      455,
+      295,
+      920,
+      565
+    ],
+    "path": "face/常态圆眼闭ω-video-143.200s.png",
+    "note": "other_55捏果子：手在动而嘴闭合；和GIF共同校准比例。"
+  },
+  {
+    "id": "F03",
+    "name": "浅开ω小舌",
+    "source": "Material/Usagi_Voice.mp4",
+    "frame": 24,
+    "time": 0.8,
+    "box": [
+      180,
+      0,
+      1160,
+      625
+    ],
+    "path": "face/浅开ω小舌-video-000.800s.png",
+    "note": "other_01：上沿仍是ω，开口浅，舌粉色，嘴下有独立弧线；眼眉不改。"
+  },
+  {
+    "id": "F04",
+    "name": "竖开ω舌口",
+    "source": "Material/d607e8a01175e0cd443fc8df50dbddc01942011.gif",
+    "frame": 6,
+    "time": 0.24,
+    "box": [
+      28,
+      54,
+      278,
+      215
+    ],
+    "path": "face/竖开ω舌口-d607e8a0-f006.png",
+    "note": "f6/0.24s抱臂张口：眼圆、眉弧；开口从ω中部向下延长，舌在底端。"
+  },
+  {
+    "id": "F05",
+    "name": "竖开ω舌口",
+    "source": "Material/Usagi_Voice.mp4",
+    "frame": 64,
+    "time": 2.133333,
+    "box": [
+      210,
+      0,
+      1150,
+      655
+    ],
+    "path": "face/竖开ω舌口-video-002.133s.png",
+    "note": "other_01：与0.8s同镜头比较口腔加深，不能把上沿抹成椭圆。"
+  },
+  {
+    "id": "F06",
+    "name": "大开ω长叫",
+    "source": "Material/Usagi_Voice.mp4",
+    "frame": 1704,
+    "time": 56.8,
+    "box": [
+      230,
+      100,
+      1100,
+      625
+    ],
+    "path": "face/大开ω长叫-video-056.800s.png",
+    "note": "other_26：长叫保持圆眼弧眉，ω上沿+长开口/舌，非怒脸。"
+  },
+  {
+    "id": "F07",
+    "name": "旋转圆眼开ω",
+    "source": "Material/Usagi_Voice.mp4",
+    "frame": 3728,
+    "time": 124.266667,
+    "box": [
+      350,
+      340,
+      630,
+      510
+    ],
+    "path": "face/旋转圆眼开ω-video-124.267s.png",
+    "note": "pururu_01正面：普通圆眼、中开ω，不是小O撅嘴。"
+  },
+  {
+    "id": "F08",
+    "name": "闭眼上弧甩水",
+    "source": "Material/89f9e11aca7a61f5db2ac315bb0aa3bb1942011.gif",
+    "frame": 6,
+    "time": 0.18,
+    "box": [
+      0,
+      40,
+      488,
+      390
+    ],
+    "path": "face/闭眼上弧甩水-89f9e11a-f006.png",
+    "note": "f6/0.18s：双眼上弧闭合、ω闭口不改；水滴和速度线属于甩水。"
+  },
+  {
+    "id": "F09",
+    "name": "短横闭眼",
+    "source": "Material/f3581eb5b5da21e320a31327642513681942011.gif",
+    "frame": 9,
+    "time": 0.72,
+    "box": [
+      15,
+      120,
+      640,
+      465
+    ],
+    "path": "face/短横闭眼-f3581eb5-f009.png",
+    "note": "f9/0.72s：短横闭眼、斜脸ω闭嘴；眉局部出画；不是笑弧眼。"
+  },
+  {
+    "id": "F10",
+    "name": "短横闭眼对照圆眼",
+    "source": "Material/f3581eb5b5da21e320a31327642513681942011.gif",
+    "frame": 10,
+    "time": 0.8,
+    "box": [
+      15,
+      120,
+      640,
+      465
+    ],
+    "path": "face/短横闭眼对照圆眼-f3581eb5-f010.png",
+    "note": "f10/0.8s：与前一帧同姿重新圆眼；用于区分眨眼与头移动。"
+  },
+  {
+    "id": "F11",
+    "name": "鼓颊缩口",
+    "source": "Material/903ac9bb2ae66096154d0ad3c806025bc1c29809.gif",
+    "frame": 16,
+    "time": 1.76,
+    "box": [
+      12,
+      82,
+      259,
+      255
+    ],
+    "path": "face/鼓颊缩口-903ac9bb-f016.png",
+    "note": "f16/1.76s：鼓出双颊、小缩ω、食屑；圆眼弧眉与粉腮保留。"
+  },
+  {
+    "id": "F12",
+    "name": "鼓颊紧缩ω",
+    "source": "Material/d1107d90efca3b461825b456abbf5f4b1942011.gif",
+    "frame": 0,
+    "time": 0,
+    "box": [
+      62,
+      128,
+      374,
+      375
+    ],
+    "path": "face/鼓颊紧缩ω-d1107d90-f000.png",
+    "note": "f0：嘴中部向内挤，鼓颊；不是现有sad倒弧嘴。右侧别的角色有遮挡。"
+  },
+  {
+    "id": "F13",
+    "name": "咀嚼回ω",
+    "source": "Material/d1107d90efca3b461825b456abbf5f4b1942011.gif",
+    "frame": 25,
+    "time": 1.78,
+    "box": [
+      62,
+      128,
+      374,
+      375
+    ],
+    "path": "face/咀嚼回ω-d1107d90-f025.png",
+    "note": "f25/1.78s：同机位收放后回ω，眼眉不随咀嚼改形。"
+  },
+  {
+    "id": "F14",
+    "name": "俯压闭ω姿态",
+    "source": "Material/bedb5e52cf6a52ef9b1d11359a6c5c501942011.gif",
+    "frame": 3,
+    "time": 0.24,
+    "box": [
+      165,
+      380,
+      640,
+      704
+    ],
+    "path": "face/俯压闭ω姿态-bedb5e52-f003.png",
+    "note": "f3/0.24s：闭ω在头下缘，眼仍圆眉仍弧；下方双粉块是果实/果酱，不能抄成大开口。"
+  },
+  {
+    "id": "F15",
+    "name": "俯压闭ω姿态",
+    "source": "Material/Usagi_Voice.mp4",
+    "frame": 4344,
+    "time": 144.8,
+    "box": [
+      475,
+      340,
+      815,
+      605
+    ],
+    "path": "face/俯压闭ω姿态-video-144.800s.png",
+    "note": "ura_04：俯视闭ω，眼嘴因姿态靠近；下方粉块是压果实，不据此画宽口。"
+  },
+  {
+    "id": "F16",
+    "name": "侧脸凸ω闭口",
+    "source": "Material/d48dde477eee3a58a5646ea9038dd51b1942011.gif",
+    "frame": 0,
+    "time": 0,
+    "box": [
+      290,
+      68,
+      785,
+      620
+    ],
+    "path": "face/侧脸凸ω闭口-d48dde47-f000.png",
+    "note": "只见单圆眼、弧眉和一侧腮红，ω凸在脸轮廓外；侧脸补充，非完整正脸。"
+  },
+  {
+    "id": "F17",
+    "name": "倒立张ω特例",
+    "source": "Material/Usagi_Voice.mp4",
+    "frame": 2544,
+    "time": 84.8,
+    "box": [
+      430,
+      480,
+      850,
+      615
+    ],
+    "path": "face/倒立张ω特例-video-084.800s.png",
+    "note": "yaha_04倒立原方向：圆眼、小开ω，眉因姿态看不清；不是新增眼形。"
+  },
+  {
+    "id": "F18",
+    "name": "侧躺小椭圆口特例",
+    "source": "Material/Usagi_Voice.mp4",
+    "frame": 3352,
+    "time": 111.733333,
+    "box": [
+      475,
+      280,
+      940,
+      645
+    ],
+    "path": "face/侧躺小椭圆口特例-video-111.733s.png",
+    "note": "yaha_05：局部小椭圆/卷曲嘴，眼眉被动物遮挡；没有清楚正脸，不应补画。"
+  },
+  {
+    "id": "F19",
+    "name": "哈圆眼开ω",
+    "source": "Material/Usagi_Voice.mp4",
+    "frame": 4718,
+    "time": 157.266667,
+    "box": [
+      785,
+      270,
+      1120,
+      470
+    ],
+    "path": "face/哈圆眼开ω-video-157.267s.png",
+    "note": "ha_01：捧食物的圆眼、弧眉、小开ω；没有明确怒眉/大瞪眼。"
+  },
+  {
+    "id": "F20",
+    "name": "侧脸竖长开ω",
+    "source": "Material/Usagi_Voice.mp4",
+    "frame": 1776,
+    "time": 59.2,
+    "box": [
+      565,
+      270,
+      960,
+      610
+    ],
+    "path": "face/侧脸竖长开ω-video-059.200s.png",
+    "note": "other_26侧向长叫：单圆眼，凸ω上沿、竖开口/舌，眉弧粉腮；侧脸补充。"
+  },
+  {
+    "id": "F21",
+    "name": "小开ω搓手",
+    "source": "Material/0f87da8acad01bd192a02bd02d4fc0a307807187.gif",
+    "frame": 0,
+    "time": 0,
+    "box": [
+      45,
+      62,
+      165,
+      145
+    ],
+    "path": "face/小开ω搓手-0f87da8a-f000.png",
+    "note": "f0/0s：胸前搓手时的ω下小开口与小舌，双圆眼弧眉不改；原图196px，不能精确量嘴的横向变形。"
+  },
+  {
+    "id": "F22",
+    "name": "连声浅缝ω特例",
+    "source": "Material/Usagi_Voice.mp4",
+    "frame": 1312,
+    "time": 43.733333,
+    "box": [
+      120,
+      35,
+      1150,
+      610
+    ],
+    "path": "face/连声浅缝ω特例-video-043.733s.png",
+    "note": "other_20开头：ω双弧下浅粉三角/舌，偏侧尾钩有短震线。源镜头仅拍嘴，眼眉完全出画，没有可用正脸，保留局部特例。"
+  }
+]
