@@ -10,7 +10,7 @@
 
 - D1 平台：自己做跨平台桌宠程序（Electron + three + @pixiv/three-vrm），不依赖 Mate Engine；Mate Engine 只做 Windows 上的兼容检查（用户自己在 Windows 电脑上试）。
 - D2 建模：用户自己在 Tripo 网页上生成（T-pose 多视图 → 智能拓扑），把 .glb 放到 `Material/tripo/`；我们只出操作指南。
-- D3 五官：Tripo 生成**无五官**的身体（只有底色、耳朵内侧粉色、尾巴）；眼睛、嘴、腮红用贴在脸上的薄片 + 表情贴图集，表情用 VRM 的 UV 平移（textureTransformBinds）切换。理由：Tripo 烘进贴图的五官没法做表情；Usagi 五官是简单线条，可以程序画。
+- D3 五官（2026-11-16 用户确认"方案a"）：Tripo 生成**无五官**的身体（只有底色、耳朵内侧粉色、尾巴）；眼睛、嘴、腮红用贴在脸上的薄片 + 表情贴图集，表情用 VRM 的 UV 平移（textureTransformBinds）切换。理由：Tripo 烘进贴图的五官没法做表情；Usagi 五官是简单线条，可以程序画。
 - D4 Blender：本机 `~/Applications/Blender.app`（5.2.3 LTS），已装 VRM 插件（extensions: vrm）。所有 Blender 步骤写成命令行脚本（`blender -b --python …`），可重复跑、可验收；每一步出预览图供主导看。
 - D5 弹簧骨骼：两只耳朵各一串骨骼（3～4 节）做弹簧，头部和身体加碰撞球。
 - D6 目录：原始素材 `Material/`；Blender 脚本 `pipeline/`；中间与最终模型 `assets/`；桌宠程序 `app/`；给用户的操作指南 `docs/guides/`。占位模型 `assets/placeholder/Seed-san.vrm`（VRM Public License 1.0，VirtualCast），只供开发，不打进安装包。
