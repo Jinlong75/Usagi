@@ -22,6 +22,7 @@
 - 2026-11-16 需求原文见 `usagi3Dpet.md`：Tripo 生成 T-pose 多视图 → 智能拓扑网格；Blender 合并重合点、删多余网格；VRM 骨骼；权重修复；弹簧骨骼和碰撞体；表情；桌宠软件；"最后把做好的角色导入 Mate Engine"；"要求桌宠能一键安装，并且可以接 deepseek 的 api"；参考桌宠 https://github.com/MerZlin/dsh-pet-indesktop 。
 - 2026-11-16 用户选择：自己做跨平台桌宠（Mac/Windows），Mate Engine 只做 Windows 兼容；Tripo 由用户自己在网页上生成；"这个mac有blender并且安装了mcp工具，其他的没有你可以自己安装"。
 - 2026-11-16 用户："我建议是使用图生3d建模，而不是用文字生成……因为我要做的是完全还原的乌萨奇"；脸部选"方案a"（无五官，表情用贴片）。指南 `docs/guides/01-Tripo建模.md` 已给用户（主导自写，001 执行者记录已停用）。
+- 2026-11-16 用户："t-pose图你来截取并生成，你可以用codex。整个项目由我参与的部分只有使用t-pose图在tripo上生成3d模型，其他都由你自动完成"；"参考桌宠项目你要做一个全量阅读……还有桌宠表情和与人互动的功能等"（调研见 docs/research/参考桌宠调研.md，功能分级 D7 在 target.md）。
 - 2026-11-16 "用中文和我交流"。素材在 `Material/`（GIF 参考图 + `Usagi_Voice.mp4` 声音）。
 - 目标、里程碑、已定方案 D1～D6 都在 `.agent-router/target.md`，拆任务前先读。
 
@@ -31,21 +32,23 @@
 （软件生成，`ar lead handoff --write` 更新；只改"主导判断"一列；处理完的失败任务删掉那一行）
 
 公共目录：~/.config/agent-router
-任务表生成于：2026-11-16T02:34:16Z
+任务表生成于：2026-11-16T04:00:51Z
 
 | 记录名 | 状态 | 启动方式 | 接回命令 | 主导判断 |
 |---|---|---|---|---|
-| 002-Blender网格清理与预览脚本 | 运行中 | 托管 | `ar wait 002-Blender网格清理与预览脚本` |  |
 | 003-桌宠程序骨架 | 排队中 | 托管 | `ar wait 003-桌宠程序骨架` |  |
+| 004-T-pose四视图生成-2 | 运行中 | 托管 | `ar wait 004-T-pose四视图生成-2` |  |
+| 005-Usagi叫声切片 | 运行中 | 托管 | `ar wait 005-Usagi叫声切片` |  |
+| 002-Blender网格清理与预览脚本 | 待验收 | — | `ar status 002-Blender网格清理与预览脚本` |  |
 | 001-Tripo建模操作指南 | 已停止 | — | `ar status 001-Tripo建模操作指南` |  |
 <!-- /ar:handoff:tasks -->
 
 ## 下一步
 
-1. 等 001/002/003（托管）结束：`ar wait <记录名>` 放后台；逐个验收（status → gate.json → review show/confirm → report.md → diff），看 002 的预览图和 003 的 smoke.png。
-2. 等用户按 `docs/guides/01-Tripo建模.md` 生成模型放到 `Material/tripo/usagi_tripo.glb`（完成条件：文件存在）。
-3. 003 合入后写 004（DeepSeek 聊天：设置里填 key、safeStorage 加密保存、气泡对话、Usagi 人设，depends 003）和 005（Usagi_Voice.mp4 切音效；本机没有 ffmpeg，任务里用 npm 的 ffmpeg-static 或 Blender 不行就让执行者装 imageio-ffmpeg 到临时环境，需要先定）。完成条件：两份说明提交并 `ar dispatch <说明> --detach` 派出。
-4. 模型到了以后：跑 `pipeline/blender/cleanup_mesh.py` 出 `assets/cleaned/`，看预览图；再写 M2 骨骼权重、M3 弹簧骨骼、M4 表情（D3 贴片 + UV 平移）的说明。
+1. 主工作区被 004-T-pose四视图生成-2（杂务，非 worktree）占用期间**不要提交**。它结束后：验收四视图（对照原作看 sheet.png，第二轮意见在说明 004 里）；`ar accept 002-Blender网格清理与预览脚本`（已验收，只差主工作区干净）；提交 006、007 说明并派发（完成条件：两份都派出）。
+2. 003 正在重跑门禁（主导补了 acceptFirstMouse 5f05d04），通过后看 smoke.png 再 accept；005 叫声切片在跑，完成后抽听几段（`afplay`）再 accept。
+3. 四视图合格后交给用户去 Tripo（用户只做这一步），等 `Material/tripo/usagi_tripo.glb`；到了就跑 `pipeline/blender/cleanup_mesh.py`（命令见 pipeline/README.md），看预览，再写 M2 骨骼权重、M3 弹簧骨骼、M4 表情说明。
+4. 006、007 合入后写 008：气泡与自言自语、聊天窗口、设置页（Key、模型 deepseek-flash / deepseek-v4-pro、测试连接）、IPC 接线、聊天情绪联动表情。完成条件：008 派出。
 5. M6 安装包（electron-builder：mac dmg arm64、win nsis），Windows 包能否在 mac 上构建要先调研（`ar research "<问题>"`）。完成条件：门禁里 `npm run dist` 产出 .dmg，Windows 包有构建方案。
 
 ## 授权与边界
@@ -58,6 +61,9 @@
 
 - D1～D6 见 `.agent-router/target.md`（自建 Electron 桌宠；用户手动 Tripo；模型无五官、表情用贴片 + UV 平移；Blender 全用命令行脚本；耳朵弹簧骨骼；目录约定）。
 - 本机 `ar` 是系统的 /usr/bin/ar，AgentRouter 一律用 `node /Users/mac/.claude/skills/agent-router/core/ar.mjs`。
+- **门禁不经过 shell**：verify 每条按空格拆开直接执行，`cd app && …` 会"0 秒假通过"，`&&`、`for`、管道都不能用。写成单条命令（`npm --prefix app test`）或主导维护的检查脚本（`sh docs/specs/checks/<编号>-check.sh`）。已反馈给 AgentRouter 开发会话。
+- type: chore 的任务默认不开 worktree，在主工作区跑，期间主导任何提交都会进它的门禁范围；要并行就别用 chore（frontmatter 的 worktree 字段软件不认）。
+- DeepSeek 当前模型 ID：deepseek-flash（默认）、deepseek-v4-pro；deepseek-v4-flash 是旧名。
 - 全局名额常被别的项目占满时，`ar next --dispatch` 不派；直接 `ar dispatch <说明> --detach` 能进队列。
 
 ## 已知问题与证据
