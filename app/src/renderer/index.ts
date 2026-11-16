@@ -9,7 +9,7 @@ import { blink, createBlink } from './behaviors/blink';
 import { cursorDirection, look } from './behaviors/look';
 import { BehaviorMachine, TURN_ANGLE } from './behavior/machine';
 import { PetAudio } from './behavior/audio';
-import { MotionRig, sampleMotion } from './motion';
+import { ARM_REST, MotionRig, sampleMotion } from './motion';
 import { DragSprings } from './motion/springs';
 import { frameBounds, measureMotionBounds, motionAspect, springEnvelope } from './motion/framing';
 import { setEmotion } from './behaviors/expressions';
@@ -115,9 +115,10 @@ async function loadModel(): Promise<void> {
     VRMUtils.combineMorphs(loaded);
     VRMUtils.rotateVRM0(loaded);
     loaded.scene.traverse((object) => { object.frustumCulled = false; });
-    // Rest the short arms beside the body; raised clips turn shoulders and arms together.
-    loaded.humanoid.getNormalizedBoneNode('leftUpperArm')?.rotation.set(0, 0, -1.1);
-    loaded.humanoid.getNormalizedBoneNode('rightUpperArm')?.rotation.set(0, 0, 1.1);
+    // Rest the short arms at the head–body notch, angled slightly down like the reference
+    // front view; 1.1 rad pulled the arm root out into a bump above each hand (用户 Windows 实测).
+    loaded.humanoid.getNormalizedBoneNode('leftUpperArm')?.rotation.set(0, 0, -ARM_REST);
+    loaded.humanoid.getNormalizedBoneNode('rightUpperArm')?.rotation.set(0, 0, ARM_REST);
     loaded.update(0);
     vrm = loaded;
     scene.add(vrm.scene);

@@ -17,6 +17,8 @@ export const MOTION_SECONDS: Record<MotionName, number> = {
   shake: DURATIONS.shake / 1000, spin: DURATIONS.spin / 1000,
   happy: DURATIONS.happy / 1000, surprised: DURATIONS.surprised / 1000, shout: DURATIONS.shout / 1000,
 };
+/** Resting downward turn of each upper arm (rad, VRM 1.0 normalized ±Z). */
+export const ARM_REST = 0.35;
 export function neutralPose(): Pose {
   return { position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1], bones: {}, expressions: {} };
 }
@@ -56,7 +58,8 @@ export function sampleMotion(name: MotionName, t: number, options: MotionOptions
     // the arm root into the head and bulges the body, so only the upper arm abducts:
     // the hands poke out sideways-up past the silhouette (主导 2026-11-16 定).
     // VRM 1.0 normalized arms extend along ±X: opposite Z turns raise both sides.
-    const upperArm = name === 'stretch' ? 1.5 : 1.4; // Relative to resting ±1.1; 1.5 sits the hands in the head–body notch, where they show most.
+    // Absolute raise above horizontal: 0.4 (stretch) / 0.3 (shout) sits the hands in the head–body notch, where they show most.
+    const upperArm = ARM_REST + (name === 'stretch' ? 0.4 : 0.3);
     pose.bones.leftUpperArm = [-0.06 * weight, 0, upperArm * weight];
     pose.bones.rightUpperArm = [-0.06 * weight, 0, -upperArm * weight];
     pose.bones.chest = [-0.1 * weight, 0, 0];

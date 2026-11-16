@@ -131,11 +131,11 @@ it('冒烟必须证明 Usagi 资源、上 30% 耳朵变化 > 3% 与脸部表情�
   expect(validBehaviorReport({ ...success, model: '/bundle/resources/models/usagi.vrm' })).toBe(true);
 });
 
-describe('刚下载的 Electron 首启 UnknownVizError 只重跑一次', () => {
-  it('只在本次刚下载且原因正是 UnknownVizError 时重跑', () => {
+describe('Electron UnknownVizError 只重跑一次', () => {
+  it('原因正是 UnknownVizError 时重跑（首启或高负载），其他失败不重跑', () => {
     const viz = '{"ok":false,"reason":"Electron 冒烟进程退出：1；Error: UnknownVizError"}';
     expect(shouldRetryFreshElectron(true, 1, viz)).toBe(true);
-    expect(shouldRetryFreshElectron(false, 1, viz)).toBe(false);
+    expect(shouldRetryFreshElectron(false, 1, viz)).toBe(true);
     expect(shouldRetryFreshElectron(true, 0, viz)).toBe(false);
     expect(shouldRetryFreshElectron(true, 1, '{"ok":false,"reason":"冒烟缺少界面"}')).toBe(false);
   });

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
 import { Bone, Box3, BoxGeometry, Float32BufferAttribute, Object3D, Skeleton, SkinnedMesh, Uint16BufferAttribute, Vector3 } from 'three';
 import type { VRM, VRMHumanBoneName } from '@pixiv/three-vrm';
-import { MOTION_SECONDS, MotionRig, jumps, neutralPose, sampleMotion } from '../src/renderer/motion';
+import { ARM_REST, MOTION_SECONDS, MotionRig, jumps, neutralPose, sampleMotion } from '../src/renderer/motion';
 import { EMOTIONS, setEmotion } from '../src/renderer/behaviors/expressions';
 import type { MotionName } from '../src/renderer/motion';
 import { DragSprings, SPRING_ACCELERATION_COEFFICIENT } from '../src/renderer/motion/springs';
@@ -260,7 +260,7 @@ it('按模型高度跳 10%，落地 XZ 1.08，短腿摇摆大于手臂，伸展�
   expect(stretch.hipsY).toBeCloseTo(0.025);
   expect(stretch.bones.chest![0]).toBeCloseTo(-0.1);
   expect(stretch.bones.leftShoulder).toBeUndefined();
-  expect(stretch.bones.leftUpperArm![2] - 1.1).toBeCloseTo(0.4);
+  expect(stretch.bones.leftUpperArm![2] - ARM_REST).toBeCloseTo(0.4);
 });
 
 it('像素比较只看指定区域，跟随脸部位移，透明度和颜色变化都能检出', () => {

@@ -4,7 +4,7 @@ import { Box3, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { VRMLoaderPlugin } from '@pixiv/three-vrm';
 import type { VRM } from '@pixiv/three-vrm';
-import { MotionRig, sampleMotion } from '../src/renderer/motion';
+import { ARM_REST, MotionRig, sampleMotion } from '../src/renderer/motion';
 import { DragSprings } from '../src/renderer/motion/springs';
 import { frameBounds, measureMotionBounds, motionAspect, springEnvelope } from '../src/renderer/motion/framing';
 
@@ -32,8 +32,8 @@ async function load(): Promise<VRM> {
   loader.register(parser => new VRMLoaderPlugin(parser));
   const result = await loader.parseAsync(fixture.buffer.slice(fixture.byteOffset, fixture.byteOffset + fixture.byteLength), '');
   const vrm = result.userData.vrm as VRM;
-  vrm.humanoid.getNormalizedBoneNode('leftUpperArm')!.rotation.z = -1.1;
-  vrm.humanoid.getNormalizedBoneNode('rightUpperArm')!.rotation.z = 1.1;
+  vrm.humanoid.getNormalizedBoneNode('leftUpperArm')!.rotation.z = -ARM_REST;
+  vrm.humanoid.getNormalizedBoneNode('rightUpperArm')!.rotation.z = ARM_REST;
   vrm.update(0);
   return vrm;
 }
@@ -70,8 +70,11 @@ describe('真实 Usagi 资源的无界面验证', () => {
     const rig = new MotionRig(vrm);
     const world = (bone: 'leftHand' | 'rightHand' | 'neck', raw = false) =>
       (raw ? vrm.humanoid.getRawBoneNode(bone) : vrm.humanoid.getNormalizedBoneNode(bone))!.getWorldPosition(new Vector3());
-    vrm.scene.updateMatrixWorld(true);
-    // Rest-pose silhouette half-width at a given height (body/head only: resting arms sit below y≈0.27H).
+    // Body/head silhouette half-width at a given height, measured with both arms hung straight
+    // down out of the way (the resting arms now sit at the notch and would mask the check).
+    const arms = (['leftUpperArm', 'rightUpperArm'] as const).map((bone) => vrm.humanoid.getNormalizedBoneNode(bone)!);
+    arms[0]!.rotation.z = -1.5; arms[1]!.rotation.z = 1.5;
+    vrm.update(0); vrm.scene.updateMatrixWorld(true);
     const points: Vector3[] = [];
     vrm.scene.traverse((object) => {
       const mesh = object as unknown as { isMesh?: boolean; geometry?: { attributes: { position?: { count: number } } };
@@ -81,13 +84,15 @@ describe('真实 Usagi 资源的无界面验证', () => {
     });
     const height = new Box3().setFromPoints(points).getSize(new Vector3()).y;
     const halfWidth = (y: number) => Math.max(...points.filter((p) => Math.abs(p.y - y) < height * 0.01).map((p) => Math.abs(p.x)));
+    arms[0]!.rotation.z = -ARM_REST; arms[1]!.rotation.z = ARM_REST;
+    vrm.update(0); vrm.scene.updateMatrixWorld(true);
     const resting = [world('leftHand', true), world('rightHand', true)];
     rig.apply(sampleMotion(name, age));
     vrm.update(0); vrm.scene.updateMatrixWorld(true);
     for (const [i, bone] of (['leftHand', 'rightHand'] as const).entries()) {
       const hand = world(bone, true);
       // Raised clearly above rest and level with the neck (the head is far too big to reach over).
-      expect(hand.y - resting[i]!.y).toBeGreaterThan(height * 0.08);
+      expect(hand.y - resting[i]!.y).toBeGreaterThan(height * 0.05); // rest is now at the notch (ARM_REST), so the lift is shorter
       expect(hand.y).toBeGreaterThan(world('neck', true).y - height * 0.02);
       // Pokes out past the body/head outline at that height, so the front view shows it.
       expect(Math.abs(hand.x) - halfWidth(hand.y)).toBeGreaterThan(height * 0.025);

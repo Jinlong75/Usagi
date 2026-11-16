@@ -21,9 +21,10 @@ export function validBehaviorReport(report) {
 
 /** 刚解压的 Electron 在 macOS 上首次启动时 GPU 进程起不来，报 UnknownVizError，第二次即正常
  * （主导 2026-11-16 复现：删掉 node_modules/electron/dist 后首跑必失败、次跑通过）。
- * 只在"本次刚下载"且原因正是 UnknownVizError 时重跑一次；其他失败照常报出。 */
-export function shouldRetryFreshElectron(freshDownload, code, output) {
-  return freshDownload && code !== 0 && /UnknownVizError/.test(output);
+ * 机器高负载（平均负载约 30）时非首启也会在截图后出现同一错误（主导 2026-11-16 21:10 复现）。
+ * 只要原因正是 UnknownVizError 就重跑一次；其他失败照常报出。freshDownload 只用于提示文字。 */
+export function shouldRetryFreshElectron(_freshDownload, code, output) {
+  return code !== 0 && /UnknownVizError/.test(output);
 }
 
 async function runOnce(electron, args) {
@@ -52,7 +53,7 @@ export async function smokeMain(executable, args = ['.', '--smoke']) {
     const electron = executable ?? (await import('electron')).default;
     let result = await runOnce(electron, args);
     if (shouldRetryFreshElectron(freshDownload, result.code, result.output)) {
-      console.log('刚下载的 Electron 首次启动报 UnknownVizError（macOS 首启问题），重跑一次冒烟');
+      console.log(freshDownload ? '刚下载的 Electron 首次启动报 UnknownVizError（macOS 首启问题），重跑一次冒烟' : 'Electron GPU 进程报 UnknownVizError（高负载偶发），重跑一次冒烟');
       result = await runOnce(electron, args);
     }
     process.exitCode = result.code;
