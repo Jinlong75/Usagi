@@ -145,6 +145,8 @@ async function start(): Promise<void> {
   win = new BrowserWindow({
     ...currentBounds(), show: false, transparent: true, backgroundColor: '#00000000',
     frame: false, hasShadow: false, resizable: false, maximizable: false, fullscreenable: false,
+    // macOS：窗口未激活时第一次按下也直接交给页面（点击/拖动不用点两次）
+    acceptFirstMouse: true,
     skipTaskbar: process.platform === 'win32', alwaysOnTop: config.alwaysOnTop,
     webPreferences: {
       preload: join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false,
@@ -152,7 +154,7 @@ async function start(): Promise<void> {
     },
   });
   win.setAlwaysOnTop(config.alwaysOnTop, 'floating');
-  if (process.platform === 'darwin') win.setVisibleOnAllWorkspaces(true);
+  if (process.platform === 'darwin') win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('console-message', (details) => {
     if (details.level === 'warning' || details.level === 'error') console.error(`[renderer:${details.level}] ${details.message}`);
