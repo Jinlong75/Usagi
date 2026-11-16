@@ -54,7 +54,7 @@
 2. 016 已合入（审查 R1-1 主导补测试替身）；015 已合入但被用户否定，由 022 撤回：无需操作，完成条件：022 合入。
 4. ~~017~~ 已作废（用户纠正，见上）：无需操作，完成条件：表情改由 018 后的新说明承接。
 5. **018 已合入**（docs/research/usagi-表情动作/，看 face/overview.png 与 REPORT.md）。主导结论：眉毛永远高弧不变；眼只有 带高光圆眼 / 短横线眨眼(F09) / 闭眼弧(F08) 三种；嘴是 ω 闭口(F01) → 小开ω带舌(F03/F19/F21) → 大开竖长ω带舌(F05/F06)，外加鼓腮咀嚼(F11~F13)；腮红 3~4 斜线。删掉怒眉/八字眉/椭圆嘴。映射：happy/yaha→小开ω、shout/ura→大开ω、surprised/哈→小开ω圆眼、angry/sad→不用；口型 aa/oh→大开ω，ih/ee/ou→小开ω；新增 chew、sleep。等 022 合入后写 023 重画图集（pipeline/face/draw_atlas.py，照 F01/F05/F09/F12/F19 描线）。完成条件：023 提交并派发。
-5d. **022-身体形状还原Tripo原始模型-2**（托管，`ar wait 022-身体形状还原Tripo原始模型-2`；用户放了更细致的 usagi3d2.glb，D12，说明已改为以它为输入和标准）：用户"身子旁边有凸起……tripo 原始模型的形状就是最标准的形状"。撤 015 凹口、smooth_face 不碰腰线、新增与原始模型形状一致性检查(≤0.5mm)、ARM_REST=0。验收并排看 assets/model/preview_original/ 与 preview/。完成条件：accept。
+5d. **022-身体形状还原Tripo原始模型-2-2**（托管，`ar wait 022-身体形状还原Tripo原始模型-2-2`；新模型尾巴是独立块，主导已放宽 009 检查 eb3f09f，诊断模型第二块 11180 面过大待查；用户放了更细致的 usagi3d2.glb，D12，说明已改为以它为输入和标准）：用户"身子旁边有凸起……tripo 原始模型的形状就是最标准的形状"。撤 015 凹口、smooth_face 不碰腰线、新增与原始模型形状一致性检查(≤0.5mm)、ARM_REST=0。验收并排看 assets/model/preview_original/ 与 preview/。完成条件：accept。
 5a. **019 已合入（6ccd264）**：docs/research/参考桌宠动作清单.md 末节 20 个候选。主导初选第一批：吃饭团、跳绳、啃西瓜、舔冰淇淋、偷吃被发现、吹泡泡、抱枕打盹（接 020 的 nap 状态）；右键菜单加"喂食/玩耍"。等 018 出五官结论后写说明：先一份"道具框架 + 跳绳"（不依赖新脸），再一份吃东西系列（要张嘴/咀嚼脸）。完成条件：两份说明提交并派发。
 5b. **020-作息时段与问候 在跑**（托管，`ar wait 020-作息时段与问候`）→ 021 早安天气 depends 020：D9。睡觉/打瞌睡动作与闭眼等五官重画后另写；全屏检测留给 D10。完成条件：accept。
 5c. **D10 吸附窗口顶端**：016 合入后写说明（koffi EnumWindows/CGWindowList、坐姿、跟随、跳下、闲逛偶尔自己跳上去可关）；全屏检测（020 的 `isForegroundFullscreen` TODO(D10)）一起做。完成条件：说明提交并派发。
@@ -75,7 +75,7 @@
 - type: chore 默认不开 worktree，在主工作区跑；两个这样的任务会被同时放进主工作区互相污染门禁（AgentRouter 缺陷 221/222，修复任务 958）。958 合入前：chore 说明里写 `worktree: true`（spec check 报"不认识的字段"可忽略，派发认它），或一次只派一个不开 worktree 的写任务。这类任务门禁被误判时不要 accept --force：主导手动跑验收命令确认，再 `ar lead pending seen` 写明原因。
 - 全量验收已配（project.json fullVerify），首次 11:59 通过（20 分钟，主要在下载 Electron）。合入时 accept 常要 `--ack external:<摘要>`：看 external-audit.json 里非 concurrent 的项，确认都不是本任务执行者在工作区外写的。
 - 已合入：002、003、004（第三轮四视图，用户没用）、005（主导手动验收）、006、007、008、009、010。模型产物：`assets/model/usagi_base.glb`（009）、`usagi_body.vrm`（010，VRM 1.0，弹簧 9 关节）、011 将出 `usagi.vrm`；桌宠默认加载 `assets/models/usagi.vrm`（013 负责拷贝）。
-- 检查脚本 `docs/specs/checks/0xx-check*.{sh,py}` 归主导维护；写新检查前先用 Seed-san 跑一遍验证 VRM 插件属性路径（插件模块 bl_ext.blender_org.vrm；需要插件时 Blender 不能带 --factory-startup）。
+- 检查脚本 `docs/specs/checks/0xx-check*.{sh,py}` 归主导维护；写新检查前先用 Seed-san 跑一遍验证 VRM 插件属性路径（插件模块 bl_ext.blender_org.vrm；需要插件时 Blender 不能带 --factory-startup）。 注意 `sh docs/specs/checks/009-check.sh` 会在当前目录重跑 prep 改写 assets/model/**；在主工作区单独验证检查时只跑 `009-check-blend.py`，跑完 `git status` 还原。
 - 带 `--rebase` 的 retry 只重跑门禁、不让执行者动手；要执行者改东西用普通 retry --note。
 - 审查常抓真问题（丢数据、弹簧末端、取景），逐条 confirm；小修主导可在 worktree 改后 `retry --regate`。
 - DeepSeek 当前模型 ID：deepseek-flash（默认）、deepseek-v4-pro；deepseek-v4-flash 是旧名。
