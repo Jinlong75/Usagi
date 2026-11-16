@@ -68,8 +68,13 @@ export function sampleMotion(name: MotionName, t: number, options: MotionOptions
     const phase = Math.max(0, Math.min(6 * ROPE_PERIOD, age));
     // Park below the face before/after the six continuously rotating turns.
     const ropeAngle = age >= 0 && age < 6 * ROPE_PERIOD ? 2 * Math.PI * (phase - ROPE_APEX) / ROPE_PERIOD : 0;
+    // Open the upper sweep around the head/ears while keeping the accepted
+    // underfoot U exactly unchanged. A small lateral opening between vertical
+    // phases also clears the hands; the ends still overlap the handle radii.
+    const upper = Math.max(0, -Math.cos(ropeAngle));
+    const ropeWidth = 1 + 0.03 * Math.sin(ropeAngle) ** 2;
     pose.props = { handles: { name: 'handles', position: [0, ROPE_PIVOT_Y, 0.02], scale: [weight, weight, weight] },
-      rope: { name: 'rope', position: [0, ROPE_PIVOT_Y, 0.02], rotation: [ropeAngle, 0, 0], scale: [weight, weight, weight] } };
+      rope: { name: 'rope', position: [0, ROPE_PIVOT_Y, 0.02], rotation: [ropeAngle, 0, 0], scale: [weight * ropeWidth, weight, weight], ropeOpen: smooth(upper) } };
     const swing = Math.sin(phase / ROPE_PERIOD * Math.PI * 2) * 0.06 * weight;
     pose.bones.leftUpperArm = [swing, 0, 0]; pose.bones.rightUpperArm = [swing, 0, 0];
     if (age >= 3.6 && age < 4.1) pose.expressions.happy = 1;

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { BackSide, Box3, Mesh, MeshBasicMaterial, Object3D, Vector3 } from 'three';
+import { BackSide, Box3, Mesh, MeshBasicMaterial, Object3D, QuadraticBezierCurve3, TubeGeometry, Vector3 } from 'three';
 import { createProp, PILLOW_CENTER, PILLOW_SIZE, PROP_COLORS, PropRig, ROPE_RADIUS, ROPE_SPAN, WAND_GRIP, WAND_RING } from '../src/renderer/props';
 import { BUBBLE_BLOWS, MOTION_SECONDS, neutralPose, ROPE_APEX, ROPE_PERIOD, ROPE_START, sampleMotion } from '../src/renderer/motion';
 import { frameBounds } from '../src/renderer/motion/framing';
@@ -80,6 +80,32 @@ describe('道具几何、驱动与释放', () => {
     expect(root.getObjectByName('prop:bubble')!.visible).toBe(true);
     expect(render).toHaveBeenCalledTimes(4);
     props.dispose();
+  });
+  it('上翻绳弧复用顶点缓冲、端点仍在握柄处，脚下帧完整恢复原 U 弧', () => {
+    const prop = createProp('rope');
+    const mesh = prop.group.children[0]!.children[0] as Mesh<import('three').TubeGeometry>;
+    const geometry = mesh.geometry;
+    const positions = geometry.attributes.position!;
+    const original = positions.array.slice();
+    const baseline = new TubeGeometry(new QuadraticBezierCurve3(new Vector3(-ROPE_SPAN, 0, 0),
+      new Vector3(0, -2 * ROPE_RADIUS, 0), new Vector3(ROPE_SPAN, 0, 0)), 64, 0.004, 8, false);
+    expect(original).toEqual(baseline.attributes.position!.array);
+    baseline.dispose();
+    const dispose = vi.spyOn(geometry, 'dispose');
+    const overhead = sampleMotion('jumpRope', ROPE_START + ROPE_APEX + ROPE_PERIOD / 2).props!.rope!;
+    expect(overhead.ropeOpen).toBe(1);
+    prop.apply(overhead);
+    expect(mesh.geometry).toBe(geometry);
+    expect(geometry.attributes.position).toBe(positions);
+    expect(positions.array).not.toEqual(original);
+    expect(geometry.parameters.path.getPoint(0).x).toBe(-ROPE_SPAN);
+    expect(geometry.parameters.path.getPoint(1).x).toBe(ROPE_SPAN);
+    expect(dispose).not.toHaveBeenCalled();
+    prop.apply(sampleMotion('jumpRope', 2.575).props!.rope!);
+    expect(prop.group.scale.toArray()).toEqual([1, 1, 1]);
+    expect(positions.array).toEqual(original);
+    expect(geometry.parameters.path.getPoint(0.5).y).toBe(-ROPE_RADIUS);
+    prop.dispose(); expect(dispose).toHaveBeenCalledOnce();
   });
 });
 

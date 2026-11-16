@@ -1,4 +1,4 @@
-import { BackSide, Box3, BufferGeometry, QuadraticBezierCurve3, CylinderGeometry, Group, Mesh, MeshBasicMaterial,
+import { BackSide, Box3, BufferGeometry, Curve, QuadraticBezierCurve3, CylinderGeometry, Group, Mesh, MeshBasicMaterial,
   Object3D, SphereGeometry, TorusGeometry, TubeGeometry, Vector3 } from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
@@ -8,13 +8,14 @@ export const PROP_COLORS = { outline: '#2b1a14', handles: '#e8584f', rope: '#f2c
 export const ROPE_SPAN = 0.355;
 export const ROPE_PIVOT_Y = 0.263;
 export const ROPE_RADIUS = 0.42;
+const ROPE_UPPER_RADIUS = 0.85;
 export const WAND_RING: [number, number, number] = [-0.108, 0.355, 0.32];
 export const WAND_GRIP: [number, number, number] = [-0.328, 0.263, 0.015];
 export const PILLOW_SIZE = [0.46, 0.184, 0.10] as const;
 export const PILLOW_CENTER: [number, number, number] = [0, 0.06, 0.295];
 export type PropName = 'handles' | 'rope' | 'wand' | 'bubble' | 'pillow';
 type Triple = [number, number, number];
-export interface PropState { name: PropName; position: Triple; rotation?: Triple; scale?: Triple; visible?: boolean; opacity?: number }
+export interface PropState { name: PropName; position: Triple; rotation?: Triple; scale?: Triple; visible?: boolean; opacity?: number; ropeOpen?: number }
 export interface PropHandle { group: Group; apply(state: PropState): void; dispose(): void }
 
 /** Unit geometry and translations are fractions of neutral height H.
@@ -24,6 +25,7 @@ export function createProp(name: PropName): PropHandle {
   const group = new Group(); group.name = `prop:${name}`;
   const geometries = new Set<BufferGeometry>();
   const materials = new Set<MeshBasicMaterial>();
+  let openRope: ((amount: number) => void) | undefined;
   const add = (geometry: BufferGeometry, color: string, position: Triple = [0, 0, 0], opacity = 1) => {
     geometries.add(geometry);
     const part = new Group(); part.position.set(...position); group.add(part);
@@ -44,7 +46,48 @@ export function createProp(name: PropName): PropHandle {
     // Open U: its ends stay at the handles while the arc rotates around the X axis.
     const arc = new QuadraticBezierCurve3(new Vector3(-ROPE_SPAN, 0, 0),
       new Vector3(0, -2 * ROPE_RADIUS, 0), new Vector3(ROPE_SPAN, 0, 0));
-    add(new TubeGeometry(arc, 64, 0.004, 8, false), PROP_COLORS.rope);
+    // An elliptical upper arch stays wide near the sides of the head. Merely
+    // stretching the narrow quadratic U still sends its sides through the skin.
+    class UpperArch extends Curve<Vector3> {
+      constructor() { super(); }
+      getPoint(t: number, target = new Vector3()): Vector3 {
+        return target.set(-ROPE_SPAN * Math.cos(Math.PI * t), -ROPE_UPPER_RADIUS * Math.sin(Math.PI * t), 0);
+      }
+    }
+    const upper = new UpperArch();
+    let openness = 0;
+    class RopePath extends Curve<Vector3> {
+      constructor() { super(); }
+      getPoint(t: number, target = new Vector3()): Vector3 {
+        return arc.getPoint(t, target).lerp(upper.getPoint(t), openness);
+      }
+      getPointAt(t: number, target = new Vector3()): Vector3 {
+        return arc.getPointAt(t, target).lerp(upper.getPointAt(t), openness);
+      }
+      getTangentAt(t: number, target = new Vector3()): Vector3 {
+        // Preserve the original tube's exact Frenet frames at the foot pose.
+        if (openness === 0) return arc.getTangentAt(t, target);
+        return this.getPointAt(Math.min(1, t + 0.0001), target)
+          .sub(this.getPointAt(Math.max(0, t - 0.0001))).normalize();
+      }
+    }
+    const geometry = new TubeGeometry(new RopePath(), 64, 0.004, 8, false);
+    const upperGeometry = new TubeGeometry(upper, 64, 0.004, 8, false);
+    const positions = geometry.attributes.position!;
+    const closedVertices = positions.array.slice();
+    const openVertices = upperGeometry.attributes.position!.array.slice();
+    upperGeometry.dispose();
+    // Reuse the same buffers/materials throughout playback; no per-frame geometry
+    // allocation. Basic shading needs no interpolated lighting normals.
+    openRope = amount => {
+      const next = Math.max(0, Math.min(1, amount));
+      if (openness === next) return;
+      openness = next;
+      for (let i = 0; i < positions.array.length; i++) positions.array[i] = closedVertices[i]! + (openVertices[i]! - closedVertices[i]!) * openness;
+      positions.needsUpdate = true;
+      geometry.computeBoundingBox(); geometry.computeBoundingSphere();
+    };
+    add(geometry, PROP_COLORS.rope);
   } else if (name === 'wand') {
     add(new TorusGeometry(0.035, 0.005, 8, 24), PROP_COLORS.wand);
     // The ring is the origin; a diagonal shaft ends at the actual right hand.
@@ -62,6 +105,7 @@ export function createProp(name: PropName): PropHandle {
   }
   let disposed = false;
   return { group, apply(state) {
+    openRope?.(state.ropeOpen ?? 0);
     group.visible = !disposed && state.visible !== false;
     group.position.set(...state.position); group.rotation.set(...(state.rotation ?? [0, 0, 0]));
     group.scale.set(...(state.scale ?? [1, 1, 1]));

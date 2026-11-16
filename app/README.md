@@ -211,3 +211,7 @@ TODO(lead): 门禁生成截图后核对五官贴片、耳朵碰撞与动作观�
 门禁冒烟新增 `smoke-jumpRope.png`、`smoke-blowBubbles.png`、`smoke-napPillow.png`，路径为 `AR_GATE_ARTIFACT_DIR`（默认 `app/smoke-out/`）。取样年龄分别为 2.575 秒（第三次腾空顶点，绳在脚下，避开脸）、1.65 秒（三个泡泡已分散上飘）、2 秒（抱枕点头）。JSON 的 `propOpaqueRatios` 记录 handles、rope、wand、bubble、pillow 的可见像素占比：在同一冻结姿态下逐类隐藏道具重绘，比较真实合成帧 RGBA，仅计原帧 alpha > 0 且有变化的像素；这样包含角色遮挡和半透明泡泡，不依赖色差猜测。每项必须 > 0，`propFraming` 要求三个动作道具的全部包围盒顶点都位于视口内。完整 test/smoke 由门禁执行。
 
 只复查这三种道具截图：先 `ar gui check Electron --headless`，通过后执行 `npm --prefix app run build`，再 `node app/scripts/smoke.mjs --only=jumpRope,blowBubbles,napPillow`。使用同一隐藏离屏渲染入口，只捕获指定行为和初始模型图，不打开聊天、气泡、设置界面；聚焦报告仍要求每类道具有可见像素且包围盒在窗内。全量冒烟的十一种行为、界面和音效检查保持完整。
+
+024 R2-1：跳绳上半圈按相位平滑插值到深 0.85H 的椭圆拱形，避开头部和耳朵；中间相位横向最多外展 3%，避开小手，绳端仍与握柄半径重叠。脚下相位、准备与收尾保持原有 0.42H 二次 U 弧，截图仍取 2.575 秒。形变复用顶点缓冲与材质，更新几何包围盒，现有 48 相位取景测量自动包含张开的绳弧。
+
+R2-1 聚焦自测（从 `app/` 目录运行）：`npm exec -- vitest run tests/props.test.ts tests/usagi-model.test.ts tests/behavior-motion.test.ts`；类型检查为 `npm --prefix app run typecheck`（从仓库根目录）。真实 VRM 回归对整圈 48 相位检查绳管、描边的全部顶点及各 129 个中心线点，以射线奇偶和最近三角面距离检查身体、头、耳、手和尾巴。头顶通过 head 骨骼位置向上发射射线、读取真实蒙皮交点得到；上翻最高点必须高出头顶至少 0.06H。每相位是独立测试用例，沿用测试默认超时。另断言脚下帧的顶点数组与原始 U 弧逐项相等、形变不重建缓冲且资源正确释放。

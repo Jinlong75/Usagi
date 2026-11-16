@@ -1,10 +1,10 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { Box3, Vector3 } from 'three';
+import { Box3, Mesh, Ray, Triangle, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { VRMLoaderPlugin } from '@pixiv/three-vrm';
 import type { VRM } from '@pixiv/three-vrm';
-import { ARM_FOREARM, ARM_RAISE, ARM_REST, MotionRig, sampleMotion } from '../src/renderer/motion';
+import { ARM_FOREARM, ARM_RAISE, ARM_REST, MotionRig, ROPE_APEX, ROPE_PERIOD, ROPE_START, sampleMotion } from '../src/renderer/motion';
 import { PropRig, ROPE_SPAN, ROPE_PIVOT_Y } from '../src/renderer/props';
 import { DragSprings } from '../src/renderer/motion/springs';
 import { frameBounds, measureMotionBounds, motionAspect, springEnvelope } from '../src/renderer/motion/framing';
@@ -53,6 +53,65 @@ function outsideColliders(vrm: VRM): void {
   }
 }
 const degrees = (a: Vector3[], b: Vector3[]) => Math.max(...a.map((v, i) => v.angleTo(b[i]!) * 180 / Math.PI));
+
+// Test-only spatial tree over the actual posed skin, including ears, arms and tail.
+// Triangle distances catch tube/shell contact; ray parity also rejects centers
+// that have already crossed deep inside the mesh (distance alone cannot do that).
+interface Surface { box: Box3; triangles?: Triangle[]; children?: Surface[] }
+function modelSurface(vrm: VRM): Surface {
+  const triangles: Triangle[] = [];
+  vrm.scene.traverse(object => {
+    if (!(object instanceof Mesh)) return;
+    let body = false;
+    for (let node: import('three').Object3D | null = object; node; node = node.parent) body ||= node.name.startsWith('Usagi_Body');
+    if (!body) return;
+    const vertices = Array.from({ length: object.geometry.attributes.position!.count }, (_, i) =>
+      object.getVertexPosition(i, new Vector3()).applyMatrix4(object.matrixWorld));
+    const index = object.geometry.index;
+    for (let i = 0; i < (index?.count ?? vertices.length); i += 3) {
+      const at = (offset: number) => vertices[index ? index.getX(i + offset) : i + offset]!;
+      triangles.push(new Triangle(at(0), at(1), at(2)));
+    }
+  });
+  expect(triangles.length).toBeGreaterThan(1000);
+  const build = (items: Triangle[]): Surface => {
+    const box = new Box3();
+    for (const t of items) box.expandByPoint(t.a).expandByPoint(t.b).expandByPoint(t.c);
+    if (items.length <= 16) return { box, triangles: items };
+    const size = box.getSize(new Vector3());
+    const axis = size.x >= size.y && size.x >= size.z ? 'x' : size.y >= size.z ? 'y' : 'z';
+    const middle = (t: Triangle) => t.a[axis] + t.b[axis] + t.c[axis];
+    items.sort((a, b) => middle(a) - middle(b));
+    const split = items.length >>> 1;
+    return { box, children: [build(items.slice(0, split)), build(items.slice(split))] };
+  };
+  return build(triangles);
+}
+function surfaceHits(surface: Surface, ray: Ray): number[] {
+  const hits: number[] = [], point = new Vector3();
+  const visit = (node: Surface) => {
+    if (!ray.intersectsBox(node.box)) return;
+    for (const t of node.triangles ?? []) if (ray.intersectTriangle(t.a, t.b, t.c, false, point)) hits.push(point.distanceTo(ray.origin));
+    node.children?.forEach(visit);
+  };
+  visit(surface);
+  return hits.sort((a, b) => a - b).filter((distance, i, all) => !i || distance - all[i - 1]! > 1e-7);
+}
+function surfaceDistance(surface: Surface, point: Vector3): number {
+  let distance = Infinity;
+  const closest = new Vector3();
+  const visit = (node: Surface) => {
+    if (node.box.distanceToPoint(point) >= distance) return;
+    for (const t of node.triangles ?? []) distance = Math.min(distance, t.closestPointToPoint(point, closest).distanceTo(point));
+    if (node.children) {
+      const [a, b] = node.children as [Surface, Surface];
+      if (a.box.distanceToPoint(point) < b.box.distanceToPoint(point)) { visit(a); visit(b); }
+      else { visit(b); visit(a); }
+    }
+  };
+  visit(surface);
+  return distance;
+}
 
 describe('真实 Usagi 资源的无界面验证', () => {
   it('部署模型逐字节等于 011，情绪 UV 表情全为二值且包含碰撞体', () => {
@@ -118,6 +177,52 @@ describe('真实 Usagi 资源的无界面验证', () => {
           // only absorbs Float32 bone/vertex arithmetic at otherwise equal bounds.
           expect(measured.motion.clone().expandByScalar(height * 0.001).containsBox(box), `${name} at ${t.toFixed(3)}s`).toBe(true);
         }
+      } finally { props.dispose(); rig.reset(); vrm.update(0); }
+    });
+    it.each(Array.from({ length: 48 }, (_, phase) => phase))('整圈 48 相位（%i/48）：绳管与描边在真实蒙皮外，上翻越过实测头顶至少 0.06H', phase => {
+      const props = new PropRig(vrm.scene, height, neutral);
+      let minimumGap = Infinity, overheadClearance: number | undefined;
+      try {
+        // Start at the unchanged underfoot apex; include the exact overhead phase.
+        props.apply(); rig.reset();
+        const pose = sampleMotion('jumpRope', ROPE_START + ROPE_APEX + phase * ROPE_PERIOD / 48, { modelHeight: height });
+        rig.apply(pose); props.apply(pose.props); vrm.update(0); vrm.scene.updateMatrixWorld(true);
+        const surface = modelSurface(vrm);
+        const rope = vrm.scene.getObjectByName('prop:rope')!;
+        let phaseGap = Infinity, firstInside: string | undefined;
+        // Check every rendered tube vertex, including all 8 radial directions
+        // and the separately transformed 3.5% shell, plus the centerline. Using
+        // actual vertices also handles nonuniform scaling without substituting
+        // an oversized sphere for the tube's elliptical cross-section.
+        for (const mesh of rope.children[0]!.children as Mesh<import('three').TubeGeometry>[]) {
+          const path = mesh.geometry.parameters.path;
+          const positions = mesh.geometry.attributes.position!;
+          const points = Array.from({ length: positions.count }, (_, i) => new Vector3().fromBufferAttribute(positions, i));
+          for (let i = 0; i <= 128; i++) points.push(path.getPointAt(i / 128));
+          for (const [i, local] of points.entries()) {
+            const point = local.applyMatrix4(mesh.matrixWorld);
+            const gap = surfaceDistance(surface, point);
+            const label = `phase=${phase}/48, sample=${i}, shell=${mesh.scale.x > 1}`;
+            if (surfaceHits(surface, new Ray(point, new Vector3(0.371, 0.529, 0.763).normalize())).length % 2) firstInside ??= label;
+            phaseGap = Math.min(phaseGap, gap / height);
+            minimumGap = Math.min(minimumGap, gap / height);
+          }
+        }
+        expect(firstInside, `phase=${phase}/48: all tube/shell vertices and centers must be outside`).toBeUndefined();
+        expect(phaseGap, `phase=${phase}/48: minimum sampled distance to actual skin`).toBeGreaterThan(1e-6);
+        if (phase === 24) {
+          // Head bone lies inside the head. Its first upward surface hit is
+          // the actual crown, excluding the taller ears; no stored Y value.
+          const origin = vrm.humanoid.getRawBoneNode('head')!.getWorldPosition(new Vector3());
+          const hits = surfaceHits(surface, new Ray(origin, new Vector3(0, 1, 0)));
+          expect(hits.length).toBeGreaterThan(0);
+          const crown = origin.y + hits[0]!;
+          const fill = rope.children[0]!.children[0] as Mesh<import('three').TubeGeometry>;
+          const top = fill.geometry.parameters.path.getPoint(0.5).applyMatrix4(fill.matrixWorld).y;
+          overheadClearance = (top - crown) / height;
+          expect(overheadClearance).toBeGreaterThanOrEqual(0.06);
+        }
+        if (phase === 0 || phase === 24) process.stdout.write(JSON.stringify({ ropeSurface: { phases: 48, phase, centerSamplesPerShell: 129, minimumGapH: minimumGap, overheadClearanceH: overheadClearance } }) + '\n');
       } finally { props.dispose(); rig.reset(); vrm.update(0); }
     });
   });
