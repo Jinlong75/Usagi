@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { initialBounds, SIZES } from '../src/shared/window';
+import { initialBounds, SIZES, windowDimensions } from '../src/shared/window';
 
 describe('大小档位及工作区位置', () => {
   const primary = { x: 0, y: 25, width: 1440, height: 850 };
@@ -24,4 +24,13 @@ describe('大小档位及工作区位置', () => {
   it('小工作区至少将左上角放在工作区内', () => {
     expect(initialBounds('large', null, { x: 30, y: 20, width: 200, height: 200 }, [])).toMatchObject({ x: 30, y: 20 });
   });
+});
+
+it('Usagi 依据动作包围盒纵横比调整三档高度，宽度仍为 240/320/440', () => {
+  const aspect = 1.0175;
+  expect(windowDimensions('medium', aspect)).toEqual({ width: 320, height: 314 });
+  expect(windowDimensions('small', aspect)).toEqual({ width: 240, height: 236 });
+  expect(windowDimensions('large', aspect)).toEqual({ width: 440, height: 432 });
+  const area = { x: 0, y: 0, width: 1440, height: 900 };
+  expect(initialBounds('medium', null, area, [area], aspect)).toEqual({ x: 1080, y: 546, width: 320, height: 314 });
 });

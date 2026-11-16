@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { BEHAVIORS, validBehaviorReport, validUiReport, validSoundReport } from '../scripts/smoke.mjs';
 import { runSmokeProcess } from '../scripts/smoke-process.mjs';
 
-const success = { ok: true, ui: ['bubble', 'chat', 'settings'], model: 'Seed-san.vrm', opaqueRatio: 0.21, vrmVersion: '1', expressions: ['blink', 'happy'],
-  behaviors: ['idle', 'walk', 'happy', 'surprised', 'shout', 'stretch', 'drag'],
-  behaviorOpaqueRatios: { idle: 0.21, walk: 0.2, happy: 0.23, surprised: 0.19, shout: 0.25, stretch: 0.24, drag: 0.2 },
+const success = { ok: true, ui: ['bubble', 'chat', 'settings'], model: '/repo/assets/models/usagi.vrm', earDifferenceRatio: 0.06, happyFaceDifferenceRatio: 0.1, opaqueRatio: 0.21, vrmVersion: '1', expressions: ['blink', 'happy'],
+  behaviors: ['idle', 'walk', 'happy', 'surprised', 'shout', 'stretch', 'drag', 'ear-shake'],
+  behaviorOpaqueRatios: { idle: 0.21, walk: 0.2, happy: 0.23, surprised: 0.19, shout: 0.25, stretch: 0.24, drag: 0.2, 'ear-shake': 0.2 },
   behaviorTopTransparent: { happy: true, shout: true, stretch: true } };
 
 async function run(source: string, timeoutMs = 5_000) {
@@ -81,8 +81,8 @@ describe('冒烟子进程结果与诊断（Node fixture，不启动 GUI）', () 
   });
 });
 
-describe('七种行为冒烟报告', () => {
-  it('必须依序包含原有六种行为及伸懒腰，每张图的 alpha 占比有效', () => {
+describe('八种行为冒烟报告', () => {
+  it('必须依序包含原有全部行为及甩耳朵，每张图的 alpha 占比有效', () => {
     expect(success.behaviors).toEqual(BEHAVIORS);
     expect(validBehaviorReport(success)).toBe(true);
     expect(validBehaviorReport({ ...success, behaviors: ['idle'] })).toBe(false);
@@ -117,3 +117,16 @@ describe('七种行为冒烟报告', () => {
      expect(validSoundReport({ sounds: bad })).toBe(false);
    }
  });
+
+it('冒烟必须证明 Usagi 资源、上 30% 耳朵变化 > 3% 与脸部表情变化', () => {
+  for (const earDifferenceRatio of [undefined, 0, 0.03, NaN, Infinity, 1.1]) {
+    expect(validBehaviorReport({ ...success, earDifferenceRatio })).toBe(false);
+  }
+  for (const happyFaceDifferenceRatio of [undefined, 0, NaN, Infinity, 1.1]) {
+    expect(validBehaviorReport({ ...success, happyFaceDifferenceRatio })).toBe(false);
+  }
+  for (const model of ['Seed-san.vrm', '/assets/placeholder/Seed-san.vrm', 'usagi.vrm']) {
+    expect(validBehaviorReport({ ...success, model })).toBe(false);
+  }
+  expect(validBehaviorReport({ ...success, model: '/bundle/resources/models/usagi.vrm' })).toBe(true);
+});

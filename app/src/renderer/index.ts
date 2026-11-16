@@ -2,7 +2,7 @@ import { AmbientLight, Box3, DirectionalLight, LoadingManager, Object3D, Orthogr
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 import type { VRM } from '@pixiv/three-vrm';
-import type { PetBridge, Point, WindowInfo, SmokeBehavior, PetExpression } from '../shared/types';
+import type { PetBridge, Point, WindowInfo, SmokeBehavior, PetExpression, Rect } from '../shared/types';
 import { alphaHit, canvasPixel } from '../shared/hit';
 import { breathe } from './behaviors/breathing';
 import { blink, createBlink } from './behaviors/blink';
@@ -11,7 +11,8 @@ import { BehaviorMachine, TURN_ANGLE } from './behavior/machine';
 import { PetAudio } from './behavior/audio';
 import { MotionRig, sampleMotion } from './motion';
 import { DragSprings } from './motion/springs';
-import { frameBounds, measureMotionBounds } from './motion/framing';
+import { frameBounds, measureMotionBounds, motionAspect, springEnvelope } from './motion/framing';
+import { setEmotion } from './behaviors/expressions';
 import { renderInterval } from './behavior/power';
 
 declare global { interface Window { pet: PetBridge } }
@@ -34,15 +35,17 @@ let animationFrame = 0;
 let petVisible = true;
 let neutralBounds: Box3 | null = null;
 let motionBounds: Box3 | null = null;
+let modelHeight = 1;
+let restEars: Vector3[] = [];
 let smokePose: SmokeBehavior | undefined;
 let smokePoseFrames = 0;
-let smokePoseStartedAt = performance.now();
 let smokeAge = 0;
 let smokeDragImpulse = false;
-const smokeAges = { idle: 0.875, walk: 0.7, happy: 0.175, surprised: 0.45, shout: 0.55, stretch: 1.1, drag: 0.5 };
+const smokeAges = { idle: 0.875, walk: 0.7, happy: 0.175, surprised: 0.45, shout: 0.55, stretch: 1.1, drag: 0.32, 'ear-shake': 0.3 };
 let chatExpression: { name: PetExpression; until: number } | undefined;
 let volume = 0.7;
 let gaze = { x: 0, y: 0 };
+let neckGaze = { x: 0, y: 0 };
 const audio = new PetAudio((use) => window.pet.loadSound(use), () => volume);
 let elapsed = 0;
 let previous = performance.now();
@@ -79,6 +82,7 @@ function frameModel(): void {
   camera.position.set(centerX, bottom + height / 2, front + 5);
   camera.lookAt(centerX, bottom + height / 2, centerZ);
   camera.updateProjectionMatrix();
+  window.pet.framed(motionAspect(motionBounds), Math.max(0, Math.min(1, (bottom + height - neutralBounds.max.y) / height)));
 }
 
 async function loadModel(): Promise<void> {
@@ -111,7 +115,7 @@ async function loadModel(): Promise<void> {
     VRMUtils.combineMorphs(loaded);
     VRMUtils.rotateVRM0(loaded);
     loaded.scene.traverse((object) => { object.frustumCulled = false; });
-    // A relaxed arm pose makes a humanoid placeholder stand naturally.
+    // Rest the short arms beside the body; raised clips turn shoulders and arms together.
     loaded.humanoid.getNormalizedBoneNode('leftUpperArm')?.rotation.set(0, 0, -1.1);
     loaded.humanoid.getNormalizedBoneNode('rightUpperArm')?.rotation.set(0, 0, 1.1);
     loaded.update(0);
@@ -128,14 +132,17 @@ async function loadModel(): Promise<void> {
     // Synchronous sampling finishes and restores neutral before any frame is drawn.
     const measured = measureMotionBounds(vrm, rig);
     neutralBounds = measured.neutral;
-    motionBounds = measured.motion;
+    modelHeight = measured.neutral.getSize(new Vector3()).y;
+    motionBounds = springEnvelope(measured.neutral, measured.motion);
+    restEars = earDirections();
+    if (vrm.lookAt) { vrm.lookAt.autoUpdate = false; vrm.lookAt.target = null; }
     dragging = false;
     frameModel();
     elapsed = 0;
     smokePose = undefined;
     smokePoseFrames = 0;
-    smokePoseStartedAt = performance.now();
-    gaze = { x: 0, y: 0 };
+    smokeAge = 0;
+    gaze = { x: 0, y: 0 }; neckGaze = { x: 0, y: 0 };
     wake();
     blinkState = createBlink();
     frames = 0;
@@ -171,8 +178,10 @@ function renderPose(now: number, delta: number): void {
   rig.reset();
   if (smoke) {
     const name = smokePose ?? 'idle';
-    smokeAge = Math.min(smokeAges[name], (now - smokePoseStartedAt) / 1000);
-    rig.apply(sampleMotion(name, smokeAge, { velocityX: 500 }));
+    const step = Math.min(1 / 60, Math.max(0, smokeAges[name] - smokeAge));
+    smokeAge += step;
+    delta = step;
+    rig.apply(sampleMotion(name === 'ear-shake' ? 'shake' : name, smokeAge, { velocityX: 500, modelHeight }));
     if (name === 'drag' && springs) {
       if (!smokeDragImpulse && smokeAge >= 0.25) {
         springs.sample({ x: 0, y: 0 }, 0); springs.sample({ x: 500, y: 0 }, 100); smokeDragImpulse = true;
@@ -190,20 +199,23 @@ function renderPose(now: number, delta: number): void {
     blink(vrm, blinkState, elapsed);
     // Keep the gaze tracker out of explicit head motions and reactions.
     if (state.state === 'idle') {
+      const neck = vrm.humanoid.getNormalizedBoneNode('neck');
+      if (neck) { neck.rotation.x = neckGaze.x; neck.rotation.y = neckGaze.y; }
       const head = vrm.humanoid.getNormalizedBoneNode('head');
       if (head) { head.rotation.x = gaze.x; head.rotation.y = gaze.y; }
       look(vrm, lookTarget, direction, delta);
       if (head) gaze = { x: head.rotation.x, y: head.rotation.y };
+      if (neck) neckGaze = { x: neck.rotation.x, y: neck.rotation.y };
       rig.apply(sampleMotion(Math.floor(state.startedAt / 3500) % 2 ? 'lookAround' : 'idle', age));
     } else {
       if (vrm.lookAt) { vrm.lookAt.target = null; vrm.lookAt.reset(); }
-      if (state.state === 'act') rig.apply(sampleMotion(state.action!, age));
-      else if (state.state === 'click') rig.apply(sampleMotion(state.reaction!, age));
+      if (state.state === 'act') rig.apply(sampleMotion(state.action!, age, { modelHeight }));
+      else if (state.state === 'click') rig.apply(sampleMotion(state.reaction!, age, { modelHeight }));
       else if (state.state === 'drag') {
         // Fade in once, then hold the suspended pose for the whole gesture.
-        rig.apply(sampleMotion('drag', Math.min(0.5, age + 0.001), { velocityX }));
+        rig.apply(sampleMotion('drag', Math.min(0.5, age + 0.001), { velocityX, modelHeight }));
       } else if (state.state === 'move') {
-        rig.apply(sampleMotion('walk', age, { duration }));
+        rig.apply(sampleMotion('walk', age, { duration, modelHeight }));
         vrm.scene.rotation.y += state.direction * TURN_ANGLE;
       } else if (state.state === 'turn') {
         const p = Math.min(1, age / duration);
@@ -214,11 +226,33 @@ function renderPose(now: number, delta: number): void {
     springs?.update(delta, dragging);
   }
   if (chatExpression && now < chatExpression.until) {
-    for (const name of ['happy', 'surprised', 'angry', 'sad']) {
-      if (vrm.expressionManager?.getExpression(name)) vrm.expressionManager.setValue(name, name === chatExpression.name ? 1 : 0);
-    }
+    if (!dragging) setEmotion(vrm, chatExpression.name);
   } else chatExpression = undefined;
   vrm.update(delta);
+}
+function earDirections(): Vector3[] {
+  if (!vrm) return [];
+  vrm.scene.updateMatrixWorld(true);
+  return ['L', 'R'].flatMap(side => {
+    const root = vrm!.scene.getObjectByName(`Ear${side}_1`);
+    const tip = vrm!.scene.getObjectByName(`Ear${side}_Tip`);
+    return root && tip ? [tip.getWorldPosition(new Vector3()).sub(root.getWorldPosition(new Vector3())).normalize()] : [];
+  });
+}
+function earDeflection(): number {
+  return Math.max(0, ...earDirections().map((direction, i) => restEars[i] ? direction.angleTo(restEars[i]!) * 180 / Math.PI : 0));
+}
+/** Bound the actual face patches, so expression comparison follows the jumping head. */
+function faceRegion(): Rect | undefined {
+  if (!vrm) return;
+  const bounds = new Box3();
+  for (const name of ['FaceEyes', 'FaceMouth']) {
+    const mesh = vrm.scene.getObjectByName(name);
+    if (mesh) bounds.union(new Box3().setFromObject(mesh, true));
+  }
+  if (bounds.isEmpty()) return;
+  const a = bounds.min.clone().project(camera), b = bounds.max.clone().project(camera);
+  return { x: (a.x + 1) / 2, y: (1 - b.y) / 2, width: (b.x - a.x) / 2, height: (b.y - a.y) / 2 };
 }
 function animate(now: number): void {
   animationFrame = 0;
@@ -235,7 +269,7 @@ function animate(now: number): void {
   if (vrm && smoke) {
     if (smokePose ? smokeAge >= smokeAges[smokePose] && ++smokePoseFrames >= 2 && !reported : ++frames >= 60 && !reported) {
       reported = true;
-      window.pet.rendered({ ok: true, vrmVersion: vrm.meta.metaVersion, behavior: smokePose,
+      window.pet.rendered({ ok: true, vrmVersion: vrm.meta.metaVersion, behavior: smokePose, face: faceRegion(), earDegrees: earDeflection(),
         expressions: vrm.expressionManager?.expressions.map((expression) => expression.expressionName) ?? [] });
     }
   }
@@ -274,7 +308,8 @@ try {
   window.pet.onSmokePose((pose) => {
     if (!smoke) return;
     springs?.restore(); smokePose = pose; smokePoseFrames = 0; reported = false;
-    smokePoseStartedAt = performance.now(); smokeDragImpulse = false;
+    smokeAge = 0; smokeDragImpulse = false;
+    rig?.reset(); vrm?.update(0); vrm?.springBoneManager?.reset();
   });
   window.pet.onVisibility(({ visible }) => {
     if (smoke) return;

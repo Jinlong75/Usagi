@@ -8,11 +8,12 @@ export function emotionExpression(emotion: Emotion): PetExpression | null { retu
 export function typewriterCount(pending: number): number { return Math.max(1, Math.min(10, Math.ceil(pending / 40))); }
 export function preview(text: string, length = 60): string { const chars = Array.from(text); return chars.slice(0, length).join('') + (chars.length > length ? '…' : ''); }
 export type BubbleSide = 'top' | 'left' | 'right';
-export function bubblePosition(pet: Rect, area: Rect, width: number, height: number): Rect & { side: BubbleSide } {
-  const side: BubbleSide = pet.y - area.y >= height + 8 ? 'top' :
+export function bubblePosition(pet: Rect, area: Rect, width: number, height: number, headTop = 0): Rect & { side: BubbleSide } {
+  const top = pet.y + pet.height * headTop;
+  const side: BubbleSide = top - area.y >= height + 8 ? 'top' :
     pet.x - area.x > area.x + area.width - pet.x - pet.width ? 'left' : 'right';
   const x = side === 'top' ? pet.x + (pet.width - width) / 2 : side === 'left' ? pet.x - width - 8 : pet.x + pet.width + 8;
-  const y = side === 'top' ? pet.y - height - 8 : pet.y + (pet.height - height) / 2;
+  const y = side === 'top' ? top - height - 8 : pet.y + (pet.height - height) / 2;
   return { x: Math.round(Math.max(area.x, Math.min(area.x + area.width - width, x))),
     y: Math.round(Math.max(area.y, Math.min(area.y + area.height - height, y))), width, height, side };
 }

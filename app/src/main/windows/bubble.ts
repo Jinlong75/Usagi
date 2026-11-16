@@ -11,6 +11,8 @@ export class BubbleWindow {
   private visible = false;
   private generation = 0;
   private chatUntil = 0;
+  private headTop = 0;
+  anchor(headTop: number): void { this.headTop = headTop; this.position(); }
   constructor(private pet: BrowserWindow, private root: string, private smoke: boolean) {
     pet.on('move', () => this.position()); pet.on('resize', () => this.position());
     pet.on('hide', () => this.hide());
@@ -29,7 +31,7 @@ export class BubbleWindow {
   private position(): void {
     if (!this.win || this.win.isDestroyed()) return;
     const pet = this.pet.getBounds();
-    const { side, ...bounds } = bubblePosition(pet, screen.getDisplayMatching(pet).workArea, 264, this.height);
+    const { side, ...bounds } = bubblePosition(pet, screen.getDisplayMatching(pet).workArea, 264, this.height, this.headTop);
     this.win.setBounds(bounds);
     this.win.webContents.send('bubble:text', { text: this.text, side, visible: this.visible });
   }

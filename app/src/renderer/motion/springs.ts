@@ -1,8 +1,8 @@
 import { Vector3 } from 'three';
 import type { VRM } from '@pixiv/three-vrm';
 
-// TODO(lead): mac 实际拖动复核受力系数；静态截图无法判断晃动幅度。
-export const SPRING_ACCELERATION_COEFFICIENT = 0.00008;
+// Forces are in VRM world units per screen acceleration (DIP/s²).
+export const SPRING_ACCELERATION_COEFFICIENT = 0.00012;
 /** Adds acceleration-induced force to the authored gravity vector, restoring the exact original settings on release. */
 export class DragSprings {
   private originals;
@@ -17,7 +17,7 @@ export class DragSprings {
     if (this.time !== null && timestamp > this.time) {
       const dt = Math.max(0.008, (timestamp - this.time) / 1000);
       this.force.set(-(velocity.x - this.velocity.x) / dt, (velocity.y - this.velocity.y) / dt, 0)
-        .multiplyScalar(SPRING_ACCELERATION_COEFFICIENT).clampLength(0, 3);
+        .multiplyScalar(SPRING_ACCELERATION_COEFFICIENT).clampLength(0, 0.85);
     }
     this.velocity = velocity; this.time = timestamp;
   }

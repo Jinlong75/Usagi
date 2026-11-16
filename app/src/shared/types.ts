@@ -13,7 +13,7 @@ export interface Config {
 }
 export interface CursorSample { point: Point; bounds: Rect; workArea: Rect }
 export interface ModelData { bytes: Uint8Array; path: string; smoke: boolean }
-export interface RenderResult { ok: boolean; reason?: string; vrmVersion?: string; expressions?: string[]; behavior?: SmokeBehavior }
+export interface RenderResult { ok: boolean; reason?: string; vrmVersion?: string; expressions?: string[]; behavior?: SmokeBehavior; face?: Rect; earDegrees?: number }
 export interface PetBridge {
   contextMenu(): void;
   getConfig(): Promise<Config>;
@@ -37,6 +37,7 @@ export interface PetBridge {
   onClick(callback: () => void): () => void;
   onReload(callback: () => void): () => void;
   rendered(result: RenderResult): void;
+  framed(aspect: number, headTop: number): void;
   logError(message: string): void;
 }
 
@@ -45,6 +46,6 @@ export type MoveResult = { ok: true; distance: number } | { ok: false; reason: s
 export interface WindowInfo { bounds: Rect; workArea: Rect }
 export interface DragSample { active: boolean; velocity: Point; timestamp: number }
 export type SoundUse = 'click_happy' | 'click_surprise' | 'click_shout' | 'drag' | 'idle_talk' | 'chat_reply';
-export type SmokeBehavior = 'idle' | 'walk' | 'happy' | 'surprised' | 'shout' | 'stretch' | 'drag';
+export type SmokeBehavior = 'idle' | 'walk' | 'happy' | 'surprised' | 'shout' | 'stretch' | 'drag' | 'ear-shake';
 
 export type PetExpression = 'happy' | 'surprised' | 'angry' | 'sad';

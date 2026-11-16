@@ -14,11 +14,11 @@ import { DeepSeekClient } from './chat/client';
 import { SessionStore } from './chat/sessionStore';
 import { SelfTalk } from './selfTalk';
 import { menuState } from '../shared/ui';
-import { initialBounds } from '../shared/window';
+import { initialBounds, windowDimensions } from '../shared/window';
 import { beginGesture, isClick, updateGesture } from '../shared/gesture';
-import { topRowsTransparent } from '../shared/hit';
+import { topRowsTransparent, regionDifference } from '../shared/hit';
 import type { Gesture } from '../shared/gesture';
-import type { Config, Point, RenderResult, Size, MoveRequest, SmokeBehavior, SoundUse } from '../shared/types';
+import type { Config, Point, RenderResult, Size, MoveRequest, SmokeBehavior, SoundUse, Rect } from '../shared/types';
 
 const smoke = process.argv.includes('--smoke');
 const root = resolve(__dirname, '../..');
@@ -33,6 +33,7 @@ let quitting = false;
 let quitFlushed = false;
 let configPath = '';
 let modelPath = '';
+let modelAspect: number | undefined;
 let cursorTimer: ReturnType<typeof setInterval> | undefined;
 let moveSaveTimer: ReturnType<typeof setTimeout> | undefined;
 let gesture: Gesture | null = null;
@@ -44,12 +45,16 @@ let lastDragEndedAt = -Infinity;
 let dragSample = { point: { x: 0, y: 0 }, time: 0 };
 const runtime = { isPackaged: app.isPackaged, resourcesPath: process.resourcesPath };
 const sounds = SoundLibrary.fromRuntime(root, runtime);
-const smokeBehaviors: SmokeBehavior[] = ['idle', 'walk', 'happy', 'surprised', 'shout', 'stretch', 'drag'];
+const smokeBehaviors: SmokeBehavior[] = ['idle', 'walk', 'happy', 'surprised', 'shout', 'stretch', 'drag', 'ear-shake'];
 const behaviorRatios: Partial<Record<SmokeBehavior, number>> = {};
 const behaviorTopTransparent: Partial<Record<SmokeBehavior, boolean>> = {};
 let smokeIndex = -1;
 let captureBusy = false;
 let initialRatio = 0;
+let idleImage: { bitmap: Uint8Array; width: number; height: number; face?: Rect } | undefined;
+let earDifferenceRatio = 0;
+let happyFaceDifferenceRatio = 0;
+const earDegrees: Partial<Record<SmokeBehavior, number>> = {};
 let lastCursorSentAt = -Infinity;
 
 function exitSmoke(code: number, result: object): void {
@@ -76,7 +81,7 @@ function save(next = config): { ok: true } | { ok: false; reason: string } {
 
 function currentBounds(size = config.size) {
   return initialBounds(size, config.position, screen.getPrimaryDisplay().workArea,
-    screen.getAllDisplays().map((display) => display.workArea));
+    screen.getAllDisplays().map((display) => display.workArea), modelAspect);
 }
 
 function setSize(size: Size): void {
@@ -216,6 +221,20 @@ async function capture(result: RenderResult): Promise<void> {
     const directory = process.env.AR_GATE_ARTIFACT_DIR || (app.isPackaged ? join(tmpdir(), `usagi-smoke-${process.pid}`) : resolve(root, 'app/smoke-out'));
     await mkdir(directory, { recursive: true });
     await writeFile(join(directory, expected ? `smoke-${expected}.png` : 'smoke.png'), image.toPNG());
+    const { width, height } = image.getSize(1);
+    if (expected === 'idle') idleImage = { bitmap, width, height, face: result.face };
+    if (expected && result.earDegrees !== undefined) earDegrees[expected] = result.earDegrees;
+    if (expected === 'ear-shake') {
+      if (!idleImage) return fail('缺少 idle 对照截图');
+      const region = { x: 0, y: 0, width: 1, height: 0.3 };
+      earDifferenceRatio = regionDifference({ ...idleImage, region }, { bitmap, width, height, region });
+      if (earDifferenceRatio <= 0.03) return fail(`耳朵区域差异比例必须 > 3%：${earDifferenceRatio}`);
+    }
+    if (expected === 'happy') {
+      if (!idleImage?.face || !result.face) return fail('缺少 Usagi 脸部区域');
+      happyFaceDifferenceRatio = regionDifference({ ...idleImage, region: idleImage.face }, { bitmap, width, height, region: result.face });
+      if (happyFaceDifferenceRatio <= 0) return fail('happy 与 idle 的脸部区域完全相同');
+    }
     if (expected === 'happy' || expected === 'shout' || expected === 'stretch') {
       behaviorTopTransparent[expected] = topRowsTransparent(bitmap, image.getSize(1).width);
       if (!behaviorTopTransparent[expected]) return fail(`角色超出取景：${expected} 最上方两行 alpha 非零`);
@@ -244,7 +263,7 @@ async function capture(result: RenderResult): Promise<void> {
       completed = true;
       exitSmoke(0, { ok: true, model: modelPath, opaqueRatio: initialRatio, vrmVersion: result.vrmVersion,
         expressions: result.expressions ?? [], behaviors: smokeBehaviors, behaviorOpaqueRatios: behaviorRatios,
-        behaviorTopTransparent, ui: ['bubble', 'chat', 'settings'],
+        behaviorTopTransparent, earDifferenceRatio, happyFaceDifferenceRatio, earDegrees, ui: ['bubble', 'chat', 'settings'],
         sounds: { directory: audio.directory, clips: audio.clips, decoded: true } });
     }
   } catch (error) { fail(String(error)); }
@@ -256,6 +275,8 @@ async function start(): Promise<void> {
     try { config = readConfig(configPath); }
     catch (error) { console.error('配置读取失败，使用默认值', error); }
   }
+  // The temporary window uses the legacy height; validate the saved position only
+  // once the renderer has measured the model's actual dimensions.
   if (process.platform === 'darwin') app.dock?.hide();
   win = new BrowserWindow({
     ...currentBounds(), show: false, transparent: true, backgroundColor: '#00000000',
@@ -310,6 +331,28 @@ async function start(): Promise<void> {
     if (!trusted(event)) throw new Error('未授权的模型请求');
     modelPath = resolveModel(root, config.modelPath, smoke, runtime);
     return { bytes: new Uint8Array(await readFile(modelPath)), path: modelPath, smoke };
+  });
+  ipcMain.on('pet:framed', (event, value: { aspect?: number; headTop?: number }) => {
+    if (!trusted(event) || !win || !value || !Number.isFinite(value.aspect) ||
+      value.aspect! < 0.4 || value.aspect! > 2 || !Number.isFinite(value.headTop) || value.headTop! < 0 || value.headTop! > 1) return;
+    const previous = win.getBounds();
+    const firstFrame = modelAspect === undefined;
+    modelAspect = value.aspect!;
+    const dimensions = windowDimensions(config.size, modelAspect);
+    const area = screen.getDisplayMatching(previous).workArea;
+    const position = { x: previous.x, y: previous.y + previous.height - dimensions.height };
+    if (firstFrame) {
+      win.setBounds(initialBounds(config.size, config.position, screen.getPrimaryDisplay().workArea,
+        screen.getAllDisplays().map(display => display.workArea), modelAspect));
+    } else if (dimensions.width !== previous.width || dimensions.height !== previous.height) {
+      win.setBounds(initialBounds(config.size, position, area, [area], modelAspect));
+    }
+    const actual = win.getBounds();
+    if (config.position?.x !== actual.x || config.position?.y !== actual.y) {
+      config.position = { x: actual.x, y: actual.y };
+      save();
+    }
+    ui.bubble.anchor(value.headTop!);
   });
   ipcMain.handle('pet:window-info', (event) => {
     if (!trusted(event) || !win) throw new Error('未授权的窗口请求');
@@ -373,9 +416,19 @@ async function start(): Promise<void> {
       const bounds = win.getBounds();
       win.webContents.send('pet:cursor', { point, bounds, workArea: screen.getDisplayMatching(bounds).workArea });
     }, 1000 / 60);
+    let observedPosition = win.getBounds();
     win.on('move', () => {
       clearTimeout(moveSaveTimer);
+      const { x, y } = win!.getBounds();
+      const changed = x !== observedPosition.x || y !== observedPosition.y;
+      observedPosition = { ...observedPosition, x, y };
       if (gesture) return;
+      if (modelAspect === undefined) {
+        // Ignore duplicate startup notifications for the temporary legacy bounds,
+        // but keep real moves available to settings and the first framing pass.
+        if (!changed) return;
+        config.position = { x, y };
+      }
       moveSaveTimer = setTimeout(() => {
         if (!win || win.isDestroyed()) return;
         const { x, y } = win.getBounds();
