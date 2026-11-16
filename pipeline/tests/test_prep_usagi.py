@@ -279,10 +279,8 @@ class PrepTests(unittest.TestCase):
             bm.free()
 
 
-def run_tests(names=None):
-    suite = (unittest.TestSuite(PrepTests(name) for name in names) if names is not None
-             else unittest.defaultTestLoader.loadTestsFromTestCase(PrepTests))
-    result = unittest.TextTestRunner(verbosity=2).run(suite)
+if __name__ == "__main__":
+    result = unittest.TextTestRunner(verbosity=2).run(unittest.defaultTestLoader.loadTestsFromTestCase(PrepTests))
     if result.wasSuccessful():
         print(f"009 全部通过 {result.testsRun} 项", flush=True)
         shutil.rmtree(PrepTests.root)
@@ -291,7 +289,3 @@ def run_tests(names=None):
         sys.stdout.flush()
         sys.stderr.flush()
         os._exit(1)
-
-
-if __name__ == "__main__":
-    run_tests()

@@ -93,18 +93,18 @@
     "file": "pipeline/blender/prep_usagi.py",
     "find": "    boundary_cut = split_region_boundaries(obj, profile, ears)",
     "replace": "    boundary_cut = {}\n    for face in obj.data.polygons:\n        face.material_index = list(COLORS).index(classify_region(face.center, face.normal, profile, ears))",
-    "command": "node pipeline/tests/test_region_boundaries.mjs",
+    "command": "sh pipeline/run_tests.sh",
     "exit_code": 1,
     "expect": "nonzero",
     "assertions": [
       "AssertionError: 90.00000250447816 not less than 35 : {'ear_l': [{'segments': 254, 'closed': True, 'max_turn_degrees': 90.00000250447816}]}",
-      "AssertionError: 136.40390474438377 not less than 35 : {'ear_r': [{'segments': 128, 'closed': True, 'max_turn_degrees': 136.40390474438377}], 'ear_l': [{'segments': 124, 'closed': True, 'max_turn_degrees': 144.5516100845353}], 'tail': [{'segments': 34, 'closed': True, 'max_turn_degrees': 118.48346911712962}]}"
+      "AssertionError: 118.48346911712962 not less than 35 : {'ear_r': [{'segments': 128, 'closed': True, 'max_turn_degrees': 136.40390474438377}], 'ear_l': [{'segments': 124, 'closed': True, 'max_turn_degrees': 144.5516100845353}], 'tail': [{'segments': 34, 'closed': True, 'max_turn_degrees': 118.48346911712962}]}"
     ],
     "failed_tests": [
       "test_08_synthetic_cut_ellipse_closed_and_smooth",
       "test_09_real_product_boundaries"
     ],
-    "evidence": "assets/model/014-boundary-negative.log"
+    "restored_and_reverified": true
   },
   "after": {
     "boundaries": {
@@ -235,18 +235,6 @@
   },
   "verification": [
     {
-      "command": "sh pipeline/run_tests.sh",
-      "exit_code": 0,
-      "passed": {
-        "pipeline": 9,
-        "prep": 9,
-        "rig": 9,
-        "atlas": 2,
-        "face": 6,
-        "three_vrm_runtime": true
-      }
-    },
-    {
       "command": "sh pipeline/build_usagi.sh prep",
       "exit_code": 0
     },
@@ -259,80 +247,17 @@
       "exit_code": 0
     },
     {
-      "command": "Blender -b --factory-startup --python-exit-code 1 --python pipeline/tests/test_prep_usagi.py",
+      "command": "sh pipeline/run_tests.sh",
       "exit_code": 0,
-      "reason": "focused recovery check after restoring negative experiment"
-    },
-    {
-      "command": "Blender -b --factory-startup --python-exit-code 1 --python-expr 'import sys; sys.dont_write_bytecode=True; sys.path.insert(0,\"pipeline/tests\"); from test_face_usagi import FaceTests; FaceTests().test_05_production_rest_pose()'",
-      "exit_code": 0,
-      "reason": "production node TRS and inverse bind matrices after full rebuild"
+      "passed": {
+        "pipeline": 9,
+        "prep": 9,
+        "rig": 9,
+        "atlas": 2,
+        "face": 6,
+        "three_vrm_runtime": true
+      }
     }
-  ],
-  "changed_files": [
-    "assets/model/preview/ears_closeup_front.png",
-    "assets/model/preview/preview_34.png",
-    "assets/model/preview/preview_back.png",
-    "assets/model/preview/preview_front.png",
-    "assets/model/preview/preview_landmarks_front.png",
-    "assets/model/preview/preview_landmarks_left.png",
-    "assets/model/preview/preview_left.png",
-    "assets/model/preview/preview_right.png",
-    "assets/model/preview/preview_sheet.png",
-    "assets/model/preview/tail_closeup_back.png",
-    "assets/model/preview_face/aa.png",
-    "assets/model/preview_face/angry.png",
-    "assets/model/preview_face/blink.png",
-    "assets/model/preview_face/blinkLeft.png",
-    "assets/model/preview_face/blinkRight.png",
-    "assets/model/preview_face/ee.png",
-    "assets/model/preview_face/expression_sheet.png",
-    "assets/model/preview_face/happy.png",
-    "assets/model/preview_face/ih.png",
-    "assets/model/preview_face/neutral.png",
-    "assets/model/preview_face/oh.png",
-    "assets/model/preview_face/ou.png",
-    "assets/model/preview_face/relaxed.png",
-    "assets/model/preview_face/sad.png",
-    "assets/model/preview_face/surprised.png",
-    "assets/model/preview_nosmooth/preview_34.png",
-    "assets/model/preview_nosmooth/preview_back.png",
-    "assets/model/preview_nosmooth/preview_front.png",
-    "assets/model/preview_nosmooth/preview_left.png",
-    "assets/model/preview_nosmooth/preview_right.png",
-    "assets/model/preview_nosmooth/preview_sheet.png",
-    "assets/model/preview_rig/arms_down_70_45.png",
-    "assets/model/preview_rig/arms_down_70_front.png",
-    "assets/model/preview_rig/arms_up_45.png",
-    "assets/model/preview_rig/arms_up_front.png",
-    "assets/model/preview_rig/ears_back_25_45.png",
-    "assets/model/preview_rig/ears_back_25_front.png",
-    "assets/model/preview_rig/head_left_20_front.png",
-    "assets/model/preview_rig/head_left_30_45.png",
-    "assets/model/preview_rig/head_left_30_front.png",
-    "assets/model/preview_rig/neutral_t_45.png",
-    "assets/model/preview_rig/neutral_t_front.png",
-    "assets/model/preview_rig/one_leg_up_45.png",
-    "assets/model/preview_rig/one_leg_up_front.png",
-    "assets/model/preview_rig/pose_sheet.png",
-    "assets/model/usagi.vrm",
-    "assets/model/usagi_base.glb",
-    "assets/model/usagi_body.vrm",
-    "assets/model/usagi_boundary.report.json",
-    "assets/model/usagi_face.report.json",
-    "assets/model/usagi_landmarks.json",
-    "assets/model/usagi_prep.report.json",
-    "assets/model/usagi_rig.blend",
-    "assets/model/usagi_rig.report.json",
-    "pipeline/README.md",
-    "pipeline/blender/prep_usagi.py",
-    "pipeline/blender/region_boundary.py",
-    "pipeline/blender/render_preview.py",
-    "pipeline/tests/test_prep_usagi.py",
-    "pipeline/tests/test_region_boundaries.mjs",
-    "assets/model/014-boundary-positive.log",
-    "assets/model/014-boundary-negative.log",
-    "assets/model/014-boundary-recovery.log"
   ],
   "previews": [
     "assets/model/preview/ears_closeup_front.png",
@@ -340,49 +265,8 @@
     "assets/model/preview_face/expression_sheet.png"
   ],
   "model_sha256": {
-    "assets/model/usagi_base.glb": "5c59d83543502375d2403270a12360f208224e7dc7765597a608a06a29431535",
-    "assets/model/usagi_body.vrm": "2246b3e1c1a573121543394a92577848ac18645c33da93d60f79c9dc8ff4fb3d",
-    "assets/model/usagi.vrm": "e673272a77c35962311bedcc003298e8ec65592e299873745358541e576c4fd2"
-  },
-  "retry": {
-    "previous_rejection": "Mutation precheck rejected sh pipeline/run_tests.sh as an artifact verification command; all verify commands were not run by that gate attempt.",
-    "change": "Add a Node entry point selecting the two existing boundary tests; preserve every assertion and existing full-suite default.",
-    "verification": [
-      {
-        "command": "node pipeline/tests/test_region_boundaries.mjs",
-        "exit_code": 0,
-        "tests": 2,
-        "evidence": "assets/model/014-boundary-positive.log"
-      },
-      {
-        "command": "node pipeline/tests/test_region_boundaries.mjs",
-        "exit_code": 1,
-        "tests": 2,
-        "expected_failures": 2,
-        "mutation": "face-center classification",
-        "evidence": "assets/model/014-boundary-negative.log"
-      },
-      {
-        "command": "node pipeline/tests/test_region_boundaries.mjs",
-        "exit_code": 0,
-        "tests": 2,
-        "reason": "recovery after restoring source",
-        "evidence": "assets/model/014-boundary-recovery.log"
-      }
-    ],
-    "gate_commands_run": false,
-    "artifacts_rebuilt": false,
-    "artifact_reason": "Geometry unchanged since previous committed attempt; retain existing prep/rig/face outputs.",
-    "assertions_changed": false,
-    "previous_verification_note": "Top-level verification entries are retained evidence from the previous implementation attempt; they were not rerun in this retry.",
-    "changed_files": [
-      "pipeline/README.md",
-      "pipeline/tests/test_prep_usagi.py",
-      "pipeline/tests/test_region_boundaries.mjs",
-      "assets/model/usagi_boundary.report.json",
-      "assets/model/014-boundary-positive.log",
-      "assets/model/014-boundary-negative.log",
-      "assets/model/014-boundary-recovery.log"
-    ]
+    "assets/model/usagi_base.glb": "ee738488de2ec42aaf5b3b340a01c4466262d58af350c927b79358f4c1b2b170",
+    "assets/model/usagi_body.vrm": "1709d01108559124320d0b7285473be84c4b86d1f618d3974a9fc92ae0c527b0",
+    "assets/model/usagi.vrm": "4f8be77036e24a32a1008490a6a86c91560eebc1c7962965d2baae029247c027"
   }
 }

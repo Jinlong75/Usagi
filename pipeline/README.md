@@ -102,7 +102,7 @@ sh pipeline/build_usagi.sh prep
 
 `test_prep_usagi.py` 新增合成三角格平面和正式底模的闭环、每个相邻段转角 <35° 检查。正式底模存在时，还从 Tripo 原始模型临时重建一次并检查相同断言，避免静态产物掩盖分区代码回退。比较基线与反向实验结果保存在 `assets/model/usagi_boundary.report.json`。
 
-014 的聚焦自测与反向实验入口为 `node pipeline/tests/test_region_boundaries.mjs`，只运行上述两个边界测试，重建文件写入临时目录。执行者启动前先运行 `ar gui check Blender --headless`；`BLENDER` 可指定 Blender 可执行文件。完整流水线测试与 009/010/011 检查交给门禁，反向实验命令不使用 `sh pipeline/run_tests.sh`。
+014 的边界转角测试（`test_08_synthetic_cut_ellipse_closed_and_smooth`、`test_09_real_product_boundaries`）在 `test_prep_usagi.py` 中，随 `sh pipeline/run_tests.sh` 运行，重建文件写入临时目录。执行者启动 Blender 前先运行 `ar gui check Blender --headless`；`BLENDER` 可指定 Blender 可执行文件。
 
 `render_preview.py --landmarks <json>` 可额外输出 `<prefix>_landmarks_front.png` 和 `<prefix>_landmarks_left.png`。关键点使用米、Blender Z 向上、正面 -Y、角色左侧 +X；`neck` 取手臂根部上方 0.01～0.07 米的中央躯干最窄 X 截面。卡通模型没有清晰解剖颈部，`hips`、`chest`、`neck` 与四肢根部为绑骨参考值，绑定前需结合预览确认。
 
