@@ -46,5 +46,8 @@
     "npm --prefix app test",
     "npm --prefix app run smoke",
     "sh pipeline/run_tests.sh"
-  ]
+  ],
+  "push": {
+    "allowLead": true
+  }
 }
