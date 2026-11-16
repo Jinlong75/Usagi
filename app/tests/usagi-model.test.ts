@@ -65,21 +65,32 @@ describe('真实 Usagi 资源的无界面验证', () => {
     }
     expect(document.extensions.VRMC_springBone.colliders.length).toBeGreaterThanOrEqual(2);
   });
-  it.each([['stretch', 1.1], ['shout', 0.55]] as const)('%s 的两只手举到颈部以上，结束后回中性', async (name, age) => {
+  it.each([['stretch', 1.1], ['shout', 0.55]] as const)('%s 的两只小手向两侧斜上举、伸出身体轮廓，结束后回中性', async (name, age) => {
     const vrm = await load();
     const rig = new MotionRig(vrm);
     const world = (bone: 'leftHand' | 'rightHand' | 'neck', raw = false) =>
       (raw ? vrm.humanoid.getRawBoneNode(bone) : vrm.humanoid.getNormalizedBoneNode(bone))!.getWorldPosition(new Vector3());
+    vrm.scene.updateMatrixWorld(true);
+    // Rest-pose silhouette half-width at a given height (body/head only: resting arms sit below y≈0.27H).
+    const points: Vector3[] = [];
+    vrm.scene.traverse((object) => {
+      const mesh = object as unknown as { isMesh?: boolean; geometry?: { attributes: { position?: { count: number } } };
+        getVertexPosition(i: number, v: Vector3): Vector3; matrixWorld: import('three').Matrix4 };
+      if (!mesh.isMesh || !mesh.geometry?.attributes.position) return;
+      for (let i = 0; i < mesh.geometry.attributes.position.count; i++) points.push(mesh.getVertexPosition(i, new Vector3()).applyMatrix4(mesh.matrixWorld));
+    });
+    const height = new Box3().setFromPoints(points).getSize(new Vector3()).y;
+    const halfWidth = (y: number) => Math.max(...points.filter((p) => Math.abs(p.y - y) < height * 0.01).map((p) => Math.abs(p.x)));
     const resting = [world('leftHand', true), world('rightHand', true)];
-    const height = new Box3().setFromObject(vrm.scene, true).getSize(new Vector3()).y;
     rig.apply(sampleMotion(name, age));
     vrm.update(0); vrm.scene.updateMatrixWorld(true);
-    for (const raw of [false, true]) {
-      expect(world('leftHand', raw).y).toBeGreaterThan(world('neck', raw).y);
-      expect(world('rightHand', raw).y).toBeGreaterThan(world('neck', raw).y);
-      // A tiny clearance passes even with the hands hidden against the lower body.
-      expect(world('leftHand', raw).y - world('neck', raw).y).toBeGreaterThan(height * 0.1);
-      expect(world('rightHand', raw).y - world('neck', raw).y).toBeGreaterThan(height * 0.1);
+    for (const [i, bone] of (['leftHand', 'rightHand'] as const).entries()) {
+      const hand = world(bone, true);
+      // Raised clearly above rest and level with the neck (the head is far too big to reach over).
+      expect(hand.y - resting[i]!.y).toBeGreaterThan(height * 0.08);
+      expect(hand.y).toBeGreaterThan(world('neck', true).y - height * 0.02);
+      // Pokes out past the body/head outline at that height, so the front view shows it.
+      expect(Math.abs(hand.x) - halfWidth(hand.y)).toBeGreaterThan(height * 0.025);
     }
     rig.reset(); rig.apply(sampleMotion(name, name === 'stretch' ? 2.2 : 1.3));
     vrm.update(0); vrm.scene.updateMatrixWorld(true);

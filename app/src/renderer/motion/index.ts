@@ -51,13 +51,12 @@ export function sampleMotion(name: MotionName, t: number, options: MotionOptions
     pose.scale = [1 + jump.squash * (0.08 / 0.15), 1 - jump.squash, 1 + jump.squash * (0.08 / 0.15)];
     if (name === 'happy') pose.expressions.happy = 1;
   } else if (name === 'stretch' || name === 'shout') {
-    // Usagi's shoulder-to-upper-arm offset is long, but each arm segment is only
-    // ~0.036 units. Lift that offset too, so the hands reach the sides of the head.
+    // Usagi's arm is a ~0.075H stub rooted at the body side (y≈0.26H) under a huge
+    // head (neck y≈0.30H): it cannot reach above the head. Turning the shoulder swings
+    // the arm root into the head and bulges the body, so only the upper arm abducts:
+    // the hands poke out sideways-up past the silhouette (主导 2026-11-16 定).
     // VRM 1.0 normalized arms extend along ±X: opposite Z turns raise both sides.
-    const shoulder = name === 'stretch' ? 0.9 : 0.7;
-    const upperArm = 2.6 - shoulder; // Resting ±1.1 + both turns leaves the arms near vertical.
-    pose.bones.leftShoulder = [0, 0, shoulder * weight];
-    pose.bones.rightShoulder = [0, 0, -shoulder * weight];
+    const upperArm = name === 'stretch' ? 1.5 : 1.4; // Relative to resting ±1.1; 1.5 sits the hands in the head–body notch, where they show most.
     pose.bones.leftUpperArm = [-0.06 * weight, 0, upperArm * weight];
     pose.bones.rightUpperArm = [-0.06 * weight, 0, -upperArm * weight];
     pose.bones.chest = [-0.1 * weight, 0, 0];
