@@ -4,7 +4,7 @@
 
 ## 一句话
 
-**恢复开发**（用户 21:0x Windows 实测后要求优先修，已和 AgentRouter-dev 主导协调好名额）：015 头身交界线、016 Windows 流畅度与焦点、017 五官形态不变、018 表情动作参考整理在跑；之后按 018 结论重做表情动作，再出新 dmg/exe 交用户 Windows 复测。
+**暂离中（用户 11-16 23:0x 起 12 小时，日志 docs/autonomy/2026-11-16-夜间.md）**。本轮：022 模型形状（usagi3d2）→ 023 五官重画；020 作息 → 021 天气；全部合入后全量验收、打 dmg/exe，停在待用户 Windows 复测，SendMessage agentrouter-dev 主导"Usagi 已完成"。道具动作、吸附窗口下一轮。
 
 ## 开工必做
 
@@ -53,7 +53,7 @@
 1. **已由主导直接修好并提交**：②Windows 图标——`app/electron-builder.yml` 打开 `signAndEditExecutable`（electron-builder 26 在 mac 上无需 wine 就能改 exe 资源，核对 win-unpacked/Usagi.exe 含 icon.ico 全部 7 个尺寸，3b036a2）；①的"手上方凸起"——手臂静止下垂 1.1→0.35（`ARM_REST`，app/src/renderer/motion/index.ts；伸懒腰/喊叫相对它计算，绝对抬角 0.4/0.3 不变；5907386）；冒烟 `UnknownVizError` 改为不论是否刚下载都重跑一次（高负载下非首启也会出，21:10 复现）。
 2. 016 已合入（审查 R1-1 主导补测试替身）；015 已合入但被用户否定，由 022 撤回：无需操作，完成条件：022 合入。
 4. ~~017~~ 已作废（用户纠正，见上）：无需操作，完成条件：表情改由 018 后的新说明承接。
-5. **018 已合入**（docs/research/usagi-表情动作/，看 face/overview.png 与 REPORT.md）。主导结论：眉毛永远高弧不变；眼只有 带高光圆眼 / 短横线眨眼(F09) / 闭眼弧(F08) 三种；嘴是 ω 闭口(F01) → 小开ω带舌(F03/F19/F21) → 大开竖长ω带舌(F05/F06)，外加鼓腮咀嚼(F11~F13)；腮红 3~4 斜线。删掉怒眉/八字眉/椭圆嘴。映射：happy/yaha→小开ω、shout/ura→大开ω、surprised/哈→小开ω圆眼、angry/sad→不用；口型 aa/oh→大开ω，ih/ee/ou→小开ω；新增 chew、sleep。等 022 合入后写 023 重画图集（pipeline/face/draw_atlas.py，照 F01/F05/F09/F12/F19 描线）。完成条件：023 提交并派发。
+5. **018 已合入**（docs/research/usagi-表情动作/，看 face/overview.png 与 REPORT.md）。主导结论：眉毛永远高弧不变；眼只有 带高光圆眼 / 短横线眨眼(F09) / 闭眼弧(F08) 三种；嘴是 ω 闭口(F01) → 小开ω带舌(F03/F19/F21) → 大开竖长ω带舌(F05/F06)，外加鼓腮咀嚼(F11~F13)；腮红 3~4 斜线。删掉怒眉/八字眉/椭圆嘴。映射：happy/yaha→小开ω、shout/ura→大开ω、surprised/哈→小开ω圆眼、angry/sad→不用；口型 aa/oh→大开ω，ih/ee/ou→小开ω；新增 chew、sleep。023 说明已提交（depends 022，含按 usagi3d2 重量贴片位置）：022 合入后 `ar next --dispatch`。完成条件：023 accept。
 5d. **022-身体形状还原Tripo原始模型-2-2**（托管，`ar wait 022-身体形状还原Tripo原始模型-2-2`；新模型尾巴是独立块，主导已放宽 009 检查 eb3f09f，诊断模型第二块 11180 面过大待查；用户放了更细致的 usagi3d2.glb，D12，说明已改为以它为输入和标准）：用户"身子旁边有凸起……tripo 原始模型的形状就是最标准的形状"。撤 015 凹口、smooth_face 不碰腰线、新增与原始模型形状一致性检查(≤0.5mm)、ARM_REST=0。验收并排看 assets/model/preview_original/ 与 preview/。完成条件：accept。
 5a. **019 已合入（6ccd264）**：docs/research/参考桌宠动作清单.md 末节 20 个候选。主导初选第一批：吃饭团、跳绳、啃西瓜、舔冰淇淋、偷吃被发现、吹泡泡、抱枕打盹（接 020 的 nap 状态）；右键菜单加"喂食/玩耍"。等 018 出五官结论后写说明：先一份"道具框架 + 跳绳"（不依赖新脸），再一份吃东西系列（要张嘴/咀嚼脸）。完成条件：两份说明提交并派发。
 5b. **020-作息时段与问候 在跑**（托管，`ar wait 020-作息时段与问候`）→ 021 早安天气 depends 020：D9。睡觉/打瞌睡动作与闭眼等五官重画后另写；全屏检测留给 D10。完成条件：accept。
