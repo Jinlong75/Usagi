@@ -92,8 +92,11 @@ export class PerchController {
       const crouch = this.phase === 'hop' ? 120 : 0, duration = this.phase === 'hop' ? 700 : 500;
       placed = this.place(arc(f.from, f.to, Math.min(1, Math.max(0, (age - crouch) / duration))));
     }
-    if (!placed && this.phase !== 'down') { this.placementFailed(); return; }
-    if (age >= f.duration) {
+    // Mid-flight samples (e.g. the hop apex 60 DIP above the target) may be clamped by the OS;
+    // only the landing point has to be reachable, so verify the read-back once the flight ends.
+    const done = age >= f.duration;
+    if (done && !placed && this.phase !== 'down') { this.placementFailed(); return; }
+    if (done) {
       this.phase = this.seat ? 'sit' : 'free'; this.flight = undefined; this.send();
     }
   }

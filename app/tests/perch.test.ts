@@ -130,6 +130,17 @@ describe('吸附状态与原生动画所有权', () => {
     expect(f.notify.mock.calls.some(([status]) => status.phase === 'sit')).toBe(false);
     expect(f.notify).toHaveBeenLastCalledWith({ phase: 'free', canHop: error.y > 0 });
   });
+  it.each([225, 250, 280])('自动跳途中被钳制到workArea.y不算失败，落点可达就坐下（上沿 %i）', top => {
+    const f = controller({ clamp: true, bounds: { y: 610 } });
+    f.perch.update([window('one', { x: 50, y: top })], false);
+    expect(f.notify).toHaveBeenLastCalledWith({ phase: 'free', canHop: true });
+    f.perch.hop();
+    for (let t = 0; t < 1040; t += 20) { f.advance(20); expect(f.perch.active).toBe(true); }
+    f.advance(20);
+    expect(f.perch.sitting).toBe(true);
+    expect(f.bounds().y + f.bounds().height * 0.8).toBe(top);
+    expect(f.notify.mock.calls.some(([status]) => status.phase === 'down')).toBe(false);
+  });
   it('放置读回容许4 DIP误差，坐着跟随的读回误差超过容差时跳下', () => {
     const f = controller(); f.error({ x: 0, y: 4 }); f.perch.drop(); f.advance(180);
     expect(f.perch.sitting).toBe(true);
