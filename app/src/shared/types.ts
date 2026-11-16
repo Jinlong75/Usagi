@@ -8,6 +8,11 @@ export interface Config {
   alwaysOnTop: boolean;
   chat: { baseUrl: string; model: string; temperature: number; maxTokens: number; thinking: 'enabled' | 'disabled' };
   selfTalk: { enabled: boolean; minSec: number; maxSec: number; lines: string[] };
+  routine: {
+    enabled: boolean; quiet: boolean;
+    morning: [string, string]; lunch: [string, string]; nap: [string, string]; dinner: [string, string];
+    bedtime: string; sleep: [string, string];
+  };
   volume: number;
   mousePassthrough: boolean;
   showFps: boolean;
@@ -16,11 +21,13 @@ export interface FpsSample { fps: number; maxFrameMs: number }
 export interface CursorSample { point: Point; bounds: Rect; workArea: Rect }
 export interface ModelData { bytes: Uint8Array; path: string; smoke: boolean }
 export interface RenderResult { ok: boolean; reason?: string; vrmVersion?: string; expressions?: string[]; behavior?: SmokeBehavior; face?: Rect; earDegrees?: number }
+export type RoutineState = 'nap' | 'sleep' | 'awake';
 export interface PetBridge {
   readonly platform: string;
   reportFps(sample: FpsSample): void;
   contextMenu(): void;
   getConfig(): Promise<Config>;
+  onRoutine(callback: (state: RoutineState) => void): () => void;
   onConfig(callback: (config: Config) => void): () => void;
   onExpression(callback: (expression: PetExpression) => void): () => void;
   onSound(callback: (use: SoundUse) => void): () => void;
