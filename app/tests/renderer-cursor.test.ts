@@ -34,7 +34,7 @@ vi.mock('@pixiv/three-vrm', () => ({ VRMLoaderPlugin: class {}, VRMUtils: {
 vi.mock('../src/renderer/motion/framing', async () => {
   const { Box3, Vector3 } = await import('three');
   const bounds = new Box3(new Vector3(-1, 0, -1), new Vector3(1, 2, 1));
-  return { measureMotionBounds: () => ({ neutral: bounds, motion: bounds }), springEnvelope: () => bounds,
+  return { measureSeat: () => new Vector3(0, 0.2, 0), measureMotionBounds: () => ({ neutral: bounds, motion: bounds }), springEnvelope: () => bounds,
     motionAspect: () => 320 / 420, frameBounds: () => ({ height: 3, bottom: 0, centerX: 0, centerZ: 0, front: 1 }) };
 });
 
@@ -57,7 +57,7 @@ describe('真实渲染入口接线，无 Electron/DOM/WebGL 宿主', () => {
     const listen = (name: string) => (callback: (value?: any) => void) => { host.callbacks.set(name, callback); return () => {}; };
     bridge = {
       platform: 'win32', activityDone: vi.fn(), reportFps: vi.fn(), getConfig: async () => structuredClone(DEFAULT_CONFIG),
-      onActivity: listen('activity'), onRoutine: listen('routine'), onConfig: listen('config'), onCursor: listen('cursor'), onPress: listen('press'), onClick: listen('click'),
+      onPerch: listen('perch'), perchHop: vi.fn(), onActivity: listen('activity'), onRoutine: listen('routine'), onConfig: listen('config'), onCursor: listen('cursor'), onPress: listen('press'), onClick: listen('click'),
       onDrag: listen('drag'), onMoveDone: listen('done'), onVisibility: listen('visibility'), onSmokePose: listen('smoke'),
       onExpression: listen('expression'), onSound: listen('sound'), onReload: listen('reload'),
       loadModel: async () => ({ bytes: new Uint8Array(), path: '', smoke: false }),
@@ -74,6 +74,17 @@ describe('真实渲染入口接线，无 Electron/DOM/WebGL 宿主', () => {
     expect(bridge.logError).not.toHaveBeenCalled();
   });
   afterEach(() => { vi.clearAllTimers(); vi.useRealTimers(); vi.unstubAllGlobals(); });
+
+  it.each(['sit', 'snap'] as const)('%s保留MotionRig保存的VRM0基准朝向Math.PI', async phase => {
+    host.model.scene.rotation.y = Math.PI;
+    host.callbacks.get('reload')!();
+    await vi.waitFor(() => expect(bridge.framed).toHaveBeenCalledTimes(2));
+    draw(); expect(host.model.scene.rotation.y).toBe(Math.PI);
+    host.callbacks.get('perch')!({ phase, canHop: false });
+    for (const delta of [20, 750, 3500]) {
+      draw(delta); expect(host.model.scene.rotation.y).toBe(Math.PI);
+    }
+  });
 
   it('只有 pet:cursor 没有 DOM mousemove，也能从穿透恢复命中；坐标使用原生窗口偏移', () => {
     expect(host.ratio).toHaveBeenCalledWith(1.25);

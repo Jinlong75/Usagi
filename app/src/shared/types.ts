@@ -9,6 +9,7 @@ export interface Config {
   alwaysOnTop: boolean;
   chat: { baseUrl: string; model: string; temperature: number; maxTokens: number; thinking: 'enabled' | 'disabled' };
   selfTalk: { enabled: boolean; minSec: number; maxSec: number; lines: string[] };
+  perch: { enabled: boolean; auto: boolean };
   routine: {
     enabled: boolean; quiet: boolean; weather: boolean;
     morning: [string, string]; lunch: [string, string]; nap: [string, string]; dinner: [string, string];
@@ -55,7 +56,9 @@ export interface PetBridge {
   onClick(callback: () => void): () => void;
   onReload(callback: () => void): () => void;
   rendered(result: RenderResult): void;
-  framed(aspect: number, headTop: number): void;
+  framed(aspect: number, headTop: number, seat: Point): void;
+  onPerch(callback: (status: PerchStatus) => void): () => void;
+  perchHop(): void;
   logError(message: string): void;
 }
 
@@ -64,7 +67,8 @@ export type MoveResult = { ok: true; distance: number } | { ok: false; reason: s
 export interface WindowInfo { bounds: Rect; workArea: Rect }
 export interface DragSample { active: boolean; velocity: Point; timestamp: number }
 export type SoundUse = 'click_happy' | 'click_surprise' | 'click_shout' | 'drag' | 'idle_talk' | 'chat_reply';
-export type SmokeBehavior = 'idle' | 'walk' | 'happy' | 'surprised' | 'shout' | 'stretch' | 'drag' | 'ear-shake' | Activity | 'napPillow' | 'sneakSnack';
+export interface PerchStatus { phase: 'free' | 'snap' | 'hop' | 'sit' | 'down'; canHop: boolean }
+export type SmokeBehavior = 'sit' | 'idle' | 'walk' | 'happy' | 'surprised' | 'shout' | 'stretch' | 'drag' | 'ear-shake' | Activity | 'napPillow' | 'sneakSnack';
 
 export type PetExpression = 'happy' | 'surprised' | 'angry' | 'sad';
 

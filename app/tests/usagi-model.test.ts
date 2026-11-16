@@ -7,7 +7,7 @@ import type { VRM } from '@pixiv/three-vrm';
 import { ARM_FOREARM, ARM_RAISE, ARM_REST, MotionRig, ROPE_APEX, ROPE_PERIOD, ROPE_START, sampleMotion } from '../src/renderer/motion';
 import { PropRig, ROPE_SPAN, ROPE_PIVOT_Y } from '../src/renderer/props';
 import { DragSprings } from '../src/renderer/motion/springs';
-import { frameBounds, measureMotionBounds, motionAspect, springEnvelope } from '../src/renderer/motion/framing';
+import { frameBounds, measureSeat, measureMotionBounds, motionAspect, springEnvelope } from '../src/renderer/motion/framing';
 
 const source = readFileSync(new URL('../../assets/model/usagi.vrm', import.meta.url));
 const deployed = readFileSync(new URL('../../assets/models/usagi.vrm', import.meta.url));
@@ -393,4 +393,20 @@ describe('真实 Usagi 资源的无界面验证', () => {
     expect(settled).toBeLessThan(2);
     process.stdout.write(JSON.stringify({ usagiPhysics: { shakeDegrees: shake, dragDegrees: drag, settledDegrees: settled, aspect, mediumHeight: Math.round(320 / aspect) } }) + '\n');
   });
+});
+
+it('真实模型坐姿小腿朝前，臀部底沿从皮肤测量，复位后上半身不变', async () => {
+  const vrm = await load(), rig = new MotionRig(vrm);
+  const neutral = new Box3().setFromObject(vrm.scene, true);
+  const height = neutral.getSize(new Vector3()).y;
+  const head = vrm.humanoid.getRawBoneNode('head')!.getWorldPosition(new Vector3());
+  const knee = vrm.humanoid.getRawBoneNode('leftLowerLeg')!.getWorldPosition(new Vector3());
+  const seat = measureSeat(vrm, rig, neutral);
+  expect(Number.isFinite(seat.y)).toBe(true);
+  expect(seat.y).toBeGreaterThan(neutral.min.y - height * 0.1);
+  expect(seat.y).toBeLessThan(neutral.min.y + height * 0.15);
+  expect(vrm.humanoid.getRawBoneNode('head')!.getWorldPosition(new Vector3()).distanceTo(head)).toBeLessThan(1e-7);
+  rig.apply(sampleMotion('sit', 0, { modelHeight: height })); vrm.update(0); vrm.scene.updateMatrixWorld(true);
+  expect(vrm.humanoid.getRawBoneNode('leftLowerLeg')!.getWorldPosition(new Vector3()).z).toBeGreaterThan(knee.z + height * 0.01);
+  expect(sampleMotion('sit', 100).bones.head).toBeUndefined();
 });

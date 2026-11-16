@@ -15,7 +15,7 @@ import { ARM_REST, caughtSnackPose, MotionRig, sampleMotion } from './motion';
 import { PropRig } from './props';
 import type { Pose } from './motion';
 import { DragSprings } from './motion/springs';
-import { frameBounds, measureMotionBounds, motionAspect, springEnvelope } from './motion/framing';
+import { frameBounds, measureSeat, measureMotionBounds, motionAspect, springEnvelope } from './motion/framing';
 import { setEmotion } from './behaviors/expressions';
 import { renderInterval } from './behavior/power';
 
@@ -33,7 +33,17 @@ let propRig: PropRig | null = null;
 let activeProps: Pose['props'];
 let routineState: import('../shared/types').RoutineState = 'awake';
 let routineEnabled = true;
-function applyPose(pose: Pose): void { activeProps = pose.props; rig?.apply(pose); }
+let perch: import('../shared/types').PerchStatus = { phase: 'free', canHop: false };
+let perchStarted = 0;
+function applyPose(pose: Pose, seatBase = false): void {
+  activeProps = pose.props ?? activeProps;
+  if (!smoke && !seatBase && (perch.phase === 'sit' || perch.phase === 'snap')) {
+    // Only upper-body animation layers over the fixed pelvis and dangling legs.
+    pose = { ...pose, position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1], hipsY: undefined, bones: { ...pose.bones } };
+    for (const name of ['leftUpperLeg', 'rightUpperLeg', 'leftLowerLeg', 'rightLowerLeg'] as const) delete pose.bones[name];
+  }
+  rig?.apply(pose);
+}
 let springs: DragSprings | null = null;
 let machine = new BehaviorMachine();
 let windowInfo: WindowInfo | null = null;
@@ -45,13 +55,14 @@ let petVisible = true;
 let neutralBounds: Box3 | null = null;
 let motionBounds: Box3 | null = null;
 let modelHeight = 1;
+let modelSeat: Vector3 | undefined;
 let restEars: Vector3[] = [];
 let smokePose: SmokeBehavior | undefined;
 let smokePoseFrames = 0;
 let smokeAge = 0;
 let smokeDragImpulse = false;
 // 饭团、西瓜和偷吃截取 aa 咬食；冰淇淋截取第三次舔的 ih（小张口带舌）。
-const smokeAges = { idle: 0.875, walk: 0.7, happy: 0.175, surprised: 0.45, shout: 0.55, stretch: 1.1, drag: 0.32, 'ear-shake': 0.3, jumpRope: 2.575, blowBubbles: 1.65, napPillow: 2, eatRiceball: 0.72, eatWatermelon: 0.72, iceCream: 2.3, sneakSnack: 1.6 };
+const smokeAges = { sit: 0.75, idle: 0.875, walk: 0.7, happy: 0.175, surprised: 0.45, shout: 0.55, stretch: 1.1, drag: 0.32, 'ear-shake': 0.3, jumpRope: 2.575, blowBubbles: 1.65, napPillow: 2, eatRiceball: 0.72, eatWatermelon: 0.72, iceCream: 2.3, sneakSnack: 1.6 };
 let chatExpression: { name: PetExpression; until: number } | undefined;
 let volume = 0.7;
 let gaze = { x: 0, y: 0 };
@@ -117,7 +128,10 @@ function frameModel(): void {
   camera.position.set(centerX, bottom + height / 2, front + 5);
   camera.lookAt(centerX, bottom + height / 2, centerZ);
   camera.updateProjectionMatrix();
-  window.pet.framed(motionAspect(motionBounds), Math.max(0, Math.min(1, (bottom + height - neutralBounds.max.y) / height)));
+  // Hip joint sits above the bottom of the pelvis; report the lowered seated underside.
+  const seat = modelSeat!.clone().project(camera);
+  window.pet.framed(motionAspect(motionBounds), Math.max(0, Math.min(1, (bottom + height - neutralBounds.max.y) / height)),
+    { x: (seat.x + 1) / 2, y: (1 - seat.y) / 2 });
 }
 
 async function loadModel(): Promise<void> {
@@ -166,11 +180,13 @@ async function loadModel(): Promise<void> {
     springs = new DragSprings(vrm);
     machine = new BehaviorMachine();
     machine.routine(routineState);
+    machine.perch(perch.phase === 'sit' || perch.phase === 'snap', perch.canHop, perch.phase === 'hop' || perch.phase === 'down');
     if (!smoke && !petVisible) { machine.visibility(false); flushCommands(); }
     // Synchronous sampling finishes and restores neutral before any frame is drawn.
     const measured = measureMotionBounds(vrm, rig);
     neutralBounds = measured.neutral;
     modelHeight = measured.neutral.getSize(new Vector3()).y;
+    modelSeat = measureSeat(vrm, rig, neutralBounds);
     propRig = new PropRig(vrm.scene, modelHeight, measured.neutral);
     motionBounds = springEnvelope(measured.neutral, measured.motion);
     restEars = earDirections();
@@ -207,6 +223,7 @@ function updateHit(): boolean {
 function flushCommands(): void {
   for (const command of machine.drain()) {
     if (command.type === 'cancel') window.pet.cancelMove();
+    else if (command.type === 'perchHop') window.pet.perchHop();
     else if (command.type === 'move') window.pet.moveTo(command.request);
     else if (command.type === 'activityDone') window.pet.activityDone({ activity: command.activity, feedId: command.feedId });
     else if (!smoke && (!dragging || command.use === 'drag')) void audio.play(command.use);
@@ -216,6 +233,7 @@ function wake(): void { lastActivity = performance.now(); }
 function renderPose(now: number, delta: number): void {
   if (!vrm || !rig) return;
   rig.reset(); activeProps = undefined;
+  const baseYaw = vrm.scene.rotation.y;
   if (smoke) {
     const name = smokePose ?? 'idle';
     const step = Math.min(1 / 60, Math.max(0, smokeAges[name] - smokeAge));
@@ -266,6 +284,13 @@ function renderPose(now: number, delta: number): void {
         const eased = p * p * (3 - 2 * p);
         vrm.scene.rotation.y += state.fromAngle + (state.toAngle - state.fromAngle) * eased;
       }
+    }
+    if (perch.phase === 'sit' || perch.phase === 'snap') {
+      // Seated posture owns the legs; upper-body actions/props continue normally.
+      applyPose(sampleMotion('sit', now / 1000, { modelHeight }), true);
+      vrm.scene.rotation.y = baseYaw;
+    } else if (perch.phase === 'hop' || perch.phase === 'down') {
+      applyPose(sampleMotion(perch.phase === 'hop' ? 'perchHop' : 'perchDown', (now - perchStarted) / 1000, { modelHeight }));
     }
     springs?.update(delta, dragging);
     springs?.caught(state.state === 'caught');
@@ -351,6 +376,12 @@ try {
     renderer.setPixelRatio(renderPixelRatio(window.devicePixelRatio, window.pet.platform));
     renderer.setSize(window.innerWidth, window.innerHeight);
     frameModel();
+  });
+  window.pet.onPerch(status => {
+    if (status.phase !== perch.phase) perchStarted = performance.now();
+    perch = status;
+    machine.perch(status.phase === 'sit' || status.phase === 'snap', status.canHop, status.phase === 'hop' || status.phase === 'down');
+    flushCommands(); wake();
   });
   window.pet.onCursor((sample) => {
     windowInfo = { bounds: sample.bounds, workArea: sample.workArea };

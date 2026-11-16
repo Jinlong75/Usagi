@@ -5,6 +5,9 @@ import type { FeedRequest, MoveRequest, MoveResult, Point, Rect } from '../src/s
 
 // Exercise the real main-process handlers with a native-window double, without Electron/GUI.
 const host = vi.hoisted(() => ({
+  nativeWindows: [] as import('../src/main/perch/logic').WindowInfo[],
+  nativeReads: 0, fullscreenReads: 0, fullscreen: false, cursor: { x: 400, y: 100 },
+  clampY: false, positionErrorY: 0, positionReads: 0,
   routineOptions: undefined as import('../src/main/routine').RoutineOptions | undefined,
   rendererSend: vi.fn(),
   start: undefined as undefined | (() => Promise<void>),
@@ -38,8 +41,11 @@ vi.mock('electron', () => {
     hide() { host.visible = false; }
     showInactive() { host.visible = true; }
     getBounds() { return { ...host.bounds }; }
-    getPosition() { return [host.bounds.x, host.bounds.y]; }
-    setPosition(x: number, y: number) { host.bounds = { ...host.bounds, x, y }; }
+    getPosition() { host.positionReads++; return [host.bounds.x, host.bounds.y]; }
+    setPosition(x: number, y: number) {
+      const actualY = y + host.positionErrorY;
+      host.bounds = { ...host.bounds, x, y: host.clampY ? Math.max(host.area.y, actualY) : actualY };
+    }
     setBounds(bounds: Rect) {
       const moved = bounds.x !== host.bounds.x || bounds.y !== host.bounds.y;
       host.bounds = { ...bounds };
@@ -66,9 +72,13 @@ vi.mock('electron', () => {
     nativeImage: { createFromBitmap: () => ({ setTemplateImage: vi.fn() }), createFromPath: () => ({ setTemplateImage: vi.fn() }) },
     screen: { getPrimaryDisplay: () => ({ workArea: host.area }),
       getAllDisplays: () => [{ workArea: host.area }], getDisplayMatching: () => ({ workArea: host.area }),
-      getCursorScreenPoint: () => ({ x: 400, y: 100 }) },
+      getCursorScreenPoint: () => ({ ...host.cursor }) },
   };
 });
+vi.mock('../src/main/perch/windows', () => ({ createWindowReader: () => ({
+  list: () => { host.nativeReads++; return host.nativeWindows; },
+  fullscreen: () => { host.fullscreenReads++; return host.fullscreen; }, available: true,
+}) }));
 vi.mock('../src/main/config', async (importOriginal) => {
   const original = await importOriginal<typeof import('../src/main/config')>();
   return { ...original, readConfig: () => ({ ...structuredClone(original.DEFAULT_CONFIG), position: host.savedPosition }), writeConfig: host.save };
@@ -92,6 +102,8 @@ const request: MoveRequest = { x: 520, y: 90, durationMs: 2000 };
 
 async function boot(): Promise<void> {
   vi.clearAllTimers(); vi.resetModules();
+  host.nativeWindows = []; host.nativeReads = 0; host.fullscreenReads = 0; host.fullscreen = false; host.cursor = { x: 400, y: 100 };
+  host.clampY = false; host.positionErrorY = 0; host.positionReads = 0;
   host.handlers.clear(); host.invokes.clear(); host.events.clear(); host.listeners.clear(); host.send.mockClear(); host.save.mockClear();
   await import('../src/main/index');
   await host.start!();
@@ -379,4 +391,83 @@ describe('可见性与移动 IPC（原生窗口替身，无 GUI）', () => {
     expect(host.bounds).toEqual({ x: 110, y: 210, width: 320, height: 314 });
     expect(config().position).toEqual({ x: 110, y: 210 });
   });
+  it('真实主进程接线：seat上报、拖放吸附、100ms跟随、菜单下来、拖动解除', () => {
+    send('pet:framed', { aspect: 320 / 420, headTop: 0.1, seat: { x: 0.5, y: 0.8 } });
+    host.nativeWindows = [{ id: 'target', bounds: { x: 100, y: 400, width: 600, height: 400 }, minimized: false }];
+    send('pet:hit', true); send('pet:drag-start'); host.cursor.x += 50;
+    vi.advanceTimersByTime(20); send('pet:drag-end', false); vi.advanceTimersByTime(200);
+    expect(host.bounds.y + host.bounds.height * 0.8).toBe(400);
+    expect(host.send).toHaveBeenCalledWith('pet:perch', { phase: 'sit', canHop: false });
+    expect(host.menu.some(item => item.label === '下来')).toBe(true);
+    host.nativeWindows[0]!.bounds.x += 100; host.nativeWindows[0]!.bounds.y += 50;
+    vi.advanceTimersByTime(100);
+    expect(host.bounds.x).toBe(490); expect(host.bounds.y + host.bounds.height * 0.8).toBe(450);
+    host.menu.find(item => item.label === '下来').click(); vi.advanceTimersByTime(750);
+    expect(host.bounds.y).toBe(340); expect(host.menu.some(item => item.label === '下来')).toBe(false);
+    // Hop then drag: the seat follower must stop owning native motion.
+    send('pet:perch-hop'); vi.advanceTimersByTime(1100);
+    expect(host.menu.some(item => item.label === '下来')).toBe(true);
+    send('pet:drag-start'); host.cursor.x += 50; vi.advanceTimersByTime(20);
+    send('pet:drag-end', true);
+    expect(host.menu.some(item => item.label === '下来')).toBe(false);
+  });
+  it.each(['win32', 'darwin'])('%s位置受工作区钳制时高处不吸不跳，坐着窗口上移到不可达高度跳下', async platform => {
+    vi.setSystemTime(new Date(2026, 10, 17, 15));
+    Object.defineProperty(process, 'platform', { value: platform }); await boot(); host.clampY = true;
+    send('pet:framed', { aspect: 320 / 420, headTop: 0.1, seat: { x: 0.5, y: 0.8 } });
+    host.bounds.y = host.area.y;
+    const reachableY = host.area.y + host.bounds.height * 0.8;
+    const target = { id: 'target', bounds: { x: 100, y: reachableY - 1, width: 600, height: 400 }, minimized: false };
+    host.nativeWindows = [target];
+    const drop = () => {
+      send('pet:hit', true); send('pet:drag-start'); host.cursor.x += 10;
+      vi.advanceTimersByTime(20); send('pet:drag-end', false);
+    };
+    drop(); send('pet:perch-hop'); vi.advanceTimersByTime(1100);
+    expect(host.bounds.y).toBe(host.area.y);
+    expect(host.send.mock.calls.filter(([channel]) => channel === 'pet:perch').every(([, status]) => status.phase === 'free')).toBe(true);
+    target.bounds.y = reachableY; drop(); vi.advanceTimersByTime(200);
+    expect(host.send).toHaveBeenCalledWith('pet:perch', { phase: 'sit', canHop: false });
+    expect(host.positionReads).toBeGreaterThan(0);
+    target.bounds.y--; vi.advanceTimersByTime(100);
+    expect(host.send.mock.calls.filter(([channel]) => channel === 'pet:perch').at(-1))
+      .toEqual(['pet:perch', { phase: 'down', canHop: false }]);
+    vi.advanceTimersByTime(750); expect(host.menu.some(item => item.label === '下来')).toBe(false);
+  });
+  it('真实setPosition后读回不一致，拖放吸附结束为free，不发送sit', () => {
+    send('pet:framed', { aspect: 320 / 420, headTop: 0.1, seat: { x: 0.5, y: 0.8 } });
+    host.nativeWindows = [{ id: 'target', bounds: { x: 100, y: 400, width: 600, height: 400 }, minimized: false }];
+    send('pet:hit', true); send('pet:drag-start'); host.cursor.x += 50;
+    vi.advanceTimersByTime(20); send('pet:drag-end', false);
+    expect(host.send).toHaveBeenCalledWith('pet:perch', { phase: 'snap', canHop: false });
+    host.positionErrorY = 5; const reads = host.positionReads; vi.advanceTimersByTime(200);
+    expect(host.positionReads).toBeGreaterThan(reads);
+    expect(host.send.mock.calls.some(([channel, status]) => channel === 'pet:perch' && status.phase === 'sit')).toBe(false);
+    expect(host.menu.some(item => item.label === '下来')).toBe(false);
+  });
+  it('全屏每2秒刷新缓存，Routine检查不再读取系统', async () => {
+    const { isForegroundFullscreen } = await import('../src/main/routine');
+    vi.advanceTimersByTime(100); expect(host.fullscreenReads).toBe(1);
+    host.fullscreen = true;
+    for (let i = 0; i < 100; i++) expect(isForegroundFullscreen()).toBe(false);
+    expect(host.fullscreenReads).toBe(1);
+    vi.advanceTimersByTime(900);
+    host.menu.find(item => item.label === '显示帧率').click({ checked: true }); // Forced window refresh must not delay the fullscreen deadline.
+    expect(host.fullscreenReads).toBe(1);
+    vi.advanceTimersByTime(1099); expect(isForegroundFullscreen()).toBe(false);
+    vi.advanceTimersByTime(1); expect(isForegroundFullscreen()).toBe(true);
+    expect(host.fullscreenReads).toBe(2);
+  });
+  it('preload传递seat和perch事件，保留sender隔离', async () => {
+    await import('../src/preload/index');
+    host.bridge!.framed(0.8, 0.1, { x: 0.5, y: 0.8 });
+    expect(host.rendererSend).toHaveBeenCalledWith('pet:framed', { aspect: 0.8, headTop: 0.1, seat: { x: 0.5, y: 0.8 } });
+    const callback = vi.fn(), unsubscribe = host.bridge!.onPerch(callback);
+    const [channel, listener] = host.rendererOn.mock.calls.at(-1)!;
+    expect(channel).toBe('pet:perch'); listener({}, { phase: 'sit', canHop: false });
+    expect(callback).toHaveBeenCalledExactlyOnceWith({ phase: 'sit', canHop: false });
+    unsubscribe(); expect(host.rendererOff).toHaveBeenCalledWith(channel, listener);
+    host.bridge!.perchHop(); expect(host.rendererSend).toHaveBeenCalledWith('pet:perch-hop');
+  });
+
 });

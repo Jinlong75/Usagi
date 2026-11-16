@@ -7,7 +7,7 @@ import { PILLOW_CENTER, ROPE_PIVOT_Y, WAND_RING } from '../props';
 import type { PropState } from '../props';
 import type { Action, Reaction } from '../behavior/machine';
 
-export type MotionName = 'idle' | 'lookAround' | 'turn' | 'walk' | 'drag' | Action | Reaction | 'napPillow';
+export type MotionName = 'idle' | 'lookAround' | 'turn' | 'walk' | 'drag' | Action | Reaction | 'napPillow' | 'sit' | 'perchDown';
 export type Rotation = [number, number, number];
 export interface Pose {
   roundEyes?: boolean;
@@ -17,7 +17,7 @@ export interface Pose {
 }
 // Translations are fractions of neutral model height; angles are radians.
 export const MOTION_SECONDS: Record<MotionName, number> = {
-  idle: 3.5, lookAround: 3.5, turn: 0.9, walk: 2, drag: 1.2,
+  sit: 3, perchHop: 1.04, perchDown: 0.72, idle: 3.5, lookAround: 3.5, turn: 0.9, walk: 2, drag: 1.2,
   eatRiceball: 6, eatWatermelon: 5, iceCream: 5.5, sneakSnack: 4.5,
   jumpRope: 6.5, blowBubbles: 5, napPillow: 4,
   jump: DURATIONS.jump / 1000, stretch: DURATIONS.stretch / 1000,
@@ -54,6 +54,14 @@ export interface MotionOptions { loop?: boolean; duration?: number; direction?: 
 /** Pure pose sampling; every finite clip has neutral endpoints, including expressions and root scale. */
 export function sampleMotion(name: MotionName, t: number, options: MotionOptions = {}): Pose {
   const pose = neutralPose();
+  if (name === 'sit') {
+    // Normalized legs point down -Y; negative X raises them toward +Z (camera/front).
+    const swing = Math.sin(t * 2 * Math.PI / 3) * 0.15;
+    pose.hipsY = -(options.modelHeight ?? 1) * 0.035;
+    pose.bones.leftUpperLeg = [-1.2, 0, 0]; pose.bones.rightUpperLeg = [-1.2, 0, 0];
+    pose.bones.leftLowerLeg = [0.25 + swing, 0, 0]; pose.bones.rightLowerLeg = [0.25 - swing, 0, 0];
+    return pose;
+  }
   const duration = options.duration ?? MOTION_SECONDS[name];
   const looping = name === 'napPillow' && options.loop;
   if (looping) t = ((t % duration) + duration) % duration;
@@ -61,7 +69,12 @@ export function sampleMotion(name: MotionName, t: number, options: MotionOptions
   const weight = envelope(t, duration);
   const p = t / duration;
   const height = options.modelHeight ?? 1;
-  if (isFoodMotion(name)) {
+  if (name === 'perchHop' || name === 'perchDown') {
+    const crouch = name === 'perchHop' && t < 0.12 ? Math.sin(Math.PI * t / 0.24) * 0.15 : 0;
+    const landing = jumps(t - (name === 'perchHop' ? 0.82 : 0.5) + 0.35, height, [0]);
+    const squash = Math.max(crouch, landing.squash);
+    pose.scale = [1 + squash * 0.08 / 0.15, 1 - squash, 1 + squash * 0.08 / 0.15];
+  } else if (isFoodMotion(name)) {
     pose.roundEyes = true;
     sampleFood(pose, name, t, weight, height);
   } else if (name === 'jumpRope') {
