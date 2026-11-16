@@ -1,6 +1,6 @@
 # 接续工作入口
 
-更新时间：2026-11-16 16:30，主导 Claude Code（Opus 5.5）。本文件覆盖改写，按需写全但不无限增加：150 行以内最好，最多 250 行；历史移到 docs/autonomy/ 下的归档文件，不追加流水账。带 `ar:handoff` 标记的段落由 `ar lead handoff --write` 生成，其余都由主导写，软件不动；写完运行 `ar lead handoff check`。
+更新时间：2026-11-16 23:4x，主导 Claude Code（Opus 5.5）。本文件覆盖改写，按需写全但不无限增加：150 行以内最好，最多 250 行；历史移到 docs/autonomy/ 下的归档文件，不追加流水账。带 `ar:handoff` 标记的段落由 `ar lead handoff --write` 生成，其余都由主导写，软件不动；写完运行 `ar lead handoff check`。
 
 ## 一句话
 
@@ -61,6 +61,12 @@
 6. 全部合入后：`ar verify --detach` 全量验收 → `npm --prefix app run dist`（mac+win 都在本机打，Rosetta 已装）→ 主导核对 exe 图标与装包冒烟 → 交用户 Windows 复测（帧率数字、焦点后点击、模型线、图标、表情）→ 用户复测反馈处理完、没有在跑和排队的任务后，SendMessage 给 agentrouter-dev 主导"Usagi 已完成"（用户要求：之后由它通知 Waypoint 主导恢复开发；地址变了就 ListAgents 找）。完成条件：用户复测反馈。
 7. Windows 待用户验证（旧清单仍有效）：安装/自动启动/托盘、卸载保留数据、Mate Engine 导入 `assets/model/usagi.vrm`。
 
+### 在跑任务的验收要点（23:4x 交接）
+
+- **020-作息时段与问候**（越界 app/tests/renderer-cursor.test.ts 已批准重试）：看 routine.test.ts 是否覆盖说明里列的情形；问话气泡可点、普通气泡仍点不到；台词与说明逐字一致（口癖+括号中文，D13 用户确认）；`isForegroundFullscreen` 恒 false 且注释 TODO(D10)。合入后 `ar next --dispatch` 会派 021。
+- **022-身体形状还原Tripo原始模型-2-2**：并排看 `assets/model/preview_original/` 与 `assets/model/preview/`（腰线一圈光滑凹槽、两侧无鼓起、小手光滑）；形状一致性检查两个方向 ≤ 0.5 mm；009 第二块（尾巴）面数应约 700、远小于 5%（上一轮诊断 11180 面不合格）；VRM 大小——若明显过大（>~5MB）或冒烟变慢，D13 用户已同意减面（形状误差 ≤ 0.5 mm），用 retry --note 让执行者减；冒烟截图 smoke-idle/walk 两侧无鼓包。合入后派 023 与（021 合入后）024。
+- 有任务在排队就 SendMessage **agentrouter-dev-57**（旧 agentrouter-dev-ae 已停手）请它按用户原话"让usagi项目优先跑任务"插队。
+
 ## 授权与边界
 
 - 已授权：自己安装需要的工具（用户原话"其他的没有你可以自己安装"）；已装 Blender VRM 插件（extensions: vrm）。
@@ -70,6 +76,7 @@
 ## 新决定与教训
 
 - D1～D6 见 `.agent-router/target.md`（自建 Electron 桌宠；用户手动 Tripo；模型无五官、表情用贴片 + UV 平移；Blender 全用命令行脚本；耳朵弹簧骨骼；目录约定）。
+- 本窗口教训：①`accept --ack external:` 合入时会重扫，偶发"证据已经变化"，再跑一次同一摘要即可（016 实例）；②用户在暂离前已答完四个问题（D13），暂离期间不再发提问卡片，按 docs/autonomy/README.md 第 4 节记决定。
 - 本机 `ar` 是系统的 /usr/bin/ar，AgentRouter 一律用 `node /Users/mac/.claude/skills/agent-router/core/ar.mjs`。
 - **门禁不经过 shell**：verify 每条按空格拆开直接执行，`cd app && …` 会"0 秒假通过"，`&&`、`for`、管道都不能用。写成单条命令（`npm --prefix app test`）或主导维护的检查脚本（`sh docs/specs/checks/<编号>-check.sh`）。已反馈给 AgentRouter 开发会话。
 - type: chore 默认不开 worktree，在主工作区跑；两个这样的任务会被同时放进主工作区互相污染门禁（AgentRouter 缺陷 221/222，修复任务 958）。958 合入前：chore 说明里写 `worktree: true`（spec check 报"不认识的字段"可忽略，派发认它），或一次只派一个不开 worktree 的写任务。这类任务门禁被误判时不要 accept --force：主导手动跑验收命令确认，再 `ar lead pending seen` 写明原因。
