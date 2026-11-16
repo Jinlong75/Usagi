@@ -21,6 +21,7 @@ function field(id: string): Field {
 let close = () => {};
 let bridge: WeatherSettingsBridge;
 let page: Field & { visibilityState: string; getElementById: typeof field };
+let win: Field & { settings: WeatherSettingsBridge };
 
 describe('设置页保存失败，无 GUI', () => {
   beforeEach(async () => {
@@ -32,7 +33,8 @@ describe('设置页保存失败，无 GUI', () => {
       revealKey: vi.fn(async () => ''), test: vi.fn(async () => ({ ok: true as const, models: [] })),
       onConfig: vi.fn(() => () => {}), onSaveClose: callback => { close = callback; return () => {}; }, closeReady: vi.fn(),
     };
-    vi.stubGlobal('window', { settings: bridge });
+    win = Object.assign(new Field(), { settings: bridge });
+    vi.stubGlobal('window', win);
     page = Object.assign(new Field(), { visibilityState: 'visible', getElementById: field });
     vi.stubGlobal('document', page);
     await import('../src/settings/index');
@@ -118,6 +120,20 @@ describe('设置页保存失败，无 GUI', () => {
     await vi.waitFor(() => expect(field('weather-city').textContent).toBe('当前位置：Chiang Mai'));
     expect(field('weather-city').hidden).toBe(false);
     expect(bridge.weatherCity).toHaveBeenCalledTimes(calls + 1);
+    expect(field('lines').value).toBe('保留我的台词');
+  });
+
+  it('隐藏期间页面仍报 visible（backgroundThrottling 关闭）时，窗口再次获得焦点也刷新城市', async () => {
+    vi.resetModules(); vi.mocked(bridge.weatherCity).mockResolvedValue(null);
+    field('weather-city').hidden = true; field('weather-city').textContent = '';
+    await import('../src/settings/index');
+    await vi.waitFor(() => expect(bridge.weatherCity).toHaveBeenCalledTimes(2));
+    field('lines').value = '保留我的台词';
+    vi.mocked(bridge.weatherCity).mockResolvedValue('Chiang Mai');
+    expect(page.visibilityState).toBe('visible');
+    win.listeners.get('focus')?.();
+    await vi.waitFor(() => expect(field('weather-city').textContent).toBe('当前位置：Chiang Mai'));
+    expect(field('weather-city').hidden).toBe(false);
     expect(field('lines').value).toBe('保留我的台词');
   });
 

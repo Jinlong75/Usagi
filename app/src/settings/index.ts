@@ -118,7 +118,9 @@ function refreshWeatherCity(): void {
   }).catch(() => {});
 }
 // SettingsWindow hides and reuses this page; refresh the cache without replacing edits.
+// backgroundThrottling is off, so a hidden window still reports 'visible'; show() focuses it, so refresh on focus too.
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') refreshWeatherCity();
 });
+window.addEventListener('focus', refreshWeatherCity);
 refreshWeatherCity();
