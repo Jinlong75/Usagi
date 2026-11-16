@@ -1,3 +1,4 @@
+import type { BubbleBridge, ChatBridge } from './ui';
 export type Size = 'small' | 'medium' | 'large';
 export interface Point { x: number; y: number }
 export interface Rect extends Point { width: number; height: number }
@@ -8,6 +9,11 @@ export interface Config {
   alwaysOnTop: boolean;
   chat: { baseUrl: string; model: string; temperature: number; maxTokens: number; thinking: 'enabled' | 'disabled' };
   selfTalk: { enabled: boolean; minSec: number; maxSec: number; lines: string[] };
+  routine: {
+    enabled: boolean; quiet: boolean;
+    morning: [string, string]; lunch: [string, string]; nap: [string, string]; dinner: [string, string];
+    bedtime: string; sleep: [string, string];
+  };
   volume: number;
   mousePassthrough: boolean;
   showFps: boolean;
@@ -16,11 +22,13 @@ export interface FpsSample { fps: number; maxFrameMs: number }
 export interface CursorSample { point: Point; bounds: Rect; workArea: Rect }
 export interface ModelData { bytes: Uint8Array; path: string; smoke: boolean }
 export interface RenderResult { ok: boolean; reason?: string; vrmVersion?: string; expressions?: string[]; behavior?: SmokeBehavior; face?: Rect; earDegrees?: number }
+export type RoutineState = 'nap' | 'sleep' | 'awake';
 export interface PetBridge {
   readonly platform: string;
   reportFps(sample: FpsSample): void;
   contextMenu(): void;
   getConfig(): Promise<Config>;
+  onRoutine(callback: (state: RoutineState) => void): () => void;
   onConfig(callback: (config: Config) => void): () => void;
   onExpression(callback: (expression: PetExpression) => void): () => void;
   onSound(callback: (use: SoundUse) => void): () => void;
@@ -53,3 +61,14 @@ export type SoundUse = 'click_happy' | 'click_surprise' | 'click_shout' | 'drag'
 export type SmokeBehavior = 'idle' | 'walk' | 'happy' | 'surprised' | 'shout' | 'stretch' | 'drag' | 'ear-shake';
 
 export type PetExpression = 'happy' | 'surprised' | 'angry' | 'sad';
+
+/** Question bubbles share the ordinary bubble payload and add a trusted answer action. */
+export interface QuestionBubbleBridge extends BubbleBridge {
+  onText(callback: (value: { text: string; side: import('./ui').BubbleSide; visible: boolean; question: boolean }) => void): () => void;
+  answer(): Promise<void>;
+}
+
+/** Reload persisted routine questions without discarding a hidden chat's draft. */
+export interface RoutineChatBridge extends ChatBridge {
+  onHistoryChanged(callback: () => void): () => void;
+}

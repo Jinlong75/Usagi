@@ -66,6 +66,10 @@ export class ChatService {
       try { listener(event); } catch { /* Consumers own their callback failures. */ }
     }
   }
+  async appendAssistant(text: string): Promise<void> {
+    await storageOperation(() => this.options.store.append({ id: randomUUID(), role: 'assistant', content: text,
+      createdAt: this.now().toISOString() }));
+  }
   send(userText: string): string {
     if (this.active) throw new ChatError('busy', '正在回复上一条消息，请稍等或先停止。');
     const request: ActiveRequest = { id: randomUUID(), controller: new AbortController(), stopped: false, committing: false };

@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { BubbleBridge } from '../shared/ui';
+import type { QuestionBubbleBridge } from '../shared/types';
 import { listen } from './listen';
-const bridge: BubbleBridge = { onText: callback => listen('bubble:text', callback), resize: height => ipcRenderer.send('bubble:resize', height) };
+const bridge: QuestionBubbleBridge = { answer: () => ipcRenderer.invoke('bubble:answer'), onText: callback => listen('bubble:text', callback), resize: height => ipcRenderer.send('bubble:resize', height) };
 contextBridge.exposeInMainWorld('bubble', bridge);

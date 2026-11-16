@@ -58,7 +58,7 @@ describe('真实渲染入口接线，无 Electron/DOM/WebGL 宿主', () => {
     const listen = (name: string) => (callback: (value?: any) => void) => { host.callbacks.set(name, callback); return () => {}; };
     bridge = {
       platform: 'win32', reportFps: vi.fn(), getConfig: async () => structuredClone(DEFAULT_CONFIG),
-      onConfig: listen('config'), onCursor: listen('cursor'), onPress: listen('press'), onClick: listen('click'),
+      onRoutine: listen('routine'), onConfig: listen('config'), onCursor: listen('cursor'), onPress: listen('press'), onClick: listen('click'),
       onDrag: listen('drag'), onMoveDone: listen('done'), onVisibility: listen('visibility'), onSmokePose: listen('smoke'),
       onExpression: listen('expression'), onSound: listen('sound'), onReload: listen('reload'),
       loadModel: async () => ({ bytes: new Uint8Array(), path: '', smoke: false }),

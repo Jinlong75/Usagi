@@ -7,6 +7,8 @@ export class BubbleWindow {
   private timer?: ReturnType<typeof setTimeout>;
   private hideTimer?: ReturnType<typeof setTimeout>;
   private text = '';
+  private onAnswer?: () => Promise<void>;
+  get questioning(): boolean { return !!this.onAnswer && this.visible; }
   private height = 72;
   private visible = false;
   private generation = 0;
@@ -22,7 +24,7 @@ export class BubbleWindow {
   private async ensure(): Promise<void> {
     if (this.ready) return this.ready;
     this.win = secureWindow('bubble', { width: 264, height: this.height, transparent: true, frame: false,
-      focusable: false, resizable: false, hasShadow: false, skipTaskbar: true, alwaysOnTop: true, backgroundColor: '#00000000' }, this.smoke);
+      focusable: false, acceptFirstMouse: true, resizable: false, hasShadow: false, skipTaskbar: true, alwaysOnTop: true, backgroundColor: '#00000000' }, this.smoke);
     this.win.setIgnoreMouseEvents(true);
     this.win.setAlwaysOnTop(true, 'floating');
     this.ready = loadWindow(this.win, 'bubble', this.root, this.smoke);
@@ -33,26 +35,36 @@ export class BubbleWindow {
     const pet = this.pet.getBounds();
     const { side, ...bounds } = bubblePosition(pet, screen.getDisplayMatching(pet).workArea, 264, this.height, this.headTop);
     this.win.setBounds(bounds);
-    this.win.webContents.send('bubble:text', { text: this.text, side, visible: this.visible });
+    this.win.webContents.send('bubble:text', { text: this.text, side, visible: this.visible, question: this.questioning });
   }
   resize(sender: Electron.WebContents, height: unknown): void {
     if (sender !== this.win?.webContents || typeof height !== 'number' || !Number.isFinite(height)) return;
     this.height = Math.max(48, Math.min(300, Math.ceil(height))); this.position();
   }
-  async showBubble(text: string, durationMs = 3200, chat = false): Promise<void> {
+  async showBubble(text: string, durationMs = 3200, chat = false, onAnswer?: () => Promise<void>): Promise<void> {
     const generation = ++this.generation;
     clearTimeout(this.timer); clearTimeout(this.hideTimer);
-    if (chat) this.chatUntil = durationMs === Infinity ? Infinity : Date.now() + durationMs;
+    this.onAnswer = undefined;
+    this.win?.setIgnoreMouseEvents(true);
+    this.chatUntil = chat || onAnswer ? (durationMs === Infinity ? Infinity : Date.now() + durationMs) : 0;
     await this.ensure();
     if (generation !== this.generation) return;
-    this.text = text; this.visible = true; this.position();
+    this.text = text; this.visible = true; this.onAnswer = onAnswer;
+    this.win?.setIgnoreMouseEvents(!onAnswer); this.position();
     if (!this.smoke && this.pet.isVisible()) this.win?.showInactive();
     if (Number.isFinite(durationMs)) this.timer = setTimeout(() => this.hide(), durationMs);
   }
   hide(): void {
     ++this.generation; clearTimeout(this.timer); clearTimeout(this.hideTimer);
-    this.visible = false; this.chatUntil = 0; this.position();
+    this.visible = false; this.onAnswer = undefined; this.win?.setIgnoreMouseEvents(true);
+    this.chatUntil = 0; this.position();
     this.hideTimer = setTimeout(() => this.win?.hide(), 150);
+  }
+  async answer(): Promise<void> {
+    const action = this.onAnswer;
+    if (!this.visible || !action) return;
+    this.hide(); // Consume once before awaiting persistence or opening a window.
+    await action();
   }
   destroy(): void { clearTimeout(this.timer); clearTimeout(this.hideTimer); if (this.win && !this.win.isDestroyed()) this.win.destroy(); }
 }
