@@ -1,0 +1,9 @@
+Focused stdout/stderr excerpt (private temporary paths omitted).
+test_08_synthetic_cut_ellipse_closed_and_smooth (test_prep_usagi.PrepTests.test_08_synthetic_cut_ellipse_closed_and_smooth) ... 
+014 boundary metrics: {"ear_l": [{"segments": 464, "closed": true, "max_turn_degrees": 14.20118418077065}]}
+test_09_real_product_boundaries (test_prep_usagi.PrepTests.test_09_real_product_boundaries) ... 18:57:11 | INFO: Data are loaded, start creating Blender stuff
+014 boundary metrics: {"ear_l": [{"segments": 217, "closed": true, "max_turn_degrees": 26.345289553357293}], "ear_r": [{"segments": 213, "closed": true, "max_turn_degrees": 25.923766136277248}], "tail": [{"segments": 262, "closed": true, "max_turn_degrees": 23.882343829218204}]}
+014 boundary metrics: {"ear_r": [{"segments": 213, "closed": true, "max_turn_degrees": 25.923766136277248}], "ear_l": [{"segments": 217, "closed": true, "max_turn_degrees": 26.345289553357293}], "tail": [{"segments": 262, "closed": true, "max_turn_degrees": 23.882343829218204}]}
+Ran 2 tests in 3.853s
+OK
+009 全部通过 2 项

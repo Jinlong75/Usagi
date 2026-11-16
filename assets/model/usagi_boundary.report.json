@@ -93,7 +93,7 @@
     "file": "pipeline/blender/prep_usagi.py",
     "find": "    boundary_cut = split_region_boundaries(obj, profile, ears)",
     "replace": "    boundary_cut = {}\n    for face in obj.data.polygons:\n        face.material_index = list(COLORS).index(classify_region(face.center, face.normal, profile, ears))",
-    "command": "sh pipeline/run_tests.sh",
+    "command": "node pipeline/tests/test_region_boundaries.mjs",
     "exit_code": 1,
     "expect": "nonzero",
     "assertions": [
@@ -103,7 +103,8 @@
     "failed_tests": [
       "test_08_synthetic_cut_ellipse_closed_and_smooth",
       "test_09_real_product_boundaries"
-    ]
+    ],
+    "evidence": "assets/model/014-boundary-negative.log"
   },
   "after": {
     "boundaries": {
@@ -327,7 +328,11 @@
     "pipeline/blender/prep_usagi.py",
     "pipeline/blender/region_boundary.py",
     "pipeline/blender/render_preview.py",
-    "pipeline/tests/test_prep_usagi.py"
+    "pipeline/tests/test_prep_usagi.py",
+    "pipeline/tests/test_region_boundaries.mjs",
+    "assets/model/014-boundary-positive.log",
+    "assets/model/014-boundary-negative.log",
+    "assets/model/014-boundary-recovery.log"
   ],
   "previews": [
     "assets/model/preview/ears_closeup_front.png",
@@ -338,5 +343,46 @@
     "assets/model/usagi_base.glb": "5c59d83543502375d2403270a12360f208224e7dc7765597a608a06a29431535",
     "assets/model/usagi_body.vrm": "2246b3e1c1a573121543394a92577848ac18645c33da93d60f79c9dc8ff4fb3d",
     "assets/model/usagi.vrm": "e673272a77c35962311bedcc003298e8ec65592e299873745358541e576c4fd2"
+  },
+  "retry": {
+    "previous_rejection": "Mutation precheck rejected sh pipeline/run_tests.sh as an artifact verification command; all verify commands were not run by that gate attempt.",
+    "change": "Add a Node entry point selecting the two existing boundary tests; preserve every assertion and existing full-suite default.",
+    "verification": [
+      {
+        "command": "node pipeline/tests/test_region_boundaries.mjs",
+        "exit_code": 0,
+        "tests": 2,
+        "evidence": "assets/model/014-boundary-positive.log"
+      },
+      {
+        "command": "node pipeline/tests/test_region_boundaries.mjs",
+        "exit_code": 1,
+        "tests": 2,
+        "expected_failures": 2,
+        "mutation": "face-center classification",
+        "evidence": "assets/model/014-boundary-negative.log"
+      },
+      {
+        "command": "node pipeline/tests/test_region_boundaries.mjs",
+        "exit_code": 0,
+        "tests": 2,
+        "reason": "recovery after restoring source",
+        "evidence": "assets/model/014-boundary-recovery.log"
+      }
+    ],
+    "gate_commands_run": false,
+    "artifacts_rebuilt": false,
+    "artifact_reason": "Geometry unchanged since previous committed attempt; retain existing prep/rig/face outputs.",
+    "assertions_changed": false,
+    "previous_verification_note": "Top-level verification entries are retained evidence from the previous implementation attempt; they were not rerun in this retry.",
+    "changed_files": [
+      "pipeline/README.md",
+      "pipeline/tests/test_prep_usagi.py",
+      "pipeline/tests/test_region_boundaries.mjs",
+      "assets/model/usagi_boundary.report.json",
+      "assets/model/014-boundary-positive.log",
+      "assets/model/014-boundary-negative.log",
+      "assets/model/014-boundary-recovery.log"
+    ]
   }
 }
