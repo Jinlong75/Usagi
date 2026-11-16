@@ -70,6 +70,9 @@
 - DeepSeek 当前模型 ID：deepseek-flash（默认）、deepseek-v4-pro；deepseek-v4-flash 是旧名。
 - `accept --ack` 只认一个：外部改动摘要和"已知问题"确认要写进同一个字符串（`--ack "external:<摘要> 已知问题：…"`），写两个 `--ack` 只有最后一个生效。
 - 反向实验（缺陷 226，AgentRouter-dev 在修）：说明有 `gate_artifacts` 时，汇报 `## 反向实验` 里的可执行 JSON 只要命令不是 `node --test …`/`node <脚本>` 就被预检拒、整个门禁不跑（即使逐字等于验收命令）。修好前：本项目 Python/Blender 测试的反向实验让执行者写纯文字、不写 ```json exec 块，主导手动核对；或暂时去掉 gate_artifacts。
+- GitHub：远程 `origin` = https://github.com/Jinlong75/Usagi.git（**私有**，含版权素材，不能改公开）。2026-11-16 用户要求同步，已合并建仓 README 提交后用 `ar push <项目路径> --by lead` 推送（14b05f0）；project.json `push.allowLead: true`。之后的提交需要时同样用 ar push，推送前先问用户。安装包（app/release/）不进 git。
+- Electron 首启：npm ci 后刚解压的 Electron 在 macOS 首次启动大概率 `UnknownVizError`，`app/scripts/smoke.mjs` 已对'刚下载且正是该错'重跑一次；别处（新脚本）启动 Electron 也要考虑这一点。
+- 跨项目协调：Waypoint、AgentRouter-dev 主导会发消息要求让出门禁/暂停，按对方要求做并回复；地址会随换窗口变，发失败就 ListAgents 找新名字。
 - 全局名额常被别的项目占满时，`ar next --dispatch` 不派；直接 `ar dispatch <说明> --detach` 能进队列。
 
 ## 已知问题与证据
