@@ -8,7 +8,8 @@ allowed_paths:
   - assets/sounds/**
   - tools/audio/**
 verify:
-  - test -f assets/sounds/usagi/manifest.json && test -f assets/sounds/usagi/README.md
+  - test -f assets/sounds/usagi/manifest.json
+  - test -f assets/sounds/usagi/README.md
   - python3 tools/audio/check_manifest.py assets/sounds/usagi/manifest.json
 expect_commit: true
 verify_timeout_min: 5
