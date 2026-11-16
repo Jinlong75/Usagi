@@ -170,7 +170,8 @@ describe('道具活动与作息', () => {
       const action = pickAction(ACTIONS, undefined, (i + 0.5) / 10000)!;
       counts[action] = (counts[action] ?? 0) + 1;
     }
-    expect(counts).toEqual({ jump: 2000, stretch: 2000, shake: 2000, spin: 2000, jumpRope: 1000, blowBubbles: 1000 });
+    expect(counts).toEqual({ jump: 1818, stretch: 1818, shake: 1819, spin: 1818, jumpRope: 909, blowBubbles: 909, sneakSnack: 909 });
+    for (const name of ['eatRiceball', 'eatWatermelon', 'iceCream']) expect(ACTIONS).not.toContain(name);
     for (const previous of ACTIONS) for (let i = 0; i < 100; i++) expect(pickAction(ACTIONS, previous, i / 100)).not.toBe(previous);
     expect(pickAction(['jumpRope'], 'jumpRope', 0)).toBe('jumpRope');
     expect(pickAction([], undefined, 0)).toBeUndefined();
@@ -207,5 +208,42 @@ describe('道具活动与作息', () => {
     expect(f.advance(1999).state).toBe('idle'); expect(f.advance(1).state).toBe('nap');
     f.machine.drag(true); f.machine.routine('awake'); expect(f.machine.snapshot.state).toBe('drag');
     f.machine.drag(false); expect(f.advance(1)).toMatchObject({ state: 'act', action: 'stretch' });
+  });
+});
+
+
+describe('进食结束与偷吃点击', () => {
+  it.each(['eatRiceball', 'eatWatermelon', 'iceCream'] as const)('%s 菜单打断 act/move、正常完成才通知一次，拖动不接管', action => {
+    const f = fixture([0.9]); f.advance(3500); f.advance(450);
+    const request = { activity: action, feedId: 42 };
+    f.machine.activity(request); f.machine.drain();
+    expect(f.advance(DURATIONS[action] - 1).action).toBe(action);
+    expect(f.machine.drain()).toEqual([]);
+    f.advance(1);
+    const commands = f.machine.drain();
+    expect(commands.filter(command => command.type === 'activityDone')).toEqual([{ type: 'activityDone', ...request }]);
+    expect(commands.filter(command => command.type === 'sound')).toEqual(action === 'eatRiceball' ? [{ type: 'sound', use: 'click_happy' }] : []);
+    f.advance(1); expect(f.machine.drain()).toEqual([]);
+    f.machine.activity(request); f.machine.click(); f.machine.drain(); f.advance(DURATIONS[action]);
+    expect(f.machine.drain().some(command => command.type === 'activityDone')).toBe(false);
+    f.machine.drag(true); f.machine.drain(); f.machine.activity(request);
+    expect(f.machine.snapshot.state).toBe('drag'); expect(f.machine.drain()).toEqual([]);
+  });
+  it.each([false, true])('偷吃点击：先冻结原姿态 400ms，再接惊讶点击和声音（原生 press 序列=%s）', press => {
+    const f = fixture([0.5, 0], ['sneakSnack']); f.advance(3500); f.advance(1700); f.machine.drain();
+    if (press) { f.machine.press(true); expect(f.machine.snapshot).toMatchObject({ state: 'caught', snackAge: 1.7 }); f.machine.press(false); }
+    expect(f.machine.click()).toBe('surprised');
+    const frozen = f.machine.snapshot;
+    expect(frozen).toMatchObject({ state: 'caught', durationMs: 400, snackAge: 1.7 });
+    expect(f.machine.drain().some(command => command.type === 'sound')).toBe(false);
+    expect(f.advance(399)).toEqual(frozen);
+    expect(f.advance(1)).toMatchObject({ state: 'click', reaction: 'surprised', durationMs: 1100 });
+    expect(f.machine.drain()).toContainEqual({ type: 'sound', use: 'click_surprise' });
+    expect(f.advance(1100).state).toBe('idle');
+  });
+  it('偷吃按下后变成拖动，不会在放手后触发被抓住', () => {
+    const f = fixture([0.5, 0], ['sneakSnack']); f.advance(3500); f.advance(1700);
+    f.machine.press(true); f.machine.drag(true); f.machine.drag(false); f.machine.press(false);
+    expect(f.machine.click()).toBe('happy'); expect(f.machine.snapshot.state).toBe('click');
   });
 });

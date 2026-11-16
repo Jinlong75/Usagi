@@ -12,6 +12,7 @@ const bridge: PetBridge = {
   reportFps: sample => ipcRenderer.send('pet:fps', sample),
   contextMenu: () => ipcRenderer.send('pet:context-menu'),
   getConfig: () => ipcRenderer.invoke('pet:config'),
+  activityDone: request => ipcRenderer.send('pet:activity-done', request),
   onActivity: callback => listen('pet:activity', callback),
   onRoutine: callback => listen('routine:state', callback),
   onConfig: callback => listen('config:changed', callback),

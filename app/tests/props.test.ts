@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import { BackSide, Box3, Mesh, MeshBasicMaterial, Object3D, QuadraticBezierCurve3, TubeGeometry, Vector3 } from 'three';
 import { createProp, PILLOW_CENTER, PILLOW_SIZE, PROP_COLORS, PropRig, ROPE_RADIUS, ROPE_SPAN, WAND_GRIP, WAND_RING } from '../src/renderer/props';
-import { BUBBLE_BLOWS, MOTION_SECONDS, neutralPose, ROPE_APEX, ROPE_PERIOD, ROPE_START, sampleMotion } from '../src/renderer/motion';
+import { BUBBLE_BLOWS, caughtSnackPose, MOTION_SECONDS, neutralPose, ROPE_APEX, ROPE_PERIOD, ROPE_START, sampleMotion } from '../src/renderer/motion';
 import { frameBounds } from '../src/renderer/motion/framing';
 
 describe('道具几何、驱动与释放', () => {
-  it.each(['handles', 'rope', 'wand', 'bubble', 'pillow'] as const)('%s 使用限定平涂与 3.5%% 反壳描边，所有 geometry/material 恰好释放一次', name => {
+  it.each(['handles', 'rope', 'wand', 'bubble', 'pillow', 'riceball', 'rice', 'watermelon', 'iceCream', 'iceDrop', 'cookie'] as const)('%s 使用限定平涂与 3.5%% 反壳描边，所有 geometry/material 恰好释放一次', name => {
     const prop = createProp(name);
     const geometries = new Set<import('three').BufferGeometry>();
     const materials = new Set<MeshBasicMaterial>();
@@ -110,7 +110,7 @@ describe('道具几何、驱动与释放', () => {
 });
 
 describe('三种互动动作', () => {
-  it.each(['jumpRope', 'blowBubbles', 'napPillow'] as const)('%s 有限片段首尾 neutral 且没有可见道具', name => {
+  it.each(['jumpRope', 'blowBubbles', 'napPillow', 'eatRiceball', 'eatWatermelon', 'iceCream', 'sneakSnack'] as const)('%s 有限片段首尾 neutral 且没有可见道具', name => {
     for (const t of [0, MOTION_SECONDS[name], MOTION_SECONDS[name] + 1]) expect(sampleMotion(name, t)).toEqual(neutralPose());
   });
   it('六圈绳最低点恰在腾空顶点 0.06H，包含落地压缩与结束 happy 半秒', () => {
@@ -163,7 +163,7 @@ describe('三种互动动作', () => {
     const neutral = new Box3(new Vector3(-0.35, 0, -0.3), new Vector3(0.35, 1, 0.3));
     const root = new Object3D(); const props = new PropRig(root, 1, neutral);
     const bounds: Box3[] = [];
-    for (const name of ['jumpRope', 'blowBubbles', 'napPillow'] as const) {
+    for (const name of ['jumpRope', 'blowBubbles', 'napPillow', 'eatRiceball', 'eatWatermelon', 'iceCream', 'sneakSnack'] as const) {
       for (let t = 0.025; t < MOTION_SECONDS[name]; t += 0.025) {
         const pose = sampleMotion(name, t); props.apply(pose.props);
         root.position.set(...pose.position); root.scale.set(...pose.scale);
@@ -176,4 +176,87 @@ describe('三种互动动作', () => {
     }
     props.dispose();
   });
+});
+
+
+describe('进食节奏与几何形变', () => {
+  it('饭团三口 1→0.65→0.3→消失，每口 aa 0.25 秒然后 sad 0.9 秒、咀嚼两压', () => {
+    for (const [i, start] of [0.6, 1.75, 2.9].entries()) {
+      expect(sampleMotion('eatRiceball', start + 0.1).props!.riceball!.scale![0]).toBeCloseTo([1, 0.65, 0.3][i]!);
+      expect(sampleMotion('eatRiceball', start + 0.249).expressions).toEqual({ aa: 1 });
+      expect(sampleMotion('eatRiceball', start + 0.251).expressions).toEqual({ sad: 1 });
+      expect(sampleMotion('eatRiceball', start + 1.149).expressions).toEqual({ sad: 1 });
+      for (const offset of [0.25 + 0.225, 0.25 + 0.675]) expect(sampleMotion('eatRiceball', start + offset).scale[1]).toBeCloseTo(0.97);
+    }
+    const crumbs = sampleMotion('eatRiceball', 3.16).props!;
+    expect(crumbs.riceball).toBeUndefined(); expect(Object.keys(crumbs)).toHaveLength(4);
+    expect(Object.values(crumbs).every(prop => prop.name === 'rice')).toBe(true);
+    expect(sampleMotion('eatRiceball', 3.7).props!['rice-0']!.position[1]).toBeLessThan(crumbs['rice-0']!.position[1]);
+    expect(sampleMotion('eatRiceball', 4).props).toEqual({});
+    expect(sampleMotion('eatRiceball', 5.2).expressions).toEqual({ happy: 1 });
+    expect(sampleMotion('eatRiceball', 5.275).position[1]).toBeCloseTo(0.04);
+  });
+  it('西瓜左、右、中啃后瓤高度逐次减小；真实红瓤与籽变形、底边保持固定', () => {
+    const prop = createProp('watermelon');
+    let previous = Infinity;
+    for (const [i, time] of [0.7, 1, 2.2, 3.4].entries()) {
+      const state = sampleMotion('eatWatermelon', time).props!.watermelon!;
+      expect(state.foodRemaining).toBe([1, 0.72, 0.44, 0.16][i]);
+      prop.apply(state);
+      const flesh = prop.group.children[2]!;
+      const box = new Box3().setFromObject(flesh, true);
+      expect(box.getSize(new Vector3()).y).toBeLessThan(previous); previous = box.getSize(new Vector3()).y;
+    }
+    expect(sampleMotion('eatWatermelon', 0.7).bones.head![2]).toBe(-0.1);
+    expect(sampleMotion('eatWatermelon', 1.9).bones.head![2]).toBe(0.1);
+    expect(sampleMotion('eatWatermelon', 3.1).bones.head![2]).toBe(0);
+    for (const t of [0.7, 1.9, 3.1]) expect(sampleMotion('eatWatermelon', t).expressions).toEqual({ aa: 1 });
+    expect(sampleMotion('eatWatermelon', 4.1).expressions).toEqual({ happy: 1 });
+    prop.dispose();
+  });
+  it('冰淇淋四次 ih 各 0.4 秒，第三次结束才滴落，0.8 秒内缩小消失；惊讶 0.6 秒', () => {
+    for (const start of [0.6, 1.4, 2.2, 3.6]) {
+      for (const age of [0.001, 0.2, 0.399]) expect(sampleMotion('iceCream', start + age).expressions.ih).toBe(1);
+    }
+    expect(sampleMotion('iceCream', 2.599).props!.iceDrop).toBeUndefined();
+    const drop = sampleMotion('iceCream', 2.601).props!.iceDrop!;
+    expect(drop.name).toBe('iceDrop');
+    const falling = sampleMotion('iceCream', 3.39).props!.iceDrop!;
+    expect(falling.position[1]).toBeLessThan(drop.position[1]); expect(falling.scale![0]).toBeLessThan(drop.scale![0]);
+    expect(sampleMotion('iceCream', 3.401).props!.iceDrop).toBeUndefined();
+    expect(sampleMotion('iceCream', 2.601).expressions).toEqual({ surprised: 1 });
+    expect(sampleMotion('iceCream', 3.199).expressions).toEqual({ surprised: 1 });
+    expect(sampleMotion('iceCream', 3.201).expressions.surprised).toBeUndefined();
+    expect(sampleMotion('iceCream', 4.5).expressions).toEqual({ happy: 1 });
+  });
+  it('偷看左右各 0.5 秒、两口 aa/sad，所有食物动作上臂不超过 0.3rad 且保持圆眼', () => {
+    expect(sampleMotion('sneakSnack', 0.45).bones.head![1]).toBeCloseTo(-0.25);
+    expect(sampleMotion('sneakSnack', 0.95).bones.head![1]).toBeCloseTo(0.25);
+    for (const start of [1.5, 2.2]) {
+      expect(sampleMotion('sneakSnack', start + 0.1).expressions).toEqual({ aa: 1 });
+      expect(sampleMotion('sneakSnack', start + 0.3).expressions).toEqual({ sad: 1 });
+    }
+    for (const name of ['eatRiceball', 'eatWatermelon', 'iceCream', 'sneakSnack'] as const) {
+      for (let t = 0.01; t < MOTION_SECONDS[name]; t += 0.01) {
+        const pose = sampleMotion(name, t); expect(pose.roundEyes).toBe(true);
+        for (const bone of ['leftUpperArm', 'rightUpperArm'] as const) expect(Math.hypot(...pose.bones[bone]!)).toBeLessThanOrEqual(0.3);
+        expect(pose.expressions.relaxed).toBeUndefined(); expect(pose.expressions.blink).toBeUndefined();
+      }
+    }
+  });
+});
+
+it('被抓住的姿态固定在点击瞬间，饼干缩到身后并隐藏、立即回收，嘴切 surprised', () => {
+  const root = new Object3D(); const props = new PropRig(root, 1, new Box3(new Vector3(), new Vector3(1, 1, 1)));
+  const chewing = sampleMotion('sneakSnack', 1.9);
+  props.apply(chewing.props);
+  const cookie = root.getObjectByName('prop:cookie')!;
+  const dispose = vi.spyOn((cookie.children[0]!.children[0] as Mesh).geometry, 'dispose');
+  const caught = caughtSnackPose(1.9);
+  expect(caught.position).toEqual(chewing.position); expect(caught.scale).toEqual(chewing.scale); expect(caught.bones).toEqual(chewing.bones);
+  expect(caught.expressions).toEqual({ surprised: 1 }); expect(caught.roundEyes).toBe(true);
+  expect(caught.props!.cookie).toMatchObject({ visible: false, scale: [0, 0, 0] });
+  expect(caught.props!.cookie!.position[2]).toBeLessThan(0);
+  props.apply(caught.props); expect(dispose).toHaveBeenCalledOnce(); expect(root.getObjectByName('prop:cookie')).toBeUndefined();
+  props.dispose();
 });

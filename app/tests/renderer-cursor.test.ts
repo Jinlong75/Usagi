@@ -56,7 +56,7 @@ describe('真实渲染入口接线，无 Electron/DOM/WebGL 宿主', () => {
     });
     const listen = (name: string) => (callback: (value?: any) => void) => { host.callbacks.set(name, callback); return () => {}; };
     bridge = {
-      platform: 'win32', reportFps: vi.fn(), getConfig: async () => structuredClone(DEFAULT_CONFIG),
+      platform: 'win32', activityDone: vi.fn(), reportFps: vi.fn(), getConfig: async () => structuredClone(DEFAULT_CONFIG),
       onActivity: listen('activity'), onRoutine: listen('routine'), onConfig: listen('config'), onCursor: listen('cursor'), onPress: listen('press'), onClick: listen('click'),
       onDrag: listen('drag'), onMoveDone: listen('done'), onVisibility: listen('visibility'), onSmokePose: listen('smoke'),
       onExpression: listen('expression'), onSound: listen('sound'), onReload: listen('reload'),
@@ -123,6 +123,53 @@ describe('真实渲染入口接线，无 Electron/DOM/WebGL 宿主', () => {
     host.callbacks.get('reload')!();
     await vi.waitFor(() => expect(wandDispose).toHaveBeenCalledOnce());
     expect(host.model.scene.getObjectByName('prop:wand')).toBeUndefined();
+  });
+
+  it('喂食播放时关闭眨眼和聊天表情叠加，吃完才发送完成 IPC，道具被释放', () => {
+    for (const [activity, prop, duration] of [['eatRiceball', 'riceball', 6000], ['eatWatermelon', 'watermelon', 5000], ['iceCream', 'iceCream', 5500]] as const) {
+      const request = { activity, feedId: duration };
+      host.callbacks.get('activity')!(request); draw(700);
+      const food = host.model.scene.getObjectByName(`prop:${prop}`);
+      expect(food).toBeDefined();
+      host.model.expressionManager.setValue.mockClear();
+      host.callbacks.get('expression')!('angry'); draw();
+      expect(host.model.expressionManager.setValue.mock.calls.filter(([name]: string[]) => name === 'blink')).toEqual([['blink', 0], ['blink', 0]]);
+      expect(host.model.expressionManager.setValue).not.toHaveBeenCalledWith('angry', 1);
+      expect(bridge.activityDone).not.toHaveBeenCalledWith(request);
+      draw(duration - 720);
+      expect(bridge.activityDone).toHaveBeenCalledWith(request);
+      expect(food.parent).toBeNull();
+    }
+  });
+
+  it('同种喂食重启动作时保留第二轮 feedId，只为实际播完的一轮回执一次', () => {
+    const first = { activity: 'eatRiceball', feedId: 71 };
+    const second = { activity: 'eatRiceball', feedId: 72 };
+    host.callbacks.get('activity')!(first); draw(1000);
+    host.callbacks.get('activity')!(second); draw(5000);
+    expect(bridge.activityDone).not.toHaveBeenCalled();
+    draw(1000);
+    expect(bridge.activityDone).toHaveBeenCalledExactlyOnceWith(second);
+    draw(20); expect(bridge.activityDone).toHaveBeenCalledTimes(1);
+  });
+
+  it('真实随机偷吃到原生 press/release/click：道具立即消失、身体冻结 400ms，之后惊讶点击', async () => {
+    const random = vi.spyOn(Math, 'random');
+    host.callbacks.get('reload')!();
+    await vi.waitFor(() => expect(bridge.framed).toHaveBeenCalledTimes(2));
+    random.mockReturnValueOnce(0.5).mockReturnValueOnce(0.999);
+    draw(3500); draw(1700);
+    expect(host.model.scene.getObjectByName('prop:cookie')).toBeDefined();
+    host.callbacks.get('press')!(true); draw();
+    expect(host.model.scene.getObjectByName('prop:cookie')).toBeUndefined();
+    const scale = host.model.scene.scale.clone(); const position = host.model.scene.position.clone();
+    host.callbacks.get('press')!(false); host.callbacks.get('click')!();
+    draw(399);
+    expect(host.model.scene.scale).toEqual(scale); expect(host.model.scene.position).toEqual(position);
+    expect(host.model.expressionManager.setValue).toHaveBeenCalledWith('surprised', 1);
+    draw(1); draw(100);
+    expect(host.model.scene.position.z).toBeLessThan(position.z);
+    random.mockRestore();
   });
 
   it.each(['nap', 'sleep'] as const)('%s 中关闭作息立即收枕清醒，迟来状态与 reload 不复睡，开启后等新状态再打盹', async state => {

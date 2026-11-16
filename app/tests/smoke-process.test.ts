@@ -4,10 +4,10 @@ import { BEHAVIORS, validBehaviorReport, validFocusedReport, validUiReport, vali
 import { runSmokeProcess } from '../scripts/smoke-process.mjs';
 
 const success = { ok: true, ui: ['bubble', 'chat', 'settings'], model: '/repo/assets/models/usagi.vrm', earDifferenceRatio: 0.06, happyFaceDifferenceRatio: 0.1, opaqueRatio: 0.21, vrmVersion: '1', expressions: ['blink', 'happy'],
-  behaviors: ['idle', 'walk', 'happy', 'surprised', 'shout', 'stretch', 'drag', 'ear-shake', 'jumpRope', 'blowBubbles', 'napPillow'],
-  behaviorOpaqueRatios: { idle: 0.21, walk: 0.2, happy: 0.23, surprised: 0.19, shout: 0.25, stretch: 0.24, drag: 0.2, 'ear-shake': 0.2, jumpRope: 0.22, blowBubbles: 0.22, napPillow: 0.22 },
-  propOpaqueRatios: { handles: 0.001, rope: 0.003, wand: 0.002, bubble: 0.002, pillow: 0.01 },
-  propFraming: { jumpRope: true, blowBubbles: true, napPillow: true },
+  behaviors: ['idle', 'walk', 'happy', 'surprised', 'shout', 'stretch', 'drag', 'ear-shake', 'jumpRope', 'blowBubbles', 'napPillow', 'eatRiceball', 'eatWatermelon', 'iceCream', 'sneakSnack'],
+  behaviorOpaqueRatios: { idle: 0.21, walk: 0.2, happy: 0.23, surprised: 0.19, shout: 0.25, stretch: 0.24, drag: 0.2, 'ear-shake': 0.2, jumpRope: 0.22, blowBubbles: 0.22, napPillow: 0.22, eatRiceball: 0.22, eatWatermelon: 0.22, iceCream: 0.22, sneakSnack: 0.22 },
+  propOpaqueRatios: { handles: 0.001, rope: 0.003, wand: 0.002, bubble: 0.002, pillow: 0.01, riceball: 0.002, watermelon: 0.002, iceCream: 0.002, cookie: 0.001 },
+  propFraming: { jumpRope: true, blowBubbles: true, napPillow: true, eatRiceball: true, eatWatermelon: true, iceCream: true, sneakSnack: true },
   behaviorTopTransparent: { happy: true, shout: true, stretch: true } };
 
 async function run(source: string, timeoutMs = 5_000) {
@@ -83,7 +83,7 @@ describe('冒烟子进程结果与诊断（Node fixture，不启动 GUI）', () 
   });
 });
 
-describe('十一种行为冒烟报告', () => {
+describe('十五种行为冒烟报告', () => {
   it('必须依序包含原有全部行为及甩耳朵，每张图的 alpha 占比有效', () => {
     expect(success.behaviors).toEqual(BEHAVIORS);
     expect(validBehaviorReport(success)).toBe(true);
@@ -144,19 +144,19 @@ describe('Electron UnknownVizError 只重跑一次', () => {
 });
 
 
-it('新增道具每种必须有可见像素，三个活动道具必须全部在窗内', () => {
-  for (const name of ['handles', 'rope', 'wand', 'bubble', 'pillow']) {
+it('新增道具每种必须有可见像素，七个活动道具必须全部在窗内', () => {
+  for (const name of ['handles', 'rope', 'wand', 'bubble', 'pillow', 'riceball', 'watermelon', 'iceCream', 'cookie']) {
     for (const ratio of [undefined, 0, NaN, Infinity, 1.1]) {
       expect(validBehaviorReport({ ...success, propOpaqueRatios: { ...success.propOpaqueRatios, [name]: ratio } })).toBe(false);
     }
   }
-  for (const name of ['jumpRope', 'blowBubbles', 'napPillow']) {
+  for (const name of ['jumpRope', 'blowBubbles', 'napPillow', 'eatRiceball', 'eatWatermelon', 'iceCream', 'sneakSnack']) {
     expect(validBehaviorReport({ ...success, propFraming: { ...success.propFraming, [name]: false } })).toBe(false);
   }
 });
 
 it('聚焦截图只接受点名道具行为，仍要求每类道具可见且完整入画，全量校验不接受聚焦结果', () => {
-  const only = ['jumpRope', 'blowBubbles', 'napPillow'];
+  const only = ['jumpRope', 'blowBubbles', 'napPillow', 'eatRiceball', 'eatWatermelon', 'iceCream', 'sneakSnack'];
   const report = { ...success, focused: true, behaviors: only };
   expect(validFocusedReport(report, only)).toBe(true);
   expect(validBehaviorReport(report)).toBe(false);

@@ -32,6 +32,18 @@ export function framingPoses(modelHeight = 1): Pose[] {
   for (let i = 0; i <= 48; i++) poses.push(sampleMotion('jumpRope', 1.2 + i * 0.6 / 48, { modelHeight }));
   for (let t = 0.1; t < 5; t += 0.1) poses.push(sampleMotion('blowBubbles', t, { modelHeight }));
   for (const t of [0.001, 1, 2, 3, 3.999]) poses.push(sampleMotion('napPillow', t, { modelHeight }));
+  // Food paths are monotone between these extrema: rise endpoints, largest
+  // food/side bends, full forward lean, last falling-particle instant and hop apex.
+  // Avoid dense skin scans for each bite of the same otherwise identical pose.
+  const foodExtrema = {
+    eatRiceball: [0.18, 0.6, 0.725, 0.85, 3.15, 3.849999, 5.275],
+    eatWatermelon: [0.6, 0.725, 1.925, 3.125],
+    iceCream: [0.18, 0.8, 2.6, 2.8, 3.399999, 3.8],
+    sneakSnack: [0.18, 0.45, 0.95, 1.2, 1.625, 2.325],
+  } as const;
+  for (const name of Object.keys(foodExtrema) as (keyof typeof foodExtrema)[]) {
+    for (const t of foodExtrema[name]) poses.push(sampleMotion(name, t, { modelHeight }));
+  }
   return poses;
 }
 

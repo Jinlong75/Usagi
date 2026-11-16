@@ -3,9 +3,9 @@ import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import { runSmokeProcess } from './smoke-process.mjs';
 
-export const BEHAVIORS = ['idle', 'walk', 'happy', 'surprised', 'shout', 'stretch', 'drag', 'ear-shake', 'jumpRope', 'blowBubbles', 'napPillow'];
+export const BEHAVIORS = ['idle', 'walk', 'happy', 'surprised', 'shout', 'stretch', 'drag', 'ear-shake', 'jumpRope', 'blowBubbles', 'napPillow', 'eatRiceball', 'eatWatermelon', 'iceCream', 'sneakSnack'];
 export function validFocusedReport(report, only) {
-  const props = { jumpRope: ['handles', 'rope'], blowBubbles: ['wand', 'bubble'], napPillow: ['pillow'] };
+  const props = { jumpRope: ['handles', 'rope'], blowBubbles: ['wand', 'bubble'], napPillow: ['pillow'], eatRiceball: ['riceball'], eatWatermelon: ['watermelon'], iceCream: ['iceCream'], sneakSnack: ['cookie'] };
   const expected = BEHAVIORS.filter(name => only.includes(name));
   return only.length > 0 && only.every(name => Object.hasOwn(props, name)) && report.focused === true &&
     report.vrmVersion === '1' && JSON.stringify(report.behaviors) === JSON.stringify(expected) &&
@@ -25,8 +25,8 @@ export function validBehaviorReport(report) {
     Array.isArray(report.behaviors) && JSON.stringify(report.behaviors) === JSON.stringify(BEHAVIORS) &&
     BEHAVIORS.every((name) => Number.isFinite(report.behaviorOpaqueRatios?.[name]) &&
       report.behaviorOpaqueRatios[name] >= 0.02 && report.behaviorOpaqueRatios[name] <= 0.95) &&
-    ['handles', 'rope', 'wand', 'bubble', 'pillow'].every(name => Number.isFinite(report.propOpaqueRatios?.[name]) && report.propOpaqueRatios[name] > 0 && report.propOpaqueRatios[name] <= 1) &&
-    ['jumpRope', 'blowBubbles', 'napPillow'].every(name => report.propFraming?.[name] === true) &&
+    ['handles', 'rope', 'wand', 'bubble', 'pillow', 'riceball', 'watermelon', 'iceCream', 'cookie'].every(name => Number.isFinite(report.propOpaqueRatios?.[name]) && report.propOpaqueRatios[name] > 0 && report.propOpaqueRatios[name] <= 1) &&
+    ['jumpRope', 'blowBubbles', 'napPillow', 'eatRiceball', 'eatWatermelon', 'iceCream', 'sneakSnack'].every(name => report.propFraming?.[name] === true) &&
     ['happy', 'shout', 'stretch'].every((name) => report.behaviorTopTransparent?.[name] === true);
 }
 

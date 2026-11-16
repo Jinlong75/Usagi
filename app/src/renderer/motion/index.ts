@@ -1,3 +1,4 @@
+import { isFoodMotion, sampleFood } from './food';
 import { Euler, Vector3 } from 'three';
 import type { VRM, VRMHumanBoneName } from '@pixiv/three-vrm';
 import { DURATIONS, SPEED } from '../behavior/machine';
@@ -9,6 +10,7 @@ import type { Action, Reaction } from '../behavior/machine';
 export type MotionName = 'idle' | 'lookAround' | 'turn' | 'walk' | 'drag' | Action | Reaction | 'napPillow';
 export type Rotation = [number, number, number];
 export interface Pose {
+  roundEyes?: boolean;
   props?: Record<string, PropState>;
   position: Rotation; rotation: Rotation; scale: Rotation;
   bones: Partial<Record<VRMHumanBoneName, Rotation>>; hipsY?: number; expressions: Record<string, number>;
@@ -16,6 +18,7 @@ export interface Pose {
 // Translations are fractions of neutral model height; angles are radians.
 export const MOTION_SECONDS: Record<MotionName, number> = {
   idle: 3.5, lookAround: 3.5, turn: 0.9, walk: 2, drag: 1.2,
+  eatRiceball: 6, eatWatermelon: 5, iceCream: 5.5, sneakSnack: 4.5,
   jumpRope: 6.5, blowBubbles: 5, napPillow: 4,
   jump: DURATIONS.jump / 1000, stretch: DURATIONS.stretch / 1000,
   shake: DURATIONS.shake / 1000, spin: DURATIONS.spin / 1000,
@@ -58,7 +61,10 @@ export function sampleMotion(name: MotionName, t: number, options: MotionOptions
   const weight = envelope(t, duration);
   const p = t / duration;
   const height = options.modelHeight ?? 1;
-  if (name === 'jumpRope') {
+  if (isFoodMotion(name)) {
+    pose.roundEyes = true;
+    sampleFood(pose, name, t, weight, height);
+  } else if (name === 'jumpRope') {
     const age = t - ROPE_START;
     if (age >= 0 && age < 6 * ROPE_PERIOD) {
       const jump = jumps(age % ROPE_PERIOD, height * 0.6, [0]);
@@ -164,6 +170,14 @@ export function sampleMotion(name: MotionName, t: number, options: MotionOptions
   }
   return pose;
 }
+/** Re-sample the same instant throughout the catch, with the cookie shrunk
+ * behind the body and immediately hidden/disposed. No breathing/chewing advances. */
+export function caughtSnackPose(snackAge: number, modelHeight = 1): Pose {
+  const pose = sampleMotion('sneakSnack', snackAge, { modelHeight });
+  pose.props = { cookie: { name: 'cookie', position: [0, 0.24, -0.25], scale: [0, 0, 0], visible: false } };
+  pose.expressions = { surprised: 1 }; pose.roundEyes = true;
+  return pose;
+}
 const BONES: VRMHumanBoneName[] = ['hips', 'spine', 'chest', 'neck', 'head', 'leftShoulder', 'rightShoulder', 'leftUpperArm', 'rightUpperArm',
   'leftLowerArm', 'rightLowerArm', 'leftUpperLeg', 'rightUpperLeg', 'leftLowerLeg', 'rightLowerLeg'];
 const EXPRESSIONS = ['happy', 'angry', 'sad', 'relaxed', 'surprised', 'aa', 'ih', 'ou', 'ee', 'oh'];
@@ -199,6 +213,7 @@ export class MotionRig {
     }
     const hips = this.vrm.humanoid.getNormalizedBoneNode('hips');
     if (hips && pose.hipsY) hips.position.y += pose.hipsY;
+    if (pose.roundEyes) this.vrm.expressionManager?.setValue('blink', 0);
     for (const [name, value] of Object.entries(pose.expressions)) {
       if (['happy', 'angry', 'sad', 'relaxed', 'surprised'].includes(name)) {
         if (value) setEmotion(this.vrm, name);
