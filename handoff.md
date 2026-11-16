@@ -4,7 +4,7 @@
 
 ## 一句话
 
-011～014 全部已合入，主导补了举手姿势和尾巴白区；下一步等 Waypoint 说"可以进门禁"后跑全量验收，看冒烟截图，出正式 dmg、请用户试用。
+全量验收已通过（20:35，da36f2e）；正式 mac dmg 已出并通过装包后冒烟；Windows 包在打；下一步把安装说明交给用户试用，收集 Windows/Mate Engine 待验证清单。
 
 ## 开工必做
 
@@ -47,7 +47,7 @@
 2. **012 已合入**（16:5x，合并提交 185359f）：-dev 占位 dmg 127MB，打包冒烟 ok；图标从参考图正面裁出（主导看过，好）。遗留：`dist:win` 在本机失败——NSIS 的 makensis 是 x86_64，本机 arm64 没装 Rosetta（`Unknown system error -86`）；出正式包时主导先 `softwareupdate --install-rosetta --agree-to-license`（用户已授权装工具）再试，仍不行就交用户在 Windows 上跑 `npm --prefix app run dist:win`。EXE 资源编辑被关掉，exe/快捷方式可能是 Electron 默认图标，正式包时核对。
 3. **013 已合入**（e540564，第 4 次）：位置漂移修好（回归测试覆盖）。举手 R4-1 成立、主导接手：Usagi 手臂约 0.075H、根在身体侧面、够不到头顶，转肩会把手转进头里并鼓包；改为肩不转、上臂外展 1.5/1.4（伸懒腰/喊叫），手卡在头身交界凹处伸出轮廓（fa29171，探针量过：手骨伸出轮廓约 0.06H）。完成条件：已完成；全量验收的 smoke-stretch/shout 截图里看得到小手（看不到再调 `app/src/renderer/motion/index.ts` 的 upperArm）。
 3b. **014 已合入**（第 4 次，审查 R4-1 判不成立：尾巴骨 0.55mm 漂移）：耳朵粉色边界完全平滑（最大转角 144°→26°）。主导随后把尾巴白区 1.15r→1.03r 去掉球上方白色月牙，整条流水线重出并同步 `assets/models/usagi.vrm`（81395e0），pipeline 测试、app 254 项单测、typecheck 通过。完成条件：已完成。
-4. **全量验收**：Waypoint 20:0x 开始第 3 次全量验收，要求期间不进门禁；等对方发"可以进门禁"后 `ar verify --detach`，`ar verify wait <运行>`。上次通过后已合入 8 个任务＋主导 3 个提交。通过后看 app/smoke-out 截图（举手、尾巴、耳朵），再 `npm --prefix app run dist`（Windows 包先 `softwareupdate --install-rosetta --agree-to-license` 再试）出正式 dmg，主导自己装试，然后请用户试用并填 DeepSeek Key。完成条件：正式 dmg 在 app/release/，用户收到安装说明 docs/guides/02-安装与使用.md。
+4. **全量验收已通过**（20261116-202714-351d）。前两次失败是环境：npm ci 后刚解压的 Electron 首启在 macOS 上大概率 UnknownVizError（删 dist 复现 3/4），主导在 app/scripts/smoke.mjs 加了"刚下载且正是该错才重跑一次"（da36f2e，单测覆盖）。正式包：`app/release/Usagi-0.1.0-mac-arm64.dmg`（120MB，正式模型，挂载检查模型与仓库逐字节一致，装包后 --smoke ok）。Rosetta 已装（20:3x），`npm --prefix app run dist:win` 在跑。完成条件：用户收到 docs/guides/02-安装与使用.md 与 dmg 路径。
 5. 收尾：Windows 实机安装与 Mate Engine 导入需要用户在 Windows 电脑上验证（Mate Engine wiki 第三方镜像称支持 VRM 0.x/1.x，未官方确认）。完成条件：把待用户验证清单交给用户。
 
 ## 授权与边界
