@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
 import { Bone, Box3, BoxGeometry, Float32BufferAttribute, Object3D, Skeleton, SkinnedMesh, Uint16BufferAttribute, Vector3 } from 'three';
 import type { VRM, VRMHumanBoneName } from '@pixiv/three-vrm';
-import { ARM_RAISE, ARM_REST, MOTION_SECONDS, MotionRig, jumps, neutralPose, sampleMotion } from '../src/renderer/motion';
+import { ARM_FOREARM, ARM_RAISE, ARM_REST, MOTION_SECONDS, MotionRig, jumps, neutralPose, sampleMotion } from '../src/renderer/motion';
 import { EMOTIONS, setEmotion } from '../src/renderer/behaviors/expressions';
 import type { MotionName } from '../src/renderer/motion';
 import { DragSprings, SPRING_ACCELERATION_COEFFICIENT } from '../src/renderer/motion/springs';
@@ -260,6 +260,10 @@ it('按模型高度跳 10%，落地 XZ 1.08，短腿摇摆大于手臂，伸展�
   expect(stretch.hipsY).toBeCloseTo(0.025);
   expect(stretch.bones.chest![0]).toBeCloseTo(-0.1);
   expect(stretch.bones.leftShoulder).toBeUndefined();
+  expect(stretch.bones.leftUpperArm).toEqual([0, 0, ARM_RAISE.stretch]);
+  expect(stretch.bones.rightUpperArm).toEqual([0, 0, -ARM_RAISE.stretch]);
+  expect(stretch.bones.leftLowerArm).toEqual([0, 0, ARM_FOREARM]);
+  expect(stretch.bones.rightLowerArm).toEqual([0, 0, -ARM_FOREARM]);
   expect(stretch.bones.leftUpperArm![2] - ARM_REST).toBeCloseTo(ARM_RAISE.stretch);
   expect(sampleMotion('shout', 0.55).bones.leftUpperArm![2] - ARM_REST).toBeCloseTo(ARM_RAISE.shout);
 });

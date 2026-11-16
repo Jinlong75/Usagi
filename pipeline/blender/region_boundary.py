@@ -1,6 +1,7 @@
-"""材质分界的闭环与三维转角测量；glTF 材质接缝先在临时网格焊接。"""
+"""材质分界闭环及转角：耳内使用椭圆场同一正面 X/Z 投影平面。"""
 import math
 import bmesh
+from mathutils import Vector
 
 
 def boundary_metrics(obj):
@@ -29,9 +30,28 @@ def boundary_metrics(obj):
                 closed = all(len(neighbors) == 2 for neighbors in adjacency.values())
                 angles = [math.degrees((v.co - neighbors[0].co).angle(neighbors[1].co - v.co))
                           for v, neighbors in adjacency.items() if len(neighbors) == 2]
+                projected = []
+                if closed:
+                    start = next(iter(verts))
+                    ordered, previous, current = [], None, start
+                    while not ordered or current != start:
+                        ordered.append(current)
+                        following = next(v for v in adjacency[current] if v != previous)
+                        previous, current = current, following
+                    points = []
+                    for v in ordered:
+                        point = Vector((v.co.x, v.co.z))
+                        if not points or (point - points[-1]).length > 1e-7:
+                            points.append(point)
+                    if len(points) > 1 and (points[0] - points[-1]).length <= 1e-7:
+                        points.pop()
+                    projected = [math.degrees((point - points[i-1]).angle(points[(i+1) % len(points)] - point))
+                                 for i, point in enumerate(points)]
                 label = ('ear_l' if sum(v.co.x for v in verts) > 0 else 'ear_r') if region == 'EarInner' else 'tail'
                 result.setdefault(label, []).append({'segments': len(component), 'closed': closed,
-                                                      'max_turn_degrees': max(angles, default=180)})
+                                                      'max_turn_degrees': max(angles, default=180),
+                                                      'max_front_turn_degrees': max(projected, default=180),
+                                                      'max_front_turn_position': list(points[projected.index(max(projected))]) if projected else None})
         return result
     finally:
         bm.free()

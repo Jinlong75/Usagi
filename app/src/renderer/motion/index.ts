@@ -19,10 +19,10 @@ export const MOTION_SECONDS: Record<MotionName, number> = {
 };
 /** 2026-11-16 用户：“那个形状就是最标准的形状”。静止不旋转上臂，保持 Tripo 原始姿态。 */
 export const ARM_REST = 0;
-/** 0.05 rad steps; smallest lifts with 0.01H clearance in the real Tripo rig. */
-// TODO(lead): 0.75 satisfies height clearance but the unchanged silhouette test fails;
-// no allowed 0.05-rad step satisfies all three geometric requirements on this rig.
-export const ARM_RAISE = { stretch: 0.75, shout: 0.75 } as const;
+/** 2026-11-17 主导授权多轴扫描；原手高与轮廓要求无解后采用 neck−0.04H。
+ * 在扫描网格中取距 0.75 rad 纯抬臂最近的姿态，见 usagi_arm_scan.report.json。 */
+export const ARM_RAISE = { stretch: 0.43, shout: 0.43 } as const;
+export const ARM_FOREARM = -0.1;
 export function neutralPose(): Pose {
   return { position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1], bones: {}, expressions: {} };
 }
@@ -57,15 +57,13 @@ export function sampleMotion(name: MotionName, t: number, options: MotionOptions
     pose.scale = [1 + jump.squash * (0.08 / 0.15), 1 - jump.squash, 1 + jump.squash * (0.08 / 0.15)];
     if (name === 'happy') pose.expressions.happy = 1;
   } else if (name === 'stretch' || name === 'shout') {
-    // Usagi's arm is a ~0.075H stub rooted at the body side (y≈0.26H) under a huge
-    // head (neck y≈0.30H): it cannot reach above the head. Turning the shoulder swings
-    // the arm root into the head and bulges the body, so only the upper arm abducts:
-    // raise the hands sideways-up (主导 2026-11-16 定).
-    // VRM 1.0 normalized arms extend along ±X: opposite Z turns raise both sides.
-    // 主导 2026-11-16 补充：按真实小手高度选择带 0.01H 余量的最小角。
+    // VRM normalized arms extend along ±X: opposite Z turns raise both sides.
+    // Keep shoulders fixed; a small forearm counter-rotation retains visible width.
     const upperArm = ARM_REST + ARM_RAISE[name];
-    pose.bones.leftUpperArm = [-0.06 * weight, 0, upperArm * weight];
-    pose.bones.rightUpperArm = [-0.06 * weight, 0, -upperArm * weight];
+    pose.bones.leftUpperArm = [0, 0, upperArm * weight];
+    pose.bones.rightUpperArm = [0, 0, -upperArm * weight];
+    pose.bones.leftLowerArm = [0, 0, ARM_FOREARM * weight];
+    pose.bones.rightLowerArm = [0, 0, -ARM_FOREARM * weight];
     pose.bones.chest = [-0.1 * weight, 0, 0];
     pose.hipsY = height * 0.025 * weight;
     if (name === 'shout') pose.expressions.angry = 1;

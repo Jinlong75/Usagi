@@ -41,11 +41,11 @@
   "rotation_degrees": -90.0,
   "front_before": [
     0.9999957084655762,
-    0.0029319110326468945,
+    0.002931788796558976,
     0.0
   ],
   "front_after": [
-    0.0029318672604858875,
+    0.0029317450243979692,
     -0.9999957084655762,
     0.0
   ],
@@ -224,16 +224,17 @@
     "independent_tail_faces": 702,
     "ear_components": [
       {
-        "faces": 2713,
-        "mean_normal_y": -0.9619406367446891,
-        "kept": true
-      },
-      {
         "faces": 2675,
         "mean_normal_y": -0.9619201384141479,
         "kept": true
+      },
+      {
+        "faces": 2713,
+        "mean_normal_y": -0.9619406367446891,
+        "kept": true
       }
     ],
+    "ear_tangential_smoothing_passes": 4,
     "removed_zero_area_faces_after_triangulation": 5,
     "connected_components": 2,
     "zero_area_faces": 0,
@@ -247,18 +248,28 @@
         {
           "segments": 258,
           "closed": true,
-          "max_turn_degrees": 82.28471644068014
+          "max_turn_degrees": 38.939342175254986,
+          "max_front_turn_degrees": 25.242420615622628,
+          "max_front_turn_position": [
+            0.03767457976937294,
+            0.804888904094696
+          ]
         }
       ],
       "ear_r": [
         {
           "segments": 253,
           "closed": true,
-          "max_turn_degrees": 79.66257949755557
+          "max_turn_degrees": 79.66257949755557,
+          "max_front_turn_degrees": 19.856239304082706,
+          "max_front_turn_position": [
+            -0.06545810401439667,
+            0.9829053282737732
+          ]
         }
       ]
     },
-    "ear_inner_max_face_normal_y": 0.03218091279268265
+    "ear_inner_max_face_normal_y": 0.03217447176575661
   },
   "material_face_counts": {
     "Body": 32008,

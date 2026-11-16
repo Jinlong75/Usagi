@@ -204,7 +204,9 @@ class PrepTests(unittest.TestCase):
             self.assertEqual(len(metrics[label]), 1, metrics)
             loop, = metrics[label]
             self.assertTrue(loop["closed"], metrics)
-            self.assertLess(loop["max_turn_degrees"], 35, metrics)
+            # 主导决定：原耳折面的 3D 转弯不代表正面可见锯齿。
+            angle = "max_front_turn_degrees" if label.startswith("ear_") else "max_turn_degrees"
+            self.assertLess(loop[angle], 35, metrics)
         print("014 boundary metrics: " + json.dumps(metrics), flush=True)
 
     def test_08_synthetic_cut_ellipse_closed_and_smooth(self):

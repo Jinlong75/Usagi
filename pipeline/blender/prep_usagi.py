@@ -433,13 +433,14 @@ def cut_isocontour(bm, field, material_index):
 
 
 def split_region_boundaries(obj, profile, ears):
-    # TODO(lead): position-only ear loops are closed, but the unchanged raw ear
-    # surface has creases where the 3D contour still turns >35 degrees.
+    # Ear smoothness is measured in the ellipse field's front X/Z plane;
+    # the original ear facets can bend the surface contour sharply in 3D.
     bm = bmesh.new()
     try:
         bm.from_mesh(obj.data)
         # Marching triangles has at most two intersections per face.
         bmesh.ops.triangulate(bm, faces=list(bm.faces))
+        original_surface = BVHTree.FromBMesh(bm)
         before = len(bm.faces)
         islands = sorted(face_islands(bm), key=len, reverse=True)
         # 主导 2026-11-16：独立尾巴整块着色，不在主体切尾巴等值线。
@@ -489,9 +490,43 @@ def split_region_boundaries(obj, profile, ears):
         if degenerate:
             bmesh.ops.delete(bm, geom=degenerate, context="FACES_ONLY")
             remove_loose(bm)
+        # 主导 2026-11-17：边界切向 Laplacian 平滑，每步投回原表面。
+        # 原面折线的正面投影可能折返；只调整耳内闭环，不碰其他顶点。
+        boundary_edges = [e for e in bm.edges if len(e.link_faces) == 2
+                          and sum(f.material_index == 1 for f in e.link_faces) == 1]
+        neighbors = {}
+        for edge in boundary_edges:
+            for vert in edge.verts:
+                neighbors.setdefault(vert, []).append(edge.other_vert(vert))
+        smoothing_passes = 0
+        for _ in range(12):
+            bad = set()
+            for vert, adjacent in neighbors.items():
+                if len(adjacent) != 2:
+                    continue
+                projected = []
+                for other in adjacent:
+                    previous = vert
+                    while (Vector((other.co.x - vert.co.x, other.co.z - vert.co.z))).length <= 1e-7:
+                        following = [v for v in neighbors[other] if v != previous]
+                        if not following or following[0] == vert:
+                            break
+                        previous, other = other, following[0]
+                    projected.append(Vector((other.co.x - vert.co.x, other.co.z - vert.co.z)))
+                if all(p.length > 1e-7 for p in projected) and (-projected[0]).angle(projected[1]) >= math.radians(35):
+                    bad.add(vert)
+            if not bad:
+                break
+            selected = bad | {n for v in bad for n in neighbors[v]}
+            updates = {v: original_surface.find_nearest(v.co.lerp(average(n.co for n in neighbors[v]), .25))[0]
+                       for v in selected if len(neighbors[v]) == 2}
+            for vert, point in updates.items():
+                vert.co = point
+            smoothing_passes += 1
         bm.normal_update()
         report = {"faces_before_cut": before, "faces_after_cut": len(bm.faces),
                   "independent_tail_faces": len(tail_faces), "ear_components": ear_components,
+                  "ear_tangential_smoothing_passes": smoothing_passes,
                   "removed_zero_area_faces_after_triangulation": len(degenerate),
                   "connected_components": len(face_islands(bm)),
                   "zero_area_faces": sum(f.calc_area() <= 1e-14 for f in bm.faces),

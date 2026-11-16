@@ -1,0 +1,19 @@
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> usagi-desktop-pet@0.1.0 test
+> vitest run tests/behavior-motion.test.ts tests/usagi-model.test.ts
+
+
+ RUN  v5.1.0 <project>/app
+
+{"motion":"stretch","side":0,"lift":0.052216605287995994,"neckClearance":-0.03163163882198658,"silhouette":0.025093586756432973}
+{"motion":"stretch","side":1,"lift":0.05221661450391766,"neckClearance":-0.031631686287445865,"silhouette":0.025093631617225266}
+{"motion":"shout","side":0,"lift":0.052216605287995994,"neckClearance":-0.03163163882198658,"silhouette":0.025093586756432973}
+{"motion":"shout","side":1,"lift":0.05221661450391766,"neckClearance":-0.031631686287445865,"silhouette":0.025093631617225266}
+{"usagiPhysics":{"shakeDegrees":39.87580522398438,"dragDegrees":7.201560027547096,"settledDegrees":0,"aspect":1.019075449975269,"mediumHeight":314}}
+
+ Test Files  2 passed (2)
+      Tests  36 passed (36)
+   Start at  00:26:25
+   Duration  3.84s (tests 77%, import 13%, transform 8%, worker 1%)
+
