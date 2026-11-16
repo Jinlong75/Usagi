@@ -32,6 +32,22 @@ interface ActiveRequest {
   committing: boolean;
 }
 
+async function storageOperation<T>(operation: () => Promise<T>): Promise<T> {
+  try { return await operation(); }
+  catch (error) {
+    const cause = error as { code?: unknown; message?: unknown } | null;
+    const reason = typeof cause?.code === 'string' && cause.code
+      ? cause.code
+      : (typeof cause?.message === 'string' ? cause.message : String(error)).slice(0, 80);
+    throw new ChatError('storage', `聊天记录读写失败：${reason}。请检查磁盘空间和文件权限。`);
+  }
+}
+
+async function* streamWithErrors(client: ChatClient, opts: StreamOptions, signal: AbortSignal): AsyncGenerator<StreamEvent> {
+  try { yield* client.streamChat(opts, signal); }
+  catch (error) { throw networkError(error, opts.apiKey); }
+}
+
 export class ChatService {
   private active?: ActiveRequest;
   private readonly listeners = new Set<(event: ChatEvent) => void>();
@@ -78,11 +94,11 @@ export class ChatService {
       this.emit({ type: 'status', status: 'thinking', requestId: request.id });
       if (request.stopped) return;
       const settings = getSettings();
-      const history = (await store.load()).messages;
+      const history = (await storageOperation(() => store.load())).messages;
       if (request.stopped) return;
       const now = this.now();
       const messages = buildMessages({ ...settings, history, userText, now, lastMessageAt: history.at(-1)?.createdAt });
-      await store.append({ id: randomUUID(), role: 'user', content: userText, createdAt: now.toISOString() });
+      await storageOperation(() => store.append({ id: randomUUID(), role: 'user', content: userText, createdAt: now.toISOString() }));
       if (request.stopped) return;
       const filter = new EmotionStreamFilter();
       let text = '', reasoning = false, complete = false;
@@ -92,7 +108,7 @@ export class ChatService {
         text += chunk;
         this.emit({ type: 'delta', requestId: request.id, text: chunk });
       };
-      for await (const event of client.streamChat({ ...settings, apiKey, messages }, request.controller.signal)) {
+      for await (const event of streamWithErrors(client, { ...settings, apiKey, messages }, request.controller.signal)) {
         if (request.stopped) return;
         if (event.type === 'content') delta(filter.push(event.text));
         else if (event.type === 'reasoning') reasoning ||= !!event.text.trim();
@@ -104,12 +120,12 @@ export class ChatService {
       if (!text.trim()) throw emptyReplyError(reasoning, finishReason, settings.maxTokens ?? 2048);
       if (!complete) throw new ChatError('stream_incomplete', '回复连接中断了，请稍后重试。');
       request.committing = true;
-      await store.append({ id: randomUUID(), role: 'assistant', content: text, createdAt: this.now().toISOString(), emotion: filter.emotion });
+      await storageOperation(() => store.append({ id: randomUUID(), role: 'assistant', content: text, createdAt: this.now().toISOString(), emotion: filter.emotion }));
       if (this.active === request) this.active = undefined;
       this.emit({ type: 'done', requestId: request.id, text, emotion: filter.emotion });
     } catch (error) {
       if (!request.stopped) {
-        const chatError = error instanceof ChatError ? error : networkError(error, apiKey);
+        const chatError = error instanceof ChatError ? error : new ChatError('unknown');
         if (this.active === request) this.active = undefined;
         this.emit({ type: 'error', requestId: request.id, code: chatError.code, message: chatError.message });
       }
@@ -122,10 +138,13 @@ export class ChatService {
     try {
       apiKey = (await this.options.keyStore.load()).apiKey;
       if (!apiKey) return { ok: false, message: '请先填写 API Key。' };
-      const models = await this.options.client.listModels(this.options.getSettings().baseUrl, apiKey);
+      const { baseUrl } = this.options.getSettings();
+      let models: string[];
+      try { models = await this.options.client.listModels(baseUrl, apiKey); }
+      catch (error) { throw networkError(error, apiKey); }
       return { ok: true, models };
     } catch (error) {
-      return { ok: false, message: networkError(error, apiKey).message };
+      return { ok: false, message: error instanceof ChatError ? error.message : new ChatError('unknown').message };
     }
   }
 }

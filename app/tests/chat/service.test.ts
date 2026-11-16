@@ -126,6 +126,59 @@ describe('ChatService', () => {
     expect(await service.testConnection()).toEqual({ ok: false, message: '请先填写 API Key。' });
     expect(client.listModels).not.toHaveBeenCalled();
   });
+  it('reports EACCES on session load as a storage error without starting transport', async () => {
+    const { service, events, store, client } = setup();
+    vi.spyOn(store, 'load').mockRejectedValueOnce(Object.assign(new Error('permission denied'), { code: 'EACCES' }));
+    const append = vi.spyOn(store, 'append');
+    const requestId = service.send('question');
+    await terminal(events);
+    expect(events).toEqual([
+      { type: 'status', status: 'thinking', requestId },
+      { type: 'error', requestId, code: 'storage', message: '聊天记录读写失败：EACCES。请检查磁盘空间和文件权限。' },
+    ]);
+    expect(append).not.toHaveBeenCalled();
+    expect(client.streamChat).not.toHaveBeenCalled();
+  });
+  it('reports ENOSPC on user append as a storage error without starting transport', async () => {
+    const { service, events, store, client } = setup();
+    const append = vi.spyOn(store, 'append').mockRejectedValueOnce(Object.assign(new Error('no space left'), { code: 'ENOSPC' }));
+    const requestId = service.send('question');
+    await terminal(events);
+    expect(events).toEqual([
+      { type: 'status', status: 'thinking', requestId },
+      { type: 'error', requestId, code: 'storage', message: '聊天记录读写失败：ENOSPC。请检查磁盘空间和文件权限。' },
+    ]);
+    expect(append).toHaveBeenCalledOnce();
+    expect(append).toHaveBeenCalledWith(expect.objectContaining({ role: 'user' }));
+    expect(client.streamChat).not.toHaveBeenCalled();
+    expect((await store.load()).messages).toEqual([]);
+  });
+  it('reports ENOSPC on assistant append as a storage error and never emits done', async () => {
+    const { service, events, store, client } = setup();
+    const persist = store.append.bind(store);
+    const append = vi.spyOn(store, 'append').mockImplementationOnce(persist)
+      .mockRejectedValueOnce(Object.assign(new Error('no space left'), { code: 'ENOSPC' }));
+    const requestId = service.send('question');
+    await terminal(events);
+    expect(events).toEqual([
+      { type: 'status', status: 'thinking', requestId },
+      { type: 'delta', text: '呀哈！', requestId }, { type: 'delta', text: '乌拉！', requestId },
+      { type: 'error', requestId, code: 'storage', message: '聊天记录读写失败：ENOSPC。请检查磁盘空间和文件权限。' },
+    ]);
+    expect(append).toHaveBeenCalledTimes(2);
+    expect(append).toHaveBeenLastCalledWith(expect.objectContaining({ role: 'assistant' }));
+    expect(client.streamChat).toHaveBeenCalledOnce();
+    expect((await store.load()).messages.map(msg => msg.role)).toEqual(['user']);
+  });
+  it('uses only the first 80 message characters when a storage error has no code', async () => {
+    const { service, events, store, client } = setup();
+    const reason = '磁盘写入失败'.repeat(20);
+    vi.spyOn(store, 'load').mockRejectedValueOnce(new Error(reason));
+    service.send('question');
+    await terminal(events);
+    expect(events.at(-1)).toMatchObject({ type: 'error', code: 'storage', message: `聊天记录读写失败：${reason.slice(0, 80)}。请检查磁盘空间和文件权限。` });
+    expect(client.streamChat).not.toHaveBeenCalled();
+  });
   it.each(['throw', 'eof', 'empty', 'reasoning'] as const)('does not persist an assistant on %s', async failure => {
     const client: ChatClient = {
       listModels: vi.fn(),
