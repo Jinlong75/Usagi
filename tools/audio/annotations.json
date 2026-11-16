@@ -1,0 +1,1855 @@
+{
+  "source": "Material/Usagi_Voice.mp4",
+  "sourceSha256": "26c318304725292c3899166b787cefc0b631e964d3111763d2c6168f71e3573f",
+  "sourceDuration": 184.807,
+  "parameters": {
+    "threshold_db": -25.0,
+    "min_silence": 0.16,
+    "min_duration": 0.2,
+    "max_duration": 3.0,
+    "padding": 0.05
+  },
+  "reviewMethod": "逐段中点画面与中日烧录字幕人工复核，辅以能量包络；未直接听音。",
+  "review_notes": [
+    "- TODO(lead): `click_surprise` 只有 1 段明确的「哈？」（ha_01，157.03–157.44 秒），缺 1 段；请补素材或决定是否接受单段。未复制音频或把唱词中的ハ凑数。",
+    "- TODO(lead): 当前工具不能直接听音。标签高置信度来自字幕，并不代表已做听感质检；请优先抽听五类已导出音频及连接边界。未明确支持的区间保守排除，不能把 mixed 记录当可播放素材。",
+    "- 所有导出片段保守归 `bgm`；本次未确认纯人声，不宣称 `clean` 或消除了配乐。低置信度条目均为未导出的混合/待核对区间。",
+    "- 末段 `other_74` 是一整组 4.227 秒连声，唯一超过 3 秒的可用片段；为避免切掉半个词保留整组，只分配 idle_talk/chat_reply。TODO(lead): 抽听后决定是否进一步收短。",
+    "- 造型参考画面：64.0 秒、103.5 秒为全身背面（含尾巴）；40.5 秒、174.5 秒为全身侧向/四分之三视角。18.5–23.5 秒还有旋转背面，但存在光束遮挡与动作变形。所有截图可在外部临时目录按对应时间重取。"
+  ],
+  "candidateCount": 126,
+  "decisions": [
+    {
+      "id": "other_01",
+      "candidates": [
+        "c001"
+      ],
+      "midpoint": 1.63
+    },
+    {
+      "id": "other_02",
+      "candidates": [
+        "c002"
+      ],
+      "midpoint": 3.99
+    },
+    {
+      "id": "other_03",
+      "candidates": [
+        "c003"
+      ],
+      "midpoint": 6.505
+    },
+    {
+      "id": "other_04",
+      "candidates": [
+        "c004"
+      ],
+      "midpoint": 8.7
+    },
+    {
+      "id": "other_05",
+      "candidates": [
+        "c005"
+      ],
+      "midpoint": 11.215
+    },
+    {
+      "id": "other_06",
+      "candidates": [
+        "c006"
+      ],
+      "midpoint": 13.72
+    },
+    {
+      "id": "other_07",
+      "candidates": [
+        "c007"
+      ],
+      "midpoint": 15.845
+    },
+    {
+      "id": "other_08",
+      "candidates": [
+        "c008"
+      ],
+      "midpoint": 17.42
+    },
+    {
+      "id": "other_09",
+      "candidates": [
+        "c009"
+      ],
+      "midpoint": 19.57
+    },
+    {
+      "id": "other_10",
+      "candidates": [
+        "c010"
+      ],
+      "midpoint": 22.16
+    },
+    {
+      "id": "other_11",
+      "candidates": [
+        "c011"
+      ],
+      "midpoint": 24.065
+    },
+    {
+      "id": "other_12",
+      "candidates": [
+        "c012"
+      ],
+      "midpoint": 26.175
+    },
+    {
+      "id": "other_13",
+      "candidates": [
+        "c013"
+      ],
+      "midpoint": 28.535
+    },
+    {
+      "id": "other_14",
+      "candidates": [
+        "c014"
+      ],
+      "midpoint": 30.945
+    },
+    {
+      "id": "other_15",
+      "candidates": [
+        "c015"
+      ],
+      "midpoint": 32.52
+    },
+    {
+      "id": "other_16",
+      "candidates": [
+        "c016",
+        "c017",
+        "c018"
+      ],
+      "midpoint": 34.51
+    },
+    {
+      "id": "other_17",
+      "candidates": [
+        "c019"
+      ],
+      "midpoint": 37.095
+    },
+    {
+      "id": "yaha_01",
+      "candidates": [
+        "c020"
+      ],
+      "midpoint": 38.855
+    },
+    {
+      "id": "other_18",
+      "candidates": [
+        "c021"
+      ],
+      "midpoint": 40.26
+    },
+    {
+      "id": "other_19",
+      "candidates": [
+        "c022"
+      ],
+      "midpoint": 42.17
+    },
+    {
+      "id": "other_20",
+      "candidates": [
+        "c023"
+      ],
+      "midpoint": 45.1
+    },
+    {
+      "id": "other_21",
+      "candidates": [
+        "c024"
+      ],
+      "midpoint": 47.225
+    },
+    {
+      "id": "other_22",
+      "candidates": [
+        "c025"
+      ],
+      "midpoint": 48.655
+    },
+    {
+      "id": "other_23",
+      "candidates": [
+        "c026",
+        "c027",
+        "c028",
+        "c029"
+      ],
+      "midpoint": 51.375
+    },
+    {
+      "id": "other_24",
+      "candidates": [
+        "c030"
+      ],
+      "midpoint": 53.49
+    },
+    {
+      "id": "other_25",
+      "candidates": [
+        "c031"
+      ],
+      "midpoint": 55.07
+    },
+    {
+      "id": "other_26",
+      "candidates": [
+        "c032",
+        "c033",
+        "c034"
+      ],
+      "midpoint": 58.32
+    },
+    {
+      "id": "other_27",
+      "candidates": [
+        "c035",
+        "c036"
+      ],
+      "midpoint": 61.685
+    },
+    {
+      "id": "yaha_02",
+      "candidates": [
+        "c037",
+        "c038"
+      ],
+      "midpoint": 63.11
+    },
+    {
+      "id": "other_28",
+      "candidates": [
+        "c039"
+      ],
+      "midpoint": 64.88
+    },
+    {
+      "id": "other_29",
+      "candidates": [
+        "c040",
+        "c041",
+        "c042"
+      ],
+      "midpoint": 65.915
+    },
+    {
+      "id": "other_30",
+      "candidates": [
+        "c043",
+        "c044"
+      ],
+      "midpoint": 68.45
+    },
+    {
+      "id": "other_31",
+      "candidates": [
+        "c045"
+      ],
+      "midpoint": 70.01
+    },
+    {
+      "id": "yaha_03",
+      "candidates": [
+        "c046"
+      ],
+      "midpoint": 71.55
+    },
+    {
+      "id": "other_32",
+      "candidates": [
+        "c047"
+      ],
+      "midpoint": 73.515
+    },
+    {
+      "id": "other_33",
+      "candidates": [
+        "c048"
+      ],
+      "midpoint": 74.625
+    },
+    {
+      "id": "other_34",
+      "candidates": [
+        "c049"
+      ],
+      "midpoint": 77.31
+    },
+    {
+      "id": "other_35",
+      "candidates": [
+        "c050"
+      ],
+      "midpoint": 79.24
+    },
+    {
+      "id": "other_36",
+      "candidates": [
+        "c051",
+        "c052",
+        "c053"
+      ],
+      "midpoint": 81.27
+    },
+    {
+      "id": "other_37",
+      "candidates": [
+        "c054"
+      ],
+      "midpoint": 82.875
+    },
+    {
+      "id": "yaha_04",
+      "candidates": [
+        "c055"
+      ],
+      "midpoint": 84.93
+    },
+    {
+      "id": "other_38",
+      "candidates": [
+        "c056"
+      ],
+      "midpoint": 86.35
+    },
+    {
+      "id": "other_39",
+      "candidates": [
+        "c057"
+      ],
+      "midpoint": 87.41
+    },
+    {
+      "id": "other_40",
+      "candidates": [
+        "c058",
+        "c059"
+      ],
+      "midpoint": 89.57
+    },
+    {
+      "id": "other_41",
+      "candidates": [
+        "c060",
+        "c061"
+      ],
+      "midpoint": 92.6
+    },
+    {
+      "id": "other_42",
+      "candidates": [
+        "c062",
+        "c063"
+      ],
+      "midpoint": 95.365
+    },
+    {
+      "id": "other_43",
+      "candidates": [
+        "c064",
+        "c065"
+      ],
+      "midpoint": 97.39
+    },
+    {
+      "id": "other_44",
+      "candidates": [
+        "c066"
+      ],
+      "midpoint": 100.71
+    },
+    {
+      "id": "other_45",
+      "candidates": [
+        "c067"
+      ],
+      "midpoint": 103.05
+    },
+    {
+      "id": "other_46",
+      "candidates": [
+        "c068"
+      ],
+      "midpoint": 105.215
+    },
+    {
+      "id": "other_47",
+      "candidates": [
+        "c069",
+        "c070",
+        "c071"
+      ],
+      "midpoint": 108.695
+    },
+    {
+      "id": "yaha_05",
+      "candidates": [
+        "c072",
+        "c073"
+      ],
+      "midpoint": 112.555
+    },
+    {
+      "id": "other_48",
+      "candidates": [
+        "c074"
+      ],
+      "midpoint": 116.41
+    },
+    {
+      "id": "yaha_06",
+      "candidates": [
+        "c075",
+        "c076"
+      ],
+      "midpoint": 118.685
+    },
+    {
+      "id": "other_49",
+      "candidates": [
+        "c077",
+        "c078"
+      ],
+      "midpoint": 121.84
+    },
+    {
+      "id": "pururu_01",
+      "candidates": [
+        "c079"
+      ],
+      "midpoint": 124.59
+    },
+    {
+      "id": "ura_01",
+      "candidates": [
+        "c080"
+      ],
+      "midpoint": 126.22
+    },
+    {
+      "id": "other_50",
+      "candidates": [
+        "c081"
+      ],
+      "midpoint": 127.995
+    },
+    {
+      "id": "other_51",
+      "candidates": [
+        "c082"
+      ],
+      "midpoint": 130.0
+    },
+    {
+      "id": "other_52",
+      "candidates": [
+        "c083"
+      ],
+      "midpoint": 132.285
+    },
+    {
+      "id": "ura_02",
+      "candidates": [
+        "c084",
+        "c085"
+      ],
+      "midpoint": 134.845
+    },
+    {
+      "id": "ura_03",
+      "candidates": [
+        "c086",
+        "c087"
+      ],
+      "midpoint": 137.19
+    },
+    {
+      "id": "other_53",
+      "candidates": [
+        "c088"
+      ],
+      "midpoint": 139.025
+    },
+    {
+      "id": "other_54",
+      "candidates": [
+        "c089"
+      ],
+      "midpoint": 140.44
+    },
+    {
+      "id": "other_55",
+      "candidates": [
+        "c090",
+        "c091",
+        "c092",
+        "c093"
+      ],
+      "midpoint": 142.835
+    },
+    {
+      "id": "ura_04",
+      "candidates": [
+        "c094"
+      ],
+      "midpoint": 144.86
+    },
+    {
+      "id": "other_56",
+      "candidates": [
+        "c095"
+      ],
+      "midpoint": 145.96
+    },
+    {
+      "id": "other_57",
+      "candidates": [
+        "c096"
+      ],
+      "midpoint": 147.045
+    },
+    {
+      "id": "other_58",
+      "candidates": [
+        "c097"
+      ],
+      "midpoint": 148.455
+    },
+    {
+      "id": "other_59",
+      "candidates": [
+        "c098"
+      ],
+      "midpoint": 152.815
+    },
+    {
+      "id": "other_60",
+      "candidates": [
+        "c099"
+      ],
+      "midpoint": 154.12
+    },
+    {
+      "id": "other_61",
+      "candidates": [
+        "c100"
+      ],
+      "midpoint": 155.34
+    },
+    {
+      "id": "other_62",
+      "candidates": [
+        "c101",
+        "c102"
+      ],
+      "midpoint": 156.38
+    },
+    {
+      "id": "ha_01",
+      "candidates": [
+        "c103"
+      ],
+      "midpoint": 157.235
+    },
+    {
+      "id": "other_63",
+      "candidates": [
+        "c104"
+      ],
+      "midpoint": 158.035
+    },
+    {
+      "id": "other_64",
+      "candidates": [
+        "c105"
+      ],
+      "midpoint": 159.52
+    },
+    {
+      "id": "other_65",
+      "candidates": [
+        "c106",
+        "c107"
+      ],
+      "midpoint": 160.985
+    },
+    {
+      "id": "other_66",
+      "candidates": [
+        "c108",
+        "c109"
+      ],
+      "midpoint": 162.515
+    },
+    {
+      "id": "other_67",
+      "candidates": [
+        "c110",
+        "c111"
+      ],
+      "midpoint": 164.955
+    },
+    {
+      "id": "other_68",
+      "candidates": [
+        "c112",
+        "c113"
+      ],
+      "midpoint": 167.62
+    },
+    {
+      "id": "other_69",
+      "candidates": [
+        "c114",
+        "c115",
+        "c116",
+        "c117"
+      ],
+      "midpoint": 170.93
+    },
+    {
+      "id": "other_70",
+      "candidates": [
+        "c118",
+        "c119",
+        "c120"
+      ],
+      "midpoint": 174.0
+    },
+    {
+      "id": "other_71",
+      "candidates": [
+        "c121"
+      ],
+      "midpoint": 176.325
+    },
+    {
+      "id": "other_72",
+      "candidates": [
+        "c122"
+      ],
+      "midpoint": 177.695
+    },
+    {
+      "id": "other_73",
+      "candidates": [
+        "c123",
+        "c124"
+      ],
+      "midpoint": 179.24
+    },
+    {
+      "id": "other_74",
+      "candidates": [
+        "c125",
+        "c126"
+      ],
+      "midpoint": 182.6935
+    }
+  ],
+  "clips": [
+    {
+      "id": "other_01",
+      "file": null,
+      "label": "other",
+      "text": "张口短叫（无字幕，文字待听审）",
+      "start": 0.29,
+      "end": 2.97,
+      "duration": 2.68,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "无字幕；张口特写中的叫声、配乐/拟音边界未能区分，保守排除。"
+    },
+    {
+      "id": "other_02",
+      "file": null,
+      "label": "other",
+      "text": "摆臂短叫（无字幕，文字待听审）",
+      "start": 2.87,
+      "end": 5.11,
+      "duration": 2.24,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "无字幕；与吉伊同场，配乐连成有声区，无法确认独立 Usagi 声音，保守排除。"
+    },
+    {
+      "id": "other_03",
+      "file": null,
+      "label": "other",
+      "text": "摆臂连叫（无字幕，文字待听审）",
+      "start": 5.01,
+      "end": 8.0,
+      "duration": 2.99,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "无字幕；吉伊同时张口，无法排除另一角色及配乐重叠。"
+    },
+    {
+      "id": "other_04",
+      "file": null,
+      "label": "other",
+      "text": "摆臂收尾（无字幕，文字待听审）",
+      "start": 7.9,
+      "end": 9.5,
+      "duration": 1.6,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "无字幕；同场角色与音乐区间，不能确认完整独立叫声。"
+    },
+    {
+      "id": "other_05",
+      "file": null,
+      "label": "other",
+      "text": "骑鱼张口叫（无字幕，文字待听审）",
+      "start": 9.73,
+      "end": 12.7,
+      "duration": 2.97,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "无字幕；吉伊与 Usagi 同时张口，另有飞鱼场景拟音，保守排除。"
+    },
+    {
+      "id": "other_06",
+      "file": null,
+      "label": "other",
+      "text": "骑鱼连叫（无字幕，文字待听审）",
+      "start": 12.6,
+      "end": 14.84,
+      "duration": 2.24,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "无字幕；吉伊与 Usagi 同时张口，无法排除重叠角色声音。"
+    },
+    {
+      "id": "other_07",
+      "file": null,
+      "label": "other",
+      "text": "骑鱼转身（无字幕，文字待听审）",
+      "start": 14.74,
+      "end": 16.95,
+      "duration": 2.21,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "无字幕；鱼转向的拟音/音乐和叫声边界无法区分。"
+    },
+    {
+      "id": "other_08",
+      "file": null,
+      "label": "other",
+      "text": "骑鱼转场（无字幕，文字待听审）",
+      "start": 16.85,
+      "end": 17.99,
+      "duration": 1.14,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "无字幕；音乐转场与飞行拟音区间，不能确认独立叫声。"
+    },
+    {
+      "id": "other_09",
+      "file": null,
+      "label": "other",
+      "text": "保佑我能买到相机",
+      "start": 18.07,
+      "end": 21.07,
+      "duration": 3.0,
+      "quality": "mixed",
+      "confidence": "high",
+      "uses": [],
+      "note": "字幕为其他角色的祈愿对白；与旋转光束拟音/音乐同段，不导出。"
+    },
+    {
+      "id": "other_10",
+      "file": null,
+      "label": "other",
+      "text": "保佑我能买到相机（续）",
+      "start": 20.97,
+      "end": 23.35,
+      "duration": 2.38,
+      "quality": "mixed",
+      "confidence": "high",
+      "uses": [],
+      "note": "其他角色祈愿对白及旋转光束拟音，不是独立 Usagi 口癖。"
+    },
+    {
+      "id": "other_11",
+      "file": null,
+      "label": "other",
+      "text": "旋转光束（无叫声字幕）",
+      "start": 23.25,
+      "end": 24.88,
+      "duration": 1.63,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "多人在场及光束拟音；不能确认独立 Usagi 叫声。"
+    },
+    {
+      "id": "other_12",
+      "file": null,
+      "label": "other",
+      "text": "啊 怎么回事 什么从两端喷出来了",
+      "start": 25.11,
+      "end": 27.24,
+      "duration": 2.13,
+      "quality": "mixed",
+      "confidence": "high",
+      "uses": [],
+      "note": "小八对白与喷烟音效重叠，不导出。"
+    },
+    {
+      "id": "other_13",
+      "file": null,
+      "label": "other",
+      "text": "喷烟/跳跃（无叫声字幕）",
+      "start": 27.14,
+      "end": 29.93,
+      "duration": 2.79,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "棍棒喷烟与跳跃拟音区间；不能分离 Usagi 声音。"
+    },
+    {
+      "id": "other_14",
+      "file": null,
+      "label": "other",
+      "text": "跳跃/片尾（无叫声字幕）",
+      "start": 29.83,
+      "end": 32.06,
+      "duration": 2.23,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "跳跃和片尾音效重叠，保守排除。"
+    },
+    {
+      "id": "other_15",
+      "file": null,
+      "label": "other",
+      "text": "林间转场（无叫声字幕）",
+      "start": 32.34,
+      "end": 32.7,
+      "duration": 0.36,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "转场音乐/拟音，无明确独立 Usagi 声音证据。"
+    },
+    {
+      "id": "other_16",
+      "file": null,
+      "label": "other",
+      "text": "那个啊 我们考了除草5级",
+      "start": 33.24,
+      "end": 35.78,
+      "duration": 2.54,
+      "quality": "mixed",
+      "confidence": "high",
+      "uses": [],
+      "note": "小八对白，不导出；合并同一句话的停顿。"
+    },
+    {
+      "id": "other_17",
+      "file": null,
+      "label": "other",
+      "text": "举证件（无叫声字幕）",
+      "start": 36.43,
+      "end": 37.76,
+      "duration": 1.33,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "证件展示前的音效/音乐，不能确认单独叫声；后面的呀哈另切。"
+    },
+    {
+      "id": "yaha_01",
+      "file": "yaha_01.ogg",
+      "label": "yaha",
+      "text": "呀哈！",
+      "start": 38.25,
+      "end": 39.46,
+      "duration": 1.21,
+      "quality": "bgm",
+      "confidence": "high",
+      "uses": [
+        "click_happy",
+        "idle_talk",
+        "chat_reply"
+      ],
+      "note": "字幕「呀哈 / ヤハ」；前后边界按较低能量尾音扩至 38.25–39.46 秒。"
+    },
+    {
+      "id": "other_18",
+      "file": null,
+      "label": "other",
+      "text": "好厉害",
+      "start": 39.74,
+      "end": 40.78,
+      "duration": 1.04,
+      "quality": "mixed",
+      "confidence": "high",
+      "uses": [],
+      "note": "小八/吉伊的惊叹对白，不导出。"
+    },
+    {
+      "id": "other_19",
+      "file": "other_19.ogg",
+      "label": "other",
+      "text": "乌噜噜噜噜……（ウルルル……）",
+      "start": 40.92,
+      "end": 43.42,
+      "duration": 2.5,
+      "quality": "bgm",
+      "confidence": "high",
+      "uses": [
+        "idle_talk",
+        "chat_reply"
+      ],
+      "note": "字幕为ウルルル连声，起首不是プ；归 other，不冒充 pururu。"
+    },
+    {
+      "id": "other_20",
+      "file": "other_20.ogg",
+      "label": "other",
+      "text": "乌乌乌哇哇哈哈哈啊啊啊……",
+      "start": 43.67,
+      "end": 46.53,
+      "duration": 2.86,
+      "quality": "bgm",
+      "confidence": "high",
+      "uses": [
+        "idle_talk",
+        "chat_reply"
+      ],
+      "note": "字幕为多音节连声，不是单次ウラ；在跳跃镜头切换处结束，供 idle_talk；尚需抽听尾字。"
+    },
+    {
+      "id": "other_21",
+      "file": null,
+      "label": "other",
+      "text": "树上跃下（无叫声字幕）",
+      "start": 46.53,
+      "end": 47.92,
+      "duration": 1.39,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "跃下拟音与长叫尾声/音乐同段，自动边界不能保证完整音节，不导出。"
+    },
+    {
+      "id": "other_22",
+      "file": null,
+      "label": "other",
+      "text": "落地转身（无叫声字幕）",
+      "start": 47.97,
+      "end": 49.34,
+      "duration": 1.37,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "落地拟音/音乐区间，没有独立口癖证据。"
+    },
+    {
+      "id": "other_23",
+      "file": "other_23.ogg",
+      "label": "other",
+      "text": "乌・呀・咿・哈（ウ・ヤ・イ・ハ）",
+      "start": 50.0,
+      "end": 52.75,
+      "duration": 2.75,
+      "quality": "bgm",
+      "confidence": "high",
+      "uses": [
+        "idle_talk",
+        "chat_reply"
+      ],
+      "note": "字幕是四音节口癖；合并四个自动候选，末尾「哈」不是问句，不分配 click_surprise。"
+    },
+    {
+      "id": "other_24",
+      "file": "other_24.ogg",
+      "label": "other",
+      "text": "乌・呀・咿（ウ・ヤ・イ）",
+      "start": 52.79,
+      "end": 54.19,
+      "duration": 1.4,
+      "quality": "bgm",
+      "confidence": "high",
+      "uses": [
+        "idle_talk",
+        "chat_reply"
+      ],
+      "note": "字幕为三音节连声；在小桃「怎么回事」对白前结束。"
+    },
+    {
+      "id": "other_25",
+      "file": null,
+      "label": "other",
+      "text": "怎么回事 你这家伙",
+      "start": 54.45,
+      "end": 55.69,
+      "duration": 1.24,
+      "quality": "mixed",
+      "confidence": "high",
+      "uses": [],
+      "note": "小桃对白，不导出。"
+    },
+    {
+      "id": "other_26",
+      "file": null,
+      "label": "other",
+      "text": "乌啦啦啦咿咿呀呀呀哈哈哈哈啊啊啊……",
+      "start": 55.77,
+      "end": 60.87,
+      "duration": 5.1,
+      "quality": "mixed",
+      "confidence": "high",
+      "uses": [],
+      "note": "字幕为连续长叫，跨镜头伴小桃震动拟音；自动最长时限会切断元音，合并记录并排除。"
+    },
+    {
+      "id": "other_27",
+      "file": null,
+      "label": "other",
+      "text": "滚一边去啦",
+      "start": 61.3,
+      "end": 62.07,
+      "duration": 0.77,
+      "quality": "mixed",
+      "confidence": "high",
+      "uses": [],
+      "note": "小桃对白，不导出。"
+    },
+    {
+      "id": "yaha_02",
+      "file": "yaha_02.ogg",
+      "label": "yaha",
+      "text": "呀哈！呀哈！",
+      "start": 62.13,
+      "end": 64.09,
+      "duration": 1.96,
+      "quality": "bgm",
+      "confidence": "high",
+      "uses": [
+        "click_happy",
+        "idle_talk",
+        "chat_reply"
+      ],
+      "note": "字幕「呀哈 呀哈 / ヤハ ヤハ」；合并同一组两次叫声，避免把第二声哈单独截断。"
+    },
+    {
+      "id": "other_28",
+      "file": null,
+      "label": "other",
+      "text": "呀哈/去去交界（待听审）",
+      "start": 64.73,
+      "end": 65.03,
+      "duration": 0.3,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "虽仍显示呀哈字幕，但已接近小桃「去去」对白；边界/说话者不确定，保守排除。"
+    },
+    {
+      "id": "other_29",
+      "file": null,
+      "label": "other",
+      "text": "去 去（シッシッ）",
+      "start": 65.08,
+      "end": 66.75,
+      "duration": 1.67,
+      "quality": "mixed",
+      "confidence": "high",
+      "uses": [],
+      "note": "小桃驱赶对白及其尾部音效，不导出。"
+    },
+    {
+      "id": "other_30",
+      "file": null,
+      "label": "other",
+      "text": "但是吃不完",
+      "start": 67.43,
+      "end": 69.47,
+      "duration": 2.04,
+      "quality": "mixed",
+      "confidence": "high",
+      "uses": [],
+      "note": "小八对白，不导出。"
+    },
+    {
+      "id": "other_31",
+      "file": null,
+      "label": "other",
+      "text": "巨大蛋包饭场景拟音（无叫声字幕）",
+      "start": 69.68,
+      "end": 70.34,
+      "duration": 0.66,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "其他角色在场，配乐/拟音区间，无独立叫声证据。"
+    },
+    {
+      "id": "yaha_03",
+      "file": "yaha_03.ogg",
+      "label": "yaha",
+      "text": "咿呀～哈～～！",
+      "start": 70.53,
+      "end": 72.57,
+      "duration": 2.04,
+      "quality": "bgm",
+      "confidence": "high",
+      "uses": [
+        "click_happy",
+        "idle_talk",
+        "chat_reply"
+      ],
+      "note": "字幕「咿呀～哈～～ / イヤ～ハ～～」；独立完整叫声。"
+    },
+    {
+      "id": "other_32",
+      "file": null,
+      "label": "other",
+      "text": "钻进食物（无叫声字幕）",
+      "start": 72.65,
+      "end": 74.38,
+      "duration": 1.73,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "钻入食物和动作拟音重叠，不能确认纯净叫声。"
+    },
+    {
+      "id": "other_33",
+      "file": null,
+      "label": "other",
+      "text": "食物场景短音（无叫声字幕）",
+      "start": 74.49,
+      "end": 74.76,
+      "duration": 0.27,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "咀嚼/动作拟音，无法确认单独 Usagi 口癖。"
+    },
+    {
+      "id": "other_34",
+      "file": null,
+      "label": "other",
+      "text": "吃不完的话就做成饭团带回去吧（前）",
+      "start": 76.54,
+      "end": 78.08,
+      "duration": 1.54,
+      "quality": "mixed",
+      "confidence": "high",
+      "uses": [],
+      "note": "小八对白，Usagi 倒在食物旁，不导出。"
+    },
+    {
+      "id": "other_35",
+      "file": null,
+      "label": "other",
+      "text": "吃不完的话就做成饭团带回去吧（后）",
+      "start": 78.55,
+      "end": 79.93,
+      "duration": 1.38,
+      "quality": "mixed",
+      "confidence": "high",
+      "uses": [],
+      "note": "小八对白，不导出。"
+    },
+    {
+      "id": "other_36",
+      "file": null,
+      "label": "other",
+      "text": "饭团场景片尾拟音",
+      "start": 80.59,
+      "end": 81.95,
+      "duration": 1.36,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "片尾伴奏/拟音，没有独立叫声证据。"
+    },
+    {
+      "id": "other_37",
+      "file": null,
+      "label": "other",
+      "text": "要拍了哦",
+      "start": 82.28,
+      "end": 83.47,
+      "duration": 1.19,
+      "quality": "mixed",
+      "confidence": "high",
+      "uses": [],
+      "note": "字幕「撮ります」为拿相机的小八说话，不把 Usagi 画面误认成其叫声。"
+    },
+    {
+      "id": "yaha_04",
+      "file": "yaha_04.ogg",
+      "label": "yaha",
+      "text": "咿～呀～哈啊啊啊～～！",
+      "start": 84.02,
+      "end": 85.84,
+      "duration": 1.82,
+      "quality": "bgm",
+      "confidence": "high",
+      "uses": [
+        "click_happy",
+        "idle_talk",
+        "chat_reply"
+      ],
+      "note": "字幕「イ～～ヤ～～ハアアア～～」；倒立摆姿势的完整长呀哈。"
+    },
+    {
+      "id": "other_38",
+      "file": null,
+      "label": "other",
+      "text": "相机快门/反应（无叫声字幕）",
+      "start": 86.03,
+      "end": 86.67,
+      "duration": 0.64,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "相机拟音及小八反应，不能确认 Usagi 独立叫声。"
+    },
+    {
+      "id": "other_39",
+      "file": null,
+      "label": "other",
+      "text": "姿势好好玩",
+      "start": 86.81,
+      "end": 88.01,
+      "duration": 1.2,
+      "quality": "mixed",
+      "confidence": "high",
+      "uses": [],
+      "note": "小八对白，不导出。"
+    },
+    {
+      "id": "other_40",
+      "file": null,
+      "label": "other",
+      "text": "新朋友③（片头音乐）",
+      "start": 88.47,
+      "end": 90.67,
+      "duration": 2.2,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "画面为片名卡，片头配音/音乐区间，不是 Usagi 叫声。"
+    },
+    {
+      "id": "other_41",
+      "file": null,
+      "label": "other",
+      "text": "跟你回家了吗",
+      "start": 91.54,
+      "end": 93.66,
+      "duration": 2.12,
+      "quality": "mixed",
+      "confidence": "high",
+      "uses": [],
+      "note": "小八对白，不导出。"
+    },
+    {
+      "id": "other_42",
+      "file": null,
+      "label": "other",
+      "text": "都没有注意到呢",
+      "start": 94.31,
+      "end": 96.42,
+      "duration": 2.11,
+      "quality": "mixed",
+      "confidence": "high",
+      "uses": [],
+      "note": "吉伊反应与小八对白；Usagi 在旁不等于其独立发声。"
+    },
+    {
+      "id": "other_43",
+      "file": null,
+      "label": "other",
+      "text": "贴脸观察（无叫声字幕）",
+      "start": 96.74,
+      "end": 98.04,
+      "duration": 1.3,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "小动物贴脸的拟音/互动声音，无法确认独立 Usagi 声音。"
+    },
+    {
+      "id": "other_44",
+      "file": null,
+      "label": "other",
+      "text": "甩动小动物（无叫声字幕）",
+      "start": 100.1,
+      "end": 101.32,
+      "duration": 1.22,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "小动物及甩动动作拟音重叠，不能分离。"
+    },
+    {
+      "id": "other_45",
+      "file": null,
+      "label": "other",
+      "text": "带小动物跑动（无叫声字幕）",
+      "start": 102.56,
+      "end": 103.54,
+      "duration": 0.98,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "脚步/动作拟音；没有文字支持独立 Usagi 叫声。"
+    },
+    {
+      "id": "other_46",
+      "file": null,
+      "label": "other",
+      "text": "它们好像很合得来",
+      "start": 103.8,
+      "end": 106.63,
+      "duration": 2.83,
+      "quality": "mixed",
+      "confidence": "high",
+      "uses": [],
+      "note": "小八对白与 Usagi 跳动/小动物同场声音，不导出。"
+    },
+    {
+      "id": "other_47",
+      "file": null,
+      "label": "other",
+      "text": "交到了新朋友呢",
+      "start": 107.19,
+      "end": 110.2,
+      "duration": 3.01,
+      "quality": "mixed",
+      "confidence": "high",
+      "uses": [],
+      "note": "小八/吉伊对白及后续短反应，不导出。"
+    },
+    {
+      "id": "yaha_05",
+      "file": null,
+      "label": "yaha",
+      "text": "咿呀～哈～～，呀～哈～～",
+      "start": 110.25,
+      "end": 114.86,
+      "duration": 4.61,
+      "quality": "mixed",
+      "confidence": "high",
+      "uses": [],
+      "note": "字幕为呀哈拖长；小动物贴脸、滚动拟音同段，不能确认无重叠；合并记录，不按最大时限切掉半个元音。"
+    },
+    {
+      "id": "other_48",
+      "file": null,
+      "label": "other",
+      "text": "那是什么",
+      "start": 116.01,
+      "end": 116.81,
+      "duration": 0.8,
+      "quality": "mixed",
+      "confidence": "high",
+      "uses": [],
+      "note": "小八对白，不导出。"
+    },
+    {
+      "id": "yaha_06",
+      "file": "yaha_06.ogg",
+      "label": "yaha",
+      "text": "呀呀呀哈！",
+      "start": 118.05,
+      "end": 119.32,
+      "duration": 1.27,
+      "quality": "bgm",
+      "confidence": "high",
+      "uses": [
+        "click_happy",
+        "idle_talk",
+        "chat_reply"
+      ],
+      "note": "字幕「ヤ↗↗↗ ハ！」；两个能量团为同一声，合并保留。"
+    },
+    {
+      "id": "other_49",
+      "file": null,
+      "label": "other",
+      "text": "在慢慢地融化 / 完全搞不懂",
+      "start": 120.49,
+      "end": 123.19,
+      "duration": 2.7,
+      "quality": "mixed",
+      "confidence": "high",
+      "uses": [],
+      "note": "小八对白，不导出。"
+    },
+    {
+      "id": "pururu_01",
+      "file": "pururu_01.ogg",
+      "label": "pururu",
+      "text": "噗噜噜噜噜噜噜……",
+      "start": 123.66,
+      "end": 125.52,
+      "duration": 1.86,
+      "quality": "bgm",
+      "confidence": "high",
+      "uses": [
+        "idle_talk",
+        "chat_reply"
+      ],
+      "note": "字幕明确「プルルルル……」；没有把ウルル误标为本类。"
+    },
+    {
+      "id": "ura_01",
+      "file": "ura_01.ogg",
+      "label": "ura",
+      "text": "乌拉！",
+      "start": 125.91,
+      "end": 126.53,
+      "duration": 0.62,
+      "quality": "bgm",
+      "confidence": "high",
+      "uses": [
+        "click_shout",
+        "idle_talk",
+        "chat_reply"
+      ],
+      "note": "字幕「乌啦 / ウラ」；在小八「用脚敲的门」对白前停止。"
+    },
+    {
+      "id": "other_50",
+      "file": null,
+      "label": "other",
+      "text": "用脚敲的门",
+      "start": 127.12,
+      "end": 128.87,
+      "duration": 1.75,
+      "quality": "mixed",
+      "confidence": "high",
+      "uses": [],
+      "note": "小八对白和门/踢击动作拟音，不导出。"
+    },
+    {
+      "id": "other_51",
+      "file": "other_51.ogg",
+      "label": "other",
+      "text": "乌～啦～呀哈～呀哈～乌～啦～",
+      "start": 128.99,
+      "end": 131.01,
+      "duration": 2.02,
+      "quality": "bgm",
+      "confidence": "high",
+      "uses": [
+        "idle_talk",
+        "chat_reply"
+      ],
+      "note": "字幕为ウーラー・ヤハ～ヤハ～・ウーラー，混合口癖不分配点击类别；按弱起音扩前缘。"
+    },
+    {
+      "id": "other_52",
+      "file": null,
+      "label": "other",
+      "text": "两倍速平常就能做到啊",
+      "start": 131.51,
+      "end": 133.06,
+      "duration": 1.55,
+      "quality": "mixed",
+      "confidence": "high",
+      "uses": [],
+      "note": "小八对白，不导出。"
+    },
+    {
+      "id": "ura_02",
+      "file": "ura_02.ogg",
+      "label": "ura",
+      "text": "乌拉～乌拉～乌拉～",
+      "start": 133.81,
+      "end": 135.88,
+      "duration": 2.07,
+      "quality": "bgm",
+      "confidence": "high",
+      "uses": [
+        "click_shout",
+        "idle_talk",
+        "chat_reply"
+      ],
+      "note": "字幕「ウラ～ウラ～ウラ～」；两候选属同一组连声。"
+    },
+    {
+      "id": "ura_03",
+      "file": "ura_03.ogg",
+      "label": "ura",
+      "text": "乌拉～乌拉～乌拉～",
+      "start": 136.2,
+      "end": 138.18,
+      "duration": 1.98,
+      "quality": "bgm",
+      "confidence": "high",
+      "uses": [
+        "click_shout",
+        "idle_talk",
+        "chat_reply"
+      ],
+      "note": "同一口癖的另一组独立时间区间；字幕持续显示ウラ，合并低能量尾段。"
+    },
+    {
+      "id": "other_53",
+      "file": null,
+      "label": "other",
+      "text": "摘果实（无叫声字幕）",
+      "start": 138.81,
+      "end": 139.24,
+      "duration": 0.43,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "摘取/动作拟音，不能确认独立叫声。"
+    },
+    {
+      "id": "other_54",
+      "file": null,
+      "label": "other",
+      "text": "递果实（无叫声字幕）",
+      "start": 140.24,
+      "end": 140.64,
+      "duration": 0.4,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "动作拟音/短反应无字幕；不能确认独立口癖。"
+    },
+    {
+      "id": "other_55",
+      "file": null,
+      "label": "other",
+      "text": "捏果实（无叫声字幕）",
+      "start": 141.78,
+      "end": 143.89,
+      "duration": 2.11,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "果实挤压/动作拟音，缺少独立 Usagi 语音证据。"
+    },
+    {
+      "id": "ura_04",
+      "file": "ura_04.ogg",
+      "label": "ura",
+      "text": "乌拉↗乌拉↗乌拉↗",
+      "start": 144.38,
+      "end": 145.34,
+      "duration": 0.96,
+      "quality": "bgm",
+      "confidence": "high",
+      "uses": [
+        "click_shout",
+        "idle_talk",
+        "chat_reply"
+      ],
+      "note": "字幕开头连续「ウラ↘ウラ↗ウラ↗」；只取这一组，后面的升调连声另列。"
+    },
+    {
+      "id": "other_56",
+      "file": "other_56.ogg",
+      "label": "other",
+      "text": "乌拉↗↗↗（升调连声）",
+      "start": 145.44,
+      "end": 146.48,
+      "duration": 1.04,
+      "quality": "bgm",
+      "confidence": "high",
+      "uses": [
+        "idle_talk",
+        "chat_reply"
+      ],
+      "note": "字幕后段用升调箭头表示连声；归 other，避免把无清晰ラ尾音的部分当标准乌拉。"
+    },
+    {
+      "id": "other_57",
+      "file": null,
+      "label": "other",
+      "text": "旋转面包（无叫声字幕）",
+      "start": 146.65,
+      "end": 147.44,
+      "duration": 0.79,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "面包旋转/动作拟音，不能确认纯净叫声。"
+    },
+    {
+      "id": "other_58",
+      "file": null,
+      "label": "other",
+      "text": "非常热的岩石（画面文字）",
+      "start": 148.08,
+      "end": 148.83,
+      "duration": 0.75,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "画面文字说明热岩石，非叫声字幕；伴岩石/烤面包拟音，不导出。"
+    },
+    {
+      "id": "other_59",
+      "file": null,
+      "label": "other",
+      "text": "咬面包（无叫声字幕）",
+      "start": 152.35,
+      "end": 153.28,
+      "duration": 0.93,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "进食拟音重叠，不能确认独立 Usagi 口癖。"
+    },
+    {
+      "id": "other_60",
+      "file": null,
+      "label": "other",
+      "text": "咀嚼面包（无叫声字幕）",
+      "start": 153.42,
+      "end": 154.82,
+      "duration": 1.4,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "咀嚼/流口水拟音混合，不能分离。"
+    },
+    {
+      "id": "other_61",
+      "file": null,
+      "label": "other",
+      "text": "流口水（じゅるり）",
+      "start": 154.95,
+      "end": 155.73,
+      "duration": 0.78,
+      "quality": "mixed",
+      "confidence": "high",
+      "uses": [],
+      "note": "字幕じゅるり指小桃流口水拟音，不是 Usagi 叫声。"
+    },
+    {
+      "id": "other_62",
+      "file": null,
+      "label": "other",
+      "text": "流口水/咀嚼（じゅるり）",
+      "start": 155.95,
+      "end": 156.81,
+      "duration": 0.86,
+      "quality": "mixed",
+      "confidence": "high",
+      "uses": [],
+      "note": "小桃流口水及进食拟音，不导出。"
+    },
+    {
+      "id": "ha_01",
+      "file": "ha_01.ogg",
+      "label": "ha",
+      "text": "哈？",
+      "start": 157.03,
+      "end": 157.44,
+      "duration": 0.41,
+      "quality": "bgm",
+      "confidence": "high",
+      "uses": [
+        "click_surprise",
+        "idle_talk",
+        "chat_reply"
+      ],
+      "note": "字幕明确「哈↗ / ハァ？」；仅此一段明确问句，不复制或把唱词末尾的ハ凑数。"
+    },
+    {
+      "id": "other_63",
+      "file": "other_63.ogg",
+      "label": "other",
+      "text": "啊↗↗↗！",
+      "start": 157.48,
+      "end": 158.59,
+      "duration": 1.11,
+      "quality": "bgm",
+      "confidence": "high",
+      "uses": [
+        "idle_talk",
+        "chat_reply"
+      ],
+      "note": "字幕「アア↗↗↗」是升调啊声，不是ハァ问句，归 other。"
+    },
+    {
+      "id": "other_64",
+      "file": null,
+      "label": "other",
+      "text": "交出来",
+      "start": 158.88,
+      "end": 160.16,
+      "duration": 1.28,
+      "quality": "mixed",
+      "confidence": "high",
+      "uses": [],
+      "note": "小桃对白，不导出。"
+    },
+    {
+      "id": "other_65",
+      "file": null,
+      "label": "other",
+      "text": "伸手示意（无叫声字幕，待听审）",
+      "start": 160.48,
+      "end": 161.49,
+      "duration": 1.01,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "没有叫声字幕；手势伴拟音/短反应，不能确认独立词音。"
+    },
+    {
+      "id": "other_66",
+      "file": null,
+      "label": "other",
+      "text": "食物想象画面拟音",
+      "start": 161.83,
+      "end": 163.2,
+      "duration": 1.37,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "食物想象转场/拟音，无法确认独立叫声。"
+    },
+    {
+      "id": "other_67",
+      "file": null,
+      "label": "other",
+      "text": "跟我谈条件吗？",
+      "start": 163.83,
+      "end": 166.08,
+      "duration": 2.25,
+      "quality": "mixed",
+      "confidence": "high",
+      "uses": [],
+      "note": "小桃对白，不导出。"
+    },
+    {
+      "id": "other_68",
+      "file": null,
+      "label": "other",
+      "text": "讨厌～不要～不要～",
+      "start": 166.21,
+      "end": 169.03,
+      "duration": 2.82,
+      "quality": "mixed",
+      "confidence": "high",
+      "uses": [],
+      "note": "小桃对白，不导出。"
+    },
+    {
+      "id": "other_69",
+      "file": null,
+      "label": "other",
+      "text": "咀嚼/转身（无叫声字幕）",
+      "start": 169.76,
+      "end": 172.1,
+      "duration": 2.34,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "嘴里含食物的咀嚼/动作拟音；不确定独立口癖，保守排除。"
+    },
+    {
+      "id": "other_70",
+      "file": "other_70.ogg",
+      "label": "other",
+      "text": "乌拉～呀哈～呀哈～",
+      "start": 172.65,
+      "end": 175.35,
+      "duration": 2.7,
+      "quality": "bgm",
+      "confidence": "high",
+      "uses": [
+        "idle_talk",
+        "chat_reply"
+      ],
+      "note": "字幕为三段混合口癖；合并以保留完整词音，在小桃「不许模仿我」之前结束。"
+    },
+    {
+      "id": "other_71",
+      "file": null,
+      "label": "other",
+      "text": "不许模仿我",
+      "start": 175.43,
+      "end": 177.22,
+      "duration": 1.79,
+      "quality": "mixed",
+      "confidence": "high",
+      "uses": [],
+      "note": "小桃对白与 Usagi 模仿声同时出现，不导出。"
+    },
+    {
+      "id": "other_72",
+      "file": null,
+      "label": "other",
+      "text": "模仿收尾/片尾拟音",
+      "start": 177.27,
+      "end": 178.12,
+      "duration": 0.85,
+      "quality": "mixed",
+      "confidence": "low",
+      "uses": [],
+      "note": "片尾音效与角色尾声无法分离，不导出。"
+    },
+    {
+      "id": "other_73",
+      "file": null,
+      "label": "other",
+      "text": "不来一起「噗～」吗？",
+      "start": 178.51,
+      "end": 179.97,
+      "duration": 1.46,
+      "quality": "mixed",
+      "confidence": "high",
+      "uses": [],
+      "note": "小八对白；字幕中的噗是对白内容，不能误标成 Usagi 的 pururu。"
+    },
+    {
+      "id": "other_74",
+      "file": "other_74.ogg",
+      "label": "other",
+      "text": "乌・拉・呀・哈・呀哈・乌・拉",
+      "start": 180.58,
+      "end": 184.807,
+      "duration": 4.227,
+      "quality": "bgm",
+      "confidence": "high",
+      "uses": [
+        "idle_talk",
+        "chat_reply"
+      ],
+      "note": "字幕「ウ・ラ・ヤ・ハ・ヤハ・ウ・ラ」；末尾一整组连声无自然停顿，保留 4.227 秒例外，避免截断词音；仅作 idle/chat，需主导听审。"
+    }
+  ]
+}
