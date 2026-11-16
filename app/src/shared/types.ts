@@ -16,7 +16,8 @@ export interface PetBridge {
   moveTo(request: MoveRequest): void;
   cancelMove(): void;
   loadSound(use: SoundUse): Promise<ArrayBuffer | null>;
-  onMoveDone(callback: () => void): () => void;
+  onMoveDone(callback: (result: MoveResult) => void): () => void;
+  onVisibility(callback: (visibility: { visible: boolean }) => void): () => void;
   onPress(callback: (pressed: boolean) => void): () => void;
   onDrag(callback: (sample: DragSample) => void): () => void;
   onSmokePose(callback: (behavior: SmokeBehavior) => void): () => void;
@@ -31,6 +32,7 @@ export interface PetBridge {
 }
 
 export interface MoveRequest extends Point { durationMs: number }
+export type MoveResult = { ok: true; distance: number } | { ok: false; reason: string };
 export interface WindowInfo { bounds: Rect; workArea: Rect }
 export interface DragSample { active: boolean; velocity: Point; timestamp: number }
 export type SoundUse = 'click_happy' | 'click_surprise' | 'click_shout' | 'drag';

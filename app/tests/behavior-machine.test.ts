@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { BehaviorMachine, DURATIONS, inwardDirection, planMove } from '../src/renderer/behavior/machine';
 import type { Action } from '../src/renderer/behavior/machine';
 import type { WindowInfo } from '../src/shared/types';
+import { sampleMotion } from '../src/renderer/motion';
 
 const info: WindowInfo = { bounds: { x: 340, y: 90, width: 320, height: 420 }, workArea: { x: 0, y: 0, width: 1000, height: 800 } };
 function fixture(values: number[], pool?: Action[]) {
@@ -62,13 +63,30 @@ describe('纯行为规则', () => {
       }
     }
   });
+  it('部分越界时先裁终点：真实距离、90px/s 时长与每 45px 一步保持一致', () => {
+    const outside = { ...info, bounds: { ...info.bounds, x: 750 } };
+    const plan = planMove(outside, () => 0)!;
+    // The raw 60px plan would end at 690; the reachable edge is 660.
+    expect(plan).toMatchObject({ x: 660, y: 90, direction: -1, durationMs: 1000 });
+    const distance = Math.abs(plan.x - outside.bounds.x);
+    const seconds = plan.durationMs / 1000;
+    expect(distance).toBe(90);
+    expect(Math.abs(distance / seconds - 90)).toBeLessThanOrEqual(1);
+    expect(distance / 45).toBe(2);
+    for (const p of [0.2, 0.4, 0.6, 0.8]) {
+      const traveled = p * p * (3 - 2 * p) * distance;
+      const pose = sampleMotion('walk', seconds * p, { duration: seconds });
+      expect(pose).toEqual(sampleMotion('walk', seconds * p, { duration: seconds, distance: traveled }));
+      expect(pose.bones.leftUpperLeg![0]).toBeCloseTo(Math.sin(traveled / 45 * Math.PI) * 0.3);
+    }
+  });
   it('先转向再发移动请求，完成通知后转回正面', () => {
     const f = fixture([0.9]);
     f.advance(3500); expect(f.machine.drain()).toEqual([]);
     expect(f.advance(450).state).toBe('move');
     expect(f.machine.drain()).toEqual([{ type: 'move', request: { x: 280, y: 90, durationMs: 60 / 90 * 1000 } }]);
-    expect(f.advance(5000).state).toBe('move'); // Native completion, not a renderer timer, owns the finish.
-    f.machine.moveDone(); expect(f.machine.snapshot).toMatchObject({ state: 'turn', toAngle: 0 });
+    expect(f.advance(700).state).toBe('move'); // Wait for native completion within the one-second grace period.
+    f.machine.moveDone({ ok: true, distance: 60 }); expect(f.machine.snapshot).toMatchObject({ state: 'turn', toAngle: 0 });
     expect(f.advance(450).state).toBe('idle');
   });
   it.each(['turn', 'move', 'click', 'drag'] as const)('%s 被点击接管，旧计划永不恢复', (state) => {
@@ -80,7 +98,7 @@ describe('纯行为规则', () => {
     f.machine.click();
     expect(f.machine.snapshot.state).toBe('click');
     expect(f.machine.drain().map((command) => command.type)).toEqual(['cancel', 'sound']);
-    f.machine.moveDone(); expect(f.machine.snapshot.state).toBe('click');
+    f.machine.moveDone({ ok: true, distance: 60 }); expect(f.machine.snapshot.state).toBe('click');
     expect(f.advance(1400).state).toBe('idle');
     expect(f.machine.drain()).toEqual([]);
   });
@@ -94,6 +112,41 @@ describe('纯行为规则', () => {
     expect(f.advance(450)).toMatchObject({ state: 'turn', toAngle: 0 });
     expect(f.machine.drain()).toEqual([]);
     expect(f.advance(450).state).toBe('idle');
+  });
+  it.each(['turn', 'move', 'click', 'drag'] as const)('%s 隐藏后不计时不掷骰，等待再显示从 idle 重新计时', (state) => {
+    const f = fixture([0.9, 0, 0, 0.5, 0.5]); f.advance(3500);
+    if (state === 'move') f.advance(450);
+    if (state === 'click') f.machine.click();
+    if (state === 'drag') f.machine.drag(true);
+    f.machine.drain();
+    f.machine.visibility(false);
+    expect(f.machine.drain()).toEqual([{ type: 'cancel' }]);
+    const hidden = { ...f.machine.snapshot };
+    expect(f.advance(60_000)).toEqual(hidden);
+    expect(f.machine.drain()).toEqual([]);
+    f.machine.visibility(true);
+    expect(f.machine.snapshot.state).toBe('idle');
+    f.machine.drain();
+    expect(f.advance(3499).state).toBe('idle');
+    expect(f.advance(1).state).toBe('act'); // Hidden ticks consumed no random values.
+    expect(f.machine.drain()).toEqual([]); // The old route is gone.
+  });
+  it.each(['hidden', 'dragging', 'invalid-target'])('主进程以 %s 拒绝移动，立即回 idle', (reason) => {
+    const f = fixture([0.9]); f.advance(3500); f.advance(450); f.machine.drain();
+    f.machine.moveDone({ ok: false, reason });
+    expect(f.machine.snapshot.state).toBe('idle');
+    expect(f.advance(1).state).toBe('idle');
+    expect(f.machine.drain()).toEqual([]);
+  });
+  it('移动到计划时长 + 1 秒未回执时取消并回 idle，晚回执不复活路线', () => {
+    const f = fixture([0.9, 0, 30 / 181]); f.advance(3500); f.advance(450); f.machine.drain();
+    expect(f.machine.snapshot.durationMs).toBe(1000);
+    const timeout = f.machine.snapshot.durationMs + 1000;
+    expect(f.advance(timeout - 1).state).toBe('move');
+    expect(f.advance(1).state).toBe('idle');
+    expect(f.machine.drain()).toEqual([{ type: 'cancel' }]);
+    f.machine.moveDone({ ok: true, distance: 60 });
+    expect(f.machine.snapshot.state).toBe('idle');
   });
   it('点击只排除上一次；时长 1～1.4s，拖动声音 30% 且只在开始', () => {
     const f = fixture([0, 0, 0, 0.29, 0.30]);

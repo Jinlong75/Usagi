@@ -3,10 +3,11 @@ import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { DEFAULT_CONFIG, readConfig, writeConfig } from './config';
 import { resolveModel } from './model';
-import { WindowMotion } from './motion';
+import { prepareMove, WindowMotion } from './motion';
 import { SoundLibrary } from './sounds';
 import { initialBounds } from '../shared/window';
 import { beginGesture, isClick, updateGesture } from '../shared/gesture';
+import { topRowsTransparent } from '../shared/hit';
 import type { Gesture } from '../shared/gesture';
 import type { Config, Point, RenderResult, Size, MoveRequest, SmokeBehavior, SoundUse } from '../shared/types';
 
@@ -29,6 +30,7 @@ let dragSample = { point: { x: 0, y: 0 }, time: 0 };
 const sounds = new SoundLibrary(resolve(root, 'assets/sounds/usagi'));
 const smokeBehaviors: SmokeBehavior[] = ['idle', 'walk', 'happy', 'surprised', 'shout', 'drag'];
 const behaviorRatios: Partial<Record<SmokeBehavior, number>> = {};
+const behaviorTopTransparent: Partial<Record<SmokeBehavior, boolean>> = {};
 let smokeIndex = -1;
 let captureBusy = false;
 let initialRatio = 0;
@@ -112,8 +114,12 @@ function refreshMenu(): void {
   if (!tray || !win) return;
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: win.isVisible() ? '隐藏桌宠' : '显示桌宠', click: () => {
-      if (win?.isVisible()) { finishDrag(true); motion?.cancel(); win.webContents.send('pet:press', false); win.hide(); }
-      else win?.showInactive();
+      if (win?.isVisible()) {
+        finishDrag(true); motion?.cancel(); win.webContents.send('pet:press', false);
+        win.hide(); win.webContents.send('pet:visibility', { visible: false });
+      } else if (win) {
+        win.showInactive(); win.webContents.send('pet:visibility', { visible: true });
+      }
       refreshMenu();
     } },
     { label: '始终置顶', type: 'checkbox', checked: config.alwaysOnTop, click: (item) => {
@@ -155,13 +161,17 @@ async function capture(result: RenderResult): Promise<void> {
   captureBusy = true;
   try {
     const image = await win.webContents.capturePage(undefined, { stayHidden: true, stayAwake: true });
-    const bitmap = image.toBitmap();
+    const bitmap = image.toBitmap({ scaleFactor: 1 });
     let opaque = 0;
     for (let index = 3; index < bitmap.length; index += 4) if (bitmap[index]! > 0) opaque++;
     const opaqueRatio = opaque / (bitmap.length / 4);
     const directory = process.env.AR_GATE_ARTIFACT_DIR || resolve(root, 'app/smoke-out');
     await mkdir(directory, { recursive: true });
     await writeFile(join(directory, expected ? `smoke-${expected}.png` : 'smoke.png'), image.toPNG());
+    if (expected === 'happy' || expected === 'shout') {
+      behaviorTopTransparent[expected] = topRowsTransparent(bitmap, image.getSize(1).width);
+      if (!behaviorTopTransparent[expected]) return fail(`角色超出取景：${expected} 最上方两行 alpha 非零`);
+    }
     if (!Number.isFinite(opaqueRatio) || opaqueRatio < 0.02 || opaqueRatio > 0.95 || result.vrmVersion !== '1') {
       return fail(`角色占比、透明背景或 VRM 版本检查失败：${expected ?? 'initial'} (${opaqueRatio})`);
     }
@@ -174,7 +184,8 @@ async function capture(result: RenderResult): Promise<void> {
     else {
       completed = true;
       exitSmoke(0, { ok: true, model: modelPath, opaqueRatio: initialRatio, vrmVersion: result.vrmVersion,
-        expressions: result.expressions ?? [], behaviors: smokeBehaviors, behaviorOpaqueRatios: behaviorRatios });
+        expressions: result.expressions ?? [], behaviors: smokeBehaviors, behaviorOpaqueRatios: behaviorRatios,
+        behaviorTopTransparent });
     }
   } catch (error) { fail(String(error)); }
 }
@@ -197,10 +208,10 @@ async function start(): Promise<void> {
       sandbox: true, offscreen: smoke, backgroundThrottling: false,
     },
   });
-  motion = new WindowMotion(win, () => {
+  motion = new WindowMotion(win, (result) => {
     if (!win || win.isDestroyed()) return;
     const { x, y } = win.getBounds(); config.position = { x, y }; save();
-    win.webContents.send('pet:move-done');
+    win.webContents.send('pet:move-done', result);
   });
   win.setAlwaysOnTop(config.alwaysOnTop, 'floating');
   if (process.platform === 'darwin') win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
@@ -235,12 +246,17 @@ async function start(): Promise<void> {
     return sounds.load(use).then((bytes) => bytes ? new Uint8Array(bytes).buffer : null);
   });
   ipcMain.on('pet:move-to', (event, request: MoveRequest) => {
-    if (!trusted(event) || smoke || gesture || !win?.isVisible() || !request ||
-      ![request.x, request.y, request.durationMs].every(Number.isFinite) || request.durationMs <= 0 || request.durationMs > 10_000) return;
+    if (!trusted(event)) return;
+    const refuse = (reason: string) => win?.webContents.send('pet:move-done', { ok: false, reason });
+    if (smoke) return refuse('smoke');
+    if (gesture) return refuse('dragging');
+    if (!win?.isVisible()) return refuse('hidden');
+    if (!motion) return refuse('unavailable');
     const bounds = win.getBounds();
     const area = screen.getDisplayMatching(bounds).workArea;
-    const x = Math.max(area.x + 20, Math.min(area.x + area.width - bounds.width - 20, request.x));
-    motion?.move({ x, y: bounds.y, durationMs: request.durationMs });
+    const prepared = prepareMove({ bounds, workArea: area }, request);
+    if (!prepared.ok) return refuse(prepared.reason);
+    motion.move(prepared.request);
   });
   ipcMain.on('pet:move-cancel', (event) => { if (trusted(event)) motion?.cancel(); });
   ipcMain.on('pet:hit', (event, value: unknown) => {
@@ -291,7 +307,9 @@ async function start(): Promise<void> {
       }, 200);
     });
     win.on('blur', () => finishDrag(true));
-    win.once('ready-to-show', () => { win?.showInactive(); refreshMenu(); });
+    win.once('ready-to-show', () => {
+      win?.showInactive(); win?.webContents.send('pet:visibility', { visible: true }); refreshMenu();
+    });
   }
   if (!smoke && process.env.USAGI_DEV_URL) await win.loadURL(process.env.USAGI_DEV_URL);
   else await win.loadFile(resolve(root, 'app/dist/index.html'));

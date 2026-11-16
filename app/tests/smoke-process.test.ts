@@ -5,7 +5,8 @@ import { runSmokeProcess } from '../scripts/smoke-process.mjs';
 
 const success = { ok: true, model: 'Seed-san.vrm', opaqueRatio: 0.21, vrmVersion: '1', expressions: ['blink', 'happy'],
   behaviors: ['idle', 'walk', 'happy', 'surprised', 'shout', 'drag'],
-  behaviorOpaqueRatios: { idle: 0.21, walk: 0.2, happy: 0.23, surprised: 0.19, shout: 0.25, drag: 0.2 } };
+  behaviorOpaqueRatios: { idle: 0.21, walk: 0.2, happy: 0.23, surprised: 0.19, shout: 0.25, drag: 0.2 },
+  behaviorTopTransparent: { happy: true, shout: true } };
 
 async function run(source: string, timeoutMs = 5_000) {
   let stdout = '';
@@ -91,5 +92,11 @@ describe('六种行为冒烟报告', () => {
     }
     expect(validBehaviorReport({ ...success, behaviorOpaqueRatios: { ...success.behaviorOpaqueRatios, drag: 0.02 } })).toBe(true);
     expect(validBehaviorReport({ ...success, behaviorOpaqueRatios: { ...success.behaviorOpaqueRatios, drag: 0.95 } })).toBe(true);
+  });
+  it('喊叫和跳跃最高点都必须证明顶部两行透明', () => {
+    expect(validBehaviorReport({ ...success, behaviorTopTransparent: undefined })).toBe(false);
+    for (const name of ['happy', 'shout']) {
+      expect(validBehaviorReport({ ...success, behaviorTopTransparent: { ...success.behaviorTopTransparent, [name]: false } })).toBe(false);
+    }
   });
 });

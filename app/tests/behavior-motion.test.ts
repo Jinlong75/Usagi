@@ -5,7 +5,9 @@ import { MOTION_SECONDS, MotionRig, jumps, neutralPose, sampleMotion } from '../
 import type { MotionName } from '../src/renderer/motion';
 import { DragSprings, SPRING_ACCELERATION_COEFFICIENT } from '../src/renderer/motion/springs';
 import { renderInterval } from '../src/renderer/behavior/power';
-import { WindowMotion } from '../src/main/motion';
+import { prepareMove, WindowMotion } from '../src/main/motion';
+import { frameSize } from '../src/renderer/motion/framing';
+import { topRowsTransparent } from '../src/shared/hit';
 
 function model() {
   const bones = new Map<VRMHumanBoneName, Object3D>();
@@ -112,6 +114,47 @@ describe('原生窗口移动（假时钟，不启动 Electron）', () => {
     motion.move({ x: 90, y: 50, durationMs: 1000 });
     now = 3500; vi.advanceTimersByTime(500); expect(point).toEqual([59, 50]);
     now = 4000; vi.advanceTimersByTime(500); expect(point).toEqual([90, 50]);
-    expect(done).toHaveBeenCalledTimes(1); expect(vi.getTimerCount()).toBe(0);
+    expect(done).toHaveBeenCalledTimes(1);
+    expect(done).toHaveBeenCalledWith({ ok: true, distance: 62 });
+    expect(vi.getTimerCount()).toBe(0);
+  });
+  it('安全裁剪改变距离时按比例调整时长，保持原请求速度且 Y 不漫游', () => {
+    const info = { bounds: { x: 750, y: 90, width: 320, height: 420 },
+      workArea: { x: 0, y: 0, width: 1000, height: 800 } };
+    expect(prepareMove(info, { x: 690, y: 150, durationMs: 60 / 90 * 1000 })).toEqual({
+      ok: true, distance: 90, request: { x: 660, y: 90, durationMs: 1000 },
+    });
+    expect(prepareMove({ ...info, bounds: { ...info.bounds, x: 600 } },
+      { x: 780, y: 90, durationMs: 2000 })).toEqual({
+      ok: true, distance: 60, request: { x: 660, y: 90, durationMs: 2000 / 3 },
+    });
+    expect(prepareMove(info, { x: 600, y: 90, durationMs: NaN })).toEqual({ ok: false, reason: 'invalid-target' });
+    expect(prepareMove(info, { x: 750, y: 90, durationMs: 1000 })).toEqual({ ok: false, reason: 'invalid-target' });
+    expect(prepareMove({ ...info, workArea: { ...info.workArea, width: 340 } },
+      { x: 600, y: 90, durationMs: 1000 })).toEqual({ ok: false, reason: 'no-space' });
+  });
+});
+
+describe('动作取景与冒烟顶部透明检查', () => {
+  it.each([320 / 420, 440 / 578, 0.4, 2])('纵横比 %s：模型顶部至少留高度 18%%、左右各 8%%，脚底在下方 5%%', (aspect) => {
+    const size = frameSize(0.8, 1.6, aspect);
+    const bottom = -size.height * 0.05;
+    expect(bottom / size.height).toBeCloseTo(-0.05);
+    expect(bottom + size.height - 1.6).toBeGreaterThanOrEqual(1.6 * 0.18 - 1e-10);
+    expect((size.width - 0.8) / 2).toBeGreaterThanOrEqual(0.8 * 0.08 - 1e-10);
+    expect(jumps(0.175).y).toBeCloseTo(0.08); // happy smoke samples the apex, not a landing.
+  });
+  it('只检查最上方两行的 alpha，第二行最后一个像素也不能漏掉', () => {
+    const bitmap = new Uint8Array(4 * 4 * 4);
+    bitmap[0] = 255; // RGB does not affect transparency.
+    bitmap[2 * 4 * 4 + 3] = 255; // Third row may contain the model.
+    expect(topRowsTransparent(bitmap, 4)).toBe(true);
+    for (let index = 3; index < 2 * 4 * 4; index += 4) {
+      bitmap[index] = 1;
+      expect(topRowsTransparent(bitmap, 4)).toBe(false);
+      bitmap[index] = 0;
+    }
+    expect(topRowsTransparent(bitmap, 0)).toBe(false);
+    expect(topRowsTransparent(bitmap.slice(0, 12), 4)).toBe(false);
   });
 });

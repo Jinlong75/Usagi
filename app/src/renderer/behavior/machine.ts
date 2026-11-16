@@ -1,4 +1,4 @@
-import type { MoveRequest, WindowInfo } from '../../shared/types';
+import type { MoveRequest, MoveResult, WindowInfo } from '../../shared/types';
 
 export type State = 'idle' | 'turn' | 'act' | 'move' | 'click' | 'drag';
 export type Reaction = 'happy' | 'surprised' | 'shout';
@@ -32,8 +32,13 @@ export function planMove(info: WindowInfo, random: () => number): (MoveRequest &
   const direction = left >= 60 && right >= 60 ? (random() < 0.5 ? -1 : 1) : left >= 60 ? -1 : 1;
   const maximum = Math.floor(Math.min(240, direction === -1 ? left : right));
   const distance = 60 + Math.min(maximum - 60, Math.floor(random() * (maximum - 60 + 1)));
-  return { x: info.bounds.x + direction * distance, y: info.bounds.y,
-    durationMs: distance / SPEED * 1000, direction };
+  const minimumX = info.workArea.x + 20;
+  const maximumX = info.workArea.x + info.workArea.width - info.bounds.width - 20;
+  if (maximumX < minimumX) return null;
+  const x = Math.round(Math.max(minimumX, Math.min(maximumX, info.bounds.x + direction * distance)));
+  const actualDistance = Math.abs(x - info.bounds.x);
+  if (!actualDistance) return null;
+  return { x, y: info.bounds.y, durationMs: actualDistance / SPEED * 1000, direction };
 }
 
 /** Times are injected milliseconds. No timers, DOM, IPC or model dependencies. */
@@ -44,6 +49,7 @@ export class BehaviorMachine {
   private lastReaction?: Reaction;
   private pending: ReturnType<typeof planMove> = null;
   private pressed = false;
+  private visible = true;
   constructor(private random = Math.random, private now = () => performance.now(), private pool: readonly Action[] = ACTIONS) {
     this.snapshot = { state: 'idle', startedAt: now(), durationMs: DURATIONS.idle, direction: 1, fromAngle: 0, toAngle: 0 };
   }
@@ -53,6 +59,12 @@ export class BehaviorMachine {
       fromAngle: 0, toAngle: 0, ...extras };
   }
   private cancel(): void { this.pending = null; this.commands.push({ type: 'cancel' }); }
+  visibility(visible: boolean): void {
+    this.visible = visible;
+    this.pressed = false;
+    this.cancel();
+    this.enter('idle', DURATIONS.idle);
+  }
   press(active: boolean): void {
     this.pressed = active;
     this.cancel();
@@ -71,9 +83,10 @@ export class BehaviorMachine {
     this.enter(active ? 'drag' : 'idle', active ? Infinity : DURATIONS.idle);
     if (active && this.random() < 0.30) this.commands.push({ type: 'sound', use: 'drag' });
   }
-  moveDone(): void {
+  moveDone(result: MoveResult): void {
     if (this.snapshot.state !== 'move') return;
     this.pending = null;
+    if (!result.ok) { this.enter('idle', DURATIONS.idle); return; }
     this.enter('turn', DURATIONS.turn, { fromAngle: this.snapshot.direction * TURN_ANGLE, toAngle: 0 });
   }
   private act(): void {
@@ -84,7 +97,15 @@ export class BehaviorMachine {
   }
   tick(info: WindowInfo | null): Snapshot {
     const state = this.snapshot;
-    if (this.pressed || state.state === 'drag' || state.state === 'move' || this.now() - state.startedAt < state.durationMs) return state;
+    if (!this.visible || this.pressed || state.state === 'drag') return state;
+    if (state.state === 'move') {
+      if (this.now() - state.startedAt >= state.durationMs + 1000) {
+        this.cancel();
+        this.enter('idle', DURATIONS.idle);
+      }
+      return this.snapshot;
+    }
+    if (this.now() - state.startedAt < state.durationMs) return state;
     if (state.state === 'turn') {
       if (this.pending) {
         const { direction, ...request } = this.pending;

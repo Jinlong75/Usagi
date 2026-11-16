@@ -11,6 +11,7 @@ import { BehaviorMachine, TURN_ANGLE } from './behavior/machine';
 import { PetAudio } from './behavior/audio';
 import { MotionRig, sampleMotion } from './motion';
 import { DragSprings } from './motion/springs';
+import { frameSize } from './motion/framing';
 import { renderInterval } from './behavior/power';
 
 declare global { interface Window { pet: PetBridge } }
@@ -30,12 +31,14 @@ let dragging = false;
 let velocityX = 0;
 let lastActivity = performance.now();
 let animationFrame = 0;
+let petVisible = true;
+let neutralBounds: Box3 | null = null;
 let smokePose: SmokeBehavior | undefined;
 let smokePoseFrames = 0;
 let smokePoseStartedAt = performance.now();
 let smokeAge = 0;
 let smokeDragImpulse = false;
-const smokeAges = { idle: 0.875, walk: 0.7, happy: 0.46, surprised: 0.45, shout: 0.55, drag: 0.5 };
+const smokeAges = { idle: 0.875, walk: 0.7, happy: 0.175, surprised: 0.45, shout: 0.55, drag: 0.5 };
 let gaze = { x: 0, y: 0 };
 const audio = new PetAudio((use) => window.pet.loadSound(use));
 let elapsed = 0;
@@ -63,15 +66,12 @@ function showError(error: unknown): void {
 }
 
 function frameModel(): void {
-  if (!vrm) return;
-  rig?.reset();
-  vrm.update(0);
-  const box = new Box3().setFromObject(vrm.scene);
+  if (!vrm || !neutralBounds) return;
+  const box = neutralBounds;
   const size = box.getSize(new Vector3());
   const center = box.getCenter(new Vector3());
   const aspect = window.innerWidth / window.innerHeight;
-  // TODO(lead): 门禁确认跳跃/上举动作的头顶留白，当前采用保守的 82% 取景。
-  const height = Math.max(size.y / 0.82, size.x / aspect / 0.82, 0.1);
+  const { height } = frameSize(size.x, size.y, aspect);
   // The bottom 5% stays below the soles, even when width determines the framing.
   const bottom = box.min.y - height * 0.05;
   camera.left = -height * aspect / 2;
@@ -126,6 +126,8 @@ async function loadModel(): Promise<void> {
     rig = new MotionRig(vrm);
     springs = new DragSprings(vrm);
     machine = new BehaviorMachine();
+    if (!smoke && !petVisible) { machine.visibility(false); flushCommands(); }
+    neutralBounds = new Box3().setFromObject(vrm.scene);
     dragging = false;
     frameModel();
     elapsed = 0;
@@ -214,9 +216,9 @@ function renderPose(now: number, delta: number): void {
 }
 function animate(now: number): void {
   animationFrame = 0;
-  if (!smoke && document.visibilityState === 'hidden') return;
+  if (!smoke && !petVisible) return;
   animationFrame = requestAnimationFrame(animate);
-  const interval = smoke ? 0 : renderInterval(now, lastActivity, document.visibilityState === 'hidden');
+  const interval = smoke ? 0 : renderInterval(now, lastActivity, !petVisible);
   if (now - previous + 0.1 < interval) return;
   const delta = Math.min((now - previous) / 1000, 0.05);
   previous = now;
@@ -250,10 +252,11 @@ try {
     pointer = { x: sample.point.x - sample.bounds.x, y: sample.point.y - sample.bounds.y };
   });
   void window.pet.windowInfo().then((info) => { windowInfo = info; }).catch(showError);
-  window.pet.onClick(() => { wake(); machine.click(); flushCommands(); });
-  window.pet.onPress((pressed) => { wake(); audio.stop(); machine.press(pressed); flushCommands(); });
-  window.pet.onMoveDone(() => { wake(); machine.moveDone(); });
+  window.pet.onClick(() => { if (petVisible) { wake(); machine.click(); flushCommands(); } });
+  window.pet.onPress((pressed) => { if (petVisible) { wake(); audio.stop(); machine.press(pressed); flushCommands(); } });
+  window.pet.onMoveDone((result) => { if (petVisible) { wake(); machine.moveDone(result); } });
   window.pet.onDrag((sample) => {
+    if (!petVisible) return;
     wake();
     if (sample.active !== dragging) {
       dragging = sample.active; machine.drag(dragging); audio.stop(); flushCommands();
@@ -267,11 +270,14 @@ try {
     springs?.restore(); smokePose = pose; smokePoseFrames = 0; reported = false;
     smokePoseStartedAt = performance.now(); smokeDragImpulse = false;
   });
-  document.addEventListener('visibilitychange', () => {
+  window.pet.onVisibility(({ visible }) => {
     if (smoke) return;
-    if (document.visibilityState === 'hidden') {
+    petVisible = visible;
+    machine.visibility(visible); flushCommands();
+    dragging = false; velocityX = 0; pointerDown = false;
+    audio.stop(); springs?.restore();
+    if (!visible) {
       cancelAnimationFrame(animationFrame); animationFrame = 0;
-      audio.stop(); springs?.restore(); machine.press(false); flushCommands();
     } else {
       wake(); previous = performance.now();
       if (!animationFrame) animationFrame = requestAnimationFrame(animate);
