@@ -17,8 +17,8 @@ export const MOTION_SECONDS: Record<MotionName, number> = {
   shake: DURATIONS.shake / 1000, spin: DURATIONS.spin / 1000,
   happy: DURATIONS.happy / 1000, surprised: DURATIONS.surprised / 1000, shout: DURATIONS.shout / 1000,
 };
-/** Resting downward turn of each upper arm (rad, VRM 1.0 normalized ±Z). */
-export const ARM_REST = 0.35;
+/** 2026-11-16 用户：“那个形状就是最标准的形状”。静止不旋转上臂，保持 Tripo 原始姿态。 */
+export const ARM_REST = 0;
 export function neutralPose(): Pose {
   return { position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1], bones: {}, expressions: {} };
 }

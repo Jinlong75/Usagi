@@ -186,7 +186,7 @@ describe('动作取景与冒烟顶部透明检查', () => {
   it('读取更新骨骼后的实际顶点而非缓存包围盒，采样完成恢复中性', () => {
     const scene = new Object3D();
     const normalized = new Object3D();
-    normalized.rotation.z = -1.1;
+    normalized.rotation.z = -ARM_REST; // Use the same neutral arm angle as the deployed model.
     const bone = new Bone();
     bone.position.y = 1;
     bone.rotation.copy(normalized.rotation);

@@ -85,20 +85,28 @@ VRM 的骨架依赖保留用于显示，脚本不编辑或导出骨架。自动�
 sh pipeline/build_usagi.sh prep
 ```
 
-入口使用 `Material/tripo/usagi_3d.glb`，复用清理流程，自动转正到 Blender -Y、删除雕刻五官、修整脸部、分配 Body／EarInner／Tail 材质和同名顶点组，并测量绑骨关键点。原始模型不改写，Blender 路径规则与测试入口一致。`rig` 阶段见下节；`face` 阶段见 011 小节；`vrm` 保留入口仍只打印“尚未实现”。
+入口使用 `Material/tripo/usagi3d2.glb`，复用清理流程，自动转正到 Blender -Y、仅删除正面雕刻五官、保留独立尾巴、局部修整脸部、分配 Body／EarInner／Tail 材质和同名顶点组，并测量绑骨关键点。原始模型不改写，Blender 路径规则与测试入口一致。`rig` 阶段见下节；`face` 阶段见 011 小节；`vrm` 保留入口仍只打印“尚未实现”。
 
 `prep_usagi.py` 接受 `--in`、`--out`、`--landmarks`、`--report`，以及 `--smooth-waist on|off`（默认 **off**）和 `--waist-iterations`（默认 100）。用户已决定保留腰线，正式底模不做腰线平滑。
+
+脸部平滑与形状回归检查共用 `feature_regions` / `in_feature_region`：朝向转正后，逐个测量独立正面雕刻块的三维包围盒，各轴外扩 0.006 m。只有盒内底模顶点可参与脸部平滑；固定高度带与侧腰凹口已移除。新模型上的区域共包含 115 个底模顶点，现有表面已满足 4 mm 拟合容差，因此不移动这些顶点。
+
+`test_shape_consistency.py` 随 `run_tests.sh` 检查已生成与临时重建的底模。`check_shape.py` 直接导入未经清理的原始模型，使用 prep 的归一化与转向，以 BVHTree 双向比较区域外表面，最大距离必须 ≤0.0005（高度归一为 1）。`usagi_shape.report.json` 记录两个方向的区域顶点数、最大距离与位置。`preview_original/` 使用同一预览器、同一机位，保留原始雕刻五官，仅变换到 prep 坐标。
 
 `prep` 产物：
 
 - `assets/model/usagi_base.glb`：保留腰线的正式底模，含三种材质与顶点组数据。
 - `assets/model/usagi_landmarks.json`、`usagi_prep.report.json`：正式底模的关键点与处理报告。
+- `assets/model/preview_original/`：归一化并转正的原始模型五视图，保留全部雕刻与原始形状。
+- `assets/model/usagi_shape.report.json`：相对原始表面的双向距离。
 - `assets/model/preview/`：正式底模的六张预览、正面/左侧关键点叠图，以及 `ears_closeup_front.png`、`tail_closeup_back.png` 两张聚焦特写。
 - `assets/model/preview_nosmooth/`：沿用历史目录名，内容为 `--smooth-waist on` 的**平滑版对照**六张预览。对照模型、关键点和报告只写临时目录，生成预览后清理，不覆盖正式产物。
 
 分区沿连续标量的零等值线切网格：耳朵保持原长椭圆的 60% 横向宽度、0.43 半长、0.51 中心和 0.08～0.94 高度参数，前侧法线与位置条件也进入连续标量。沿共享边二分求交点，再拆三角面；按原面上线性标量的中心值确定碎片归属，避免瘦长外侧碎片因非线性曲率被重新染色。交点共享，最后清理退化边并三角化；三种材质、顶点组和 `_USAGI_REGION` 位掩码不变。
 
-保留原有耳朵局部四等分（`cuts=3`），另仅对尾巴边界 0.025 m 邻域四等分，全部为线性细分，不移动原表面。尾巴的球面与背面半空间原本直接取 max，会在交界处形成几何尖角；改为宽 0.002 m 的紧支撑 smooth-max，在交界最多向内收 0.0005 m，且始终同时满足球内与背面限制。球心、半径及颜色值保持原定义。处理报告 `region_boundary` 记录细分/切分面数、连通块、零面积面、两耳与尾巴闭环段数/最大三维转角及粉色面法线 Y 最大值。
+新模型自带更密的网格：耳朵局部二等分（`cuts=1`），尾巴只二等分实际跨越零等值线的边，不再把整块独立尾巴四等分。全部为线性细分，不移动原表面。尾巴的球面与背面半空间原本直接取 max，会在交界处形成几何尖角；改为宽 0.002 m 的紧支撑 smooth-max，在交界最多向内收 0.0005 m，且始终同时满足球内与背面限制。球心、半径及颜色值保持原定义。处理报告 `region_boundary` 记录细分/切分面数、连通块、零面积面、两耳与尾巴闭环段数/最大三维转角及粉色面法线 Y 最大值。
+
+022 当前未通过既有 `test_09_real_product_boundaries`：新模型沿原有场切分后，左耳有两条闭环、尾巴有三条，且存在 >35° 的转角。形状回归检查通过；此处保留原规则及原边界断言，需主导确定后续分区处理。
 
 `test_prep_usagi.py` 新增合成三角格平面和正式底模的闭环、每个相邻段转角 <35° 检查。正式底模存在时，还从 Tripo 原始模型临时重建一次并检查相同断言，避免静态产物掩盖分区代码回退。比较基线与反向实验结果保存在 `assets/model/usagi_boundary.report.json`。
 
@@ -106,7 +114,7 @@ sh pipeline/build_usagi.sh prep
 
 `render_preview.py --landmarks <json>` 可额外输出 `<prefix>_landmarks_front.png` 和 `<prefix>_landmarks_left.png`。关键点使用米、Blender Z 向上、正面 -Y、角色左侧 +X；`neck` 取手臂根部上方 0.01～0.07 米的中央躯干最窄 X 截面。卡通模型没有清晰解剖颈部，`hips`、`chest`、`neck` 与四肢根部为绑骨参考值，绑定前需结合预览确认。
 
-glTF 导入会在材质边界拆点；连通性测试在临时 BMesh 中以 `1e-6` 米距离焊接后，仍严格要求一个连通块。顶点组、材质和颜色的回读检查使用原导入网格。
+glTF 导入会在材质边界拆点；新模型的连通性测试在临时 BMesh 中焊接后，要求主体与原始独立尾巴两块；尾巴占总面数 <5%、中心位于背面且 Tail 材质占比 ≥50%。顶点组、材质和颜色的回读检查使用原导入网格。
 
 ## 自动测试
 

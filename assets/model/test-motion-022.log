@@ -1,0 +1,14 @@
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> usagi-desktop-pet@0.1.0 test
+> vitest run --run tests/behavior-motion.test.ts
+
+
+ RUN  v5.1.0 app
+
+
+ Test Files  1 passed (1)
+      Tests  31 passed (31)
+   Start at  23:12:51
+   Duration  1.01s (transform 43%, import 29%, tests 27%)
+

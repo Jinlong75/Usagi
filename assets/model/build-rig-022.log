@@ -1,0 +1,34 @@
+23:11:54 | INFO: Data are loaded, start creating Blender stuff
+23:11:54 | INFO: Blender create Mesh node tripo_7f0710d5_2d7f_4ae2_95ba_a3929a66c6cf
+23:11:55 | INFO: glTF import finished in 0.79s
+Warning: Bone Heat Weighting: failed to find solution for one or more bones
+INFO Draco is available, use library at <home>/Applications/Blender.app/Contents/Resources/5.2/scripts/addons_core/io_scene_gltf2/libbf_intern_draco_bridge.dylib
+INFO MeshOptimizer is available, use library at <home>/Applications/Blender.app/Contents/Resources/5.2/scripts/addons_core/io_scene_gltf2/libbf_intern_meshopt_bridge.dylib
+23:12:22 | INFO: Starting glTF 2.0 export
+23:12:22 | INFO: Starting glTF 2.0 export
+23:12:22 | INFO: Extracting primitive: tripo_7f0710d5_2d7f_4ae2_95ba_a3929a66c6cf
+23:12:22 | INFO: Extracting primitive: tripo_7f0710d5_2d7f_4ae2_95ba_a3929a66c6cf
+23:12:23 | INFO: Primitives created: 3
+23:12:23 | INFO: Primitives created: 3
+23:12:23 | INFO: Finished glTF 2.0 export in 1.0441968441009521 s
+23:12:23 | INFO: Finished glTF 2.0 export in 1.0441968441009521 s
+pipeline/blender/rig_usagi.py:438: DeprecationWarning: 'World.use_nodes' is expected to be removed in Blender 6.0
+  scene.world.use_nodes = True
+00:37.365  render           | Saved: 'assets/model/preview_rig/neutral_t_front.png'
+00:41.579  render           | Saved: 'assets/model/preview_rig/neutral_t_45.png'
+00:44.929  render           | Saved: 'assets/model/preview_rig/arms_up_front.png'
+00:48.447  render           | Saved: 'assets/model/preview_rig/arms_up_45.png'
+00:51.401  render           | Saved: 'assets/model/preview_rig/arms_down_70_front.png'
+00:54.804  render           | Saved: 'assets/model/preview_rig/arms_down_70_45.png'
+00:59.238  render           | Saved: 'assets/model/preview_rig/head_left_30_front.png'
+01:03.731  render           | Saved: 'assets/model/preview_rig/head_left_30_45.png'
+01:08.334  render           | Saved: 'assets/model/preview_rig/ears_back_25_front.png'
+01:12.152  render           | Saved: 'assets/model/preview_rig/ears_back_25_45.png'
+01:16.475  render           | Saved: 'assets/model/preview_rig/one_leg_up_front.png'
+01:20.507  render           | Saved: 'assets/model/preview_rig/one_leg_up_45.png'
+01:24.408  render           | Saved: 'assets/model/preview_rig/head_left_20_front.png'
+
+Info: Saved as "usagi_rig.blend"
+Blender 5.2.3 LTS (hash e13b728c6880 built 2026-10-22 01:31:22)
+
+Blender quit

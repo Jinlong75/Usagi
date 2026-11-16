@@ -11,6 +11,7 @@ export BLENDER
 # --python-exit-code 覆盖测试入口本身的导入/语法错误；业务脚本另有进程失败保护。
 "$BLENDER" -b --factory-startup --python-exit-code 1 --python "$PIPELINE_DIR/tests/test_pipeline.py"
 "$BLENDER" -b --factory-startup --python-exit-code 1 --python "$PIPELINE_DIR/tests/test_prep_usagi.py"
+"$BLENDER" -b --factory-startup --python-exit-code 1 --python "$PIPELINE_DIR/tests/test_shape_consistency.py"
 # VRM 扩展依赖用户启动配置，rig 测试不使用 --factory-startup。
 "$BLENDER" -b --python-exit-code 1 --python "$PIPELINE_DIR/tests/test_rig_usagi.py"
 # 011: external temporary Pillow, then synthetic face and real three-vrm mixing.

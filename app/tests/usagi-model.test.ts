@@ -65,13 +65,33 @@ describe('真实 Usagi 资源的无界面验证', () => {
     }
     expect(document.extensions.VRMC_springBone.colliders.length).toBeGreaterThanOrEqual(2);
   });
+  it('静止上臂保持原始姿态，模型表面不受蒙皮变形', async () => {
+    expect(ARM_REST).toBe(0);
+    const vrm = await load();
+    for (const bone of ['leftUpperArm', 'rightUpperArm'] as const) {
+      expect(Math.abs(vrm.humanoid.getNormalizedBoneNode(bone)!.rotation.z)).toBe(0);
+    }
+    let maximum = 0, vertices = 0;
+    vrm.scene.traverse((object) => {
+      const mesh = object as import('three').SkinnedMesh;
+      if (!mesh.isSkinnedMesh || !mesh.geometry.attributes.position) return;
+      const position = mesh.geometry.attributes.position;
+      for (let i = 0; i < position.count; i++) {
+        const original = new Vector3().fromBufferAttribute(position, i);
+        maximum = Math.max(maximum, original.distanceTo(mesh.getVertexPosition(i, new Vector3())));
+        vertices++;
+      }
+    });
+    expect(vertices).toBeGreaterThan(9000);
+    expect(maximum).toBeLessThan(1e-6);
+  });
   it.each([['stretch', 1.1], ['shout', 0.55]] as const)('%s 的两只小手向两侧斜上举、伸出身体轮廓，结束后回中性', async (name, age) => {
     const vrm = await load();
     const rig = new MotionRig(vrm);
     const world = (bone: 'leftHand' | 'rightHand' | 'neck', raw = false) =>
       (raw ? vrm.humanoid.getRawBoneNode(bone) : vrm.humanoid.getNormalizedBoneNode(bone))!.getWorldPosition(new Vector3());
     // Body/head silhouette half-width at a given height, measured with both arms hung straight
-    // down out of the way (the resting arms now sit at the notch and would mask the check).
+    // down out of the way so the unchanged Tripo rest arms do not mask the check.
     const arms = (['leftUpperArm', 'rightUpperArm'] as const).map((bone) => vrm.humanoid.getNormalizedBoneNode(bone)!);
     arms[0]!.rotation.z = -1.5; arms[1]!.rotation.z = 1.5;
     vrm.update(0); vrm.scene.updateMatrixWorld(true);
@@ -92,7 +112,7 @@ describe('真实 Usagi 资源的无界面验证', () => {
     for (const [i, bone] of (['leftHand', 'rightHand'] as const).entries()) {
       const hand = world(bone, true);
       // Raised clearly above rest and level with the neck (the head is far too big to reach over).
-      expect(hand.y - resting[i]!.y).toBeGreaterThan(height * 0.05); // rest is now at the notch (ARM_REST), so the lift is shorter
+      expect(hand.y - resting[i]!.y).toBeGreaterThan(height * 0.05);
       expect(hand.y).toBeGreaterThan(world('neck', true).y - height * 0.02);
       // Pokes out past the body/head outline at that height, so the front view shows it.
       expect(Math.abs(hand.x) - halfWidth(hand.y)).toBeGreaterThan(height * 0.025);

@@ -164,6 +164,10 @@ def render(args):
         raise ValueError("--prefix 必须是不含目录分隔符的文件名前缀")
     reset_scene()
     objects = import_model(args.input, allow_vrm=True)
+    if getattr(args, "original_transform", False):
+        from check_shape import normalize_original
+        original, _ = normalize_original(objects)
+        objects = [original]
     # VRM 可以带骨架，保留依赖；隐藏输入相机、灯光等辅助对象。
     for obj in bpy.context.scene.objects:
         if obj.type != "MESH":
@@ -254,6 +258,7 @@ def main():
     parser.add_argument("--out-dir", required=True)
     parser.add_argument("--size", type=positive_int, default=768)
     parser.add_argument("--prefix", default="preview")
+    parser.add_argument("--original-transform", action="store_true", help="原始 Tripo 使用与 prep 相同的平移、缩放及转向；保留五官和原网格")
     parser.add_argument("--landmarks", help="Blender 坐标 JSON；额外输出 front/left 红点标记图")
     render(parser.parse_args(script_args()))
 

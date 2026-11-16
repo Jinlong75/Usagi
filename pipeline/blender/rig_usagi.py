@@ -12,10 +12,12 @@ from pathlib import Path
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import addon_utils
+import bmesh
 import bpy
 from mathutils import Vector, Quaternion
 from common import import_model, reset_scene, run, script_args
 from prep_usagi import linear_color
+from cleanup_mesh import face_islands
 
 EAR_SPRING = dict(stiffness=1.6, gravity_power=0.15, gravity_dir=(0, 0, -1),
                   drag_force=0.45, hit_radius=0.012)  # Blender Z-up -> VRM (0,-1,0)
@@ -64,7 +66,8 @@ def make_armature(lm):
     ext.spec_version = "1.0"
     ext.vrm0.humanoid.initial_automatic_bone_assignment = False
     ext.vrm1.humanoid.human_bones.initial_automatic_bone_assignment = False
-    # Landmarks already define the rest T-pose; preserve it through export.
+    # Bones are measured inside the untouched Tripo mesh; no mesh T-pose
+    # deformation or pose baking. Preserve these rest coordinates through export.
     ext.vrm1.humanoid.pose = "restPositionPose"
     bpy.ops.object.mode_set(mode="EDIT")
     def bone(name, head, tail, parent=None):
@@ -118,11 +121,37 @@ def make_armature(lm):
     return arm
 
 
+def independent_tail_vertices(obj):
+    """Include the hidden Body-colored cap of the original detached tail.
+
+    Weld only a temporary topology copy at material seams. Do not weld the tail
+    to the body or alter either surface. All cap vertices must follow the same
+    Hips-parented Tail bone as the visible part.
+    """
+    bm = bmesh.new()
+    try:
+        bm.from_mesh(obj.data)
+        bmesh.ops.remove_doubles(bm, verts=list(bm.verts), dist=1e-7)
+        coordinates = set()
+        for island in face_islands(bm):
+            if len(island) >= len(bm.faces) * .05:
+                continue
+            center_y = sum(f.calc_center_median().y for f in island) / len(island)
+            tail_share = sum(obj.data.materials[f.material_index].name.split('.')[0] == "Tail"
+                             for f in island) / len(island)
+            if center_y > 0 and tail_share >= .5:
+                coordinates.update(tuple(v.co) for f in island for v in f.verts)
+        return {v.index for v in obj.data.vertices if tuple(v.co) in coordinates}
+    finally:
+        bm.free()
+
+
 def regions(obj, lm):
     """Disjoint semantic masks; Tail uses preserved 009 region membership."""
     tail_group = obj.vertex_groups.get("Tail")
     tail_ids = {v.index for v in obj.data.vertices if tail_group and
                 any(g.group == tail_group.index and g.weight > .5 for g in v.groups)}
+    tail_ids.update(independent_tail_vertices(obj))
     result = []
     for v in obj.data.vertices:
         p = v.co

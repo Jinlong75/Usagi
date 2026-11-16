@@ -40,12 +40,20 @@ fi
 PREP_TEMP=$(mktemp -d "$MODEL_DIR/.prep-XXXXXX")
 trap 'rm -rf "$PREP_TEMP"' EXIT HUP INT TERM
 "$BLENDER" -b --factory-startup --python-exit-code 1 --python "$PIPELINE_DIR/blender/prep_usagi.py" -- \
-    --in Material/tripo/usagi_3d.glb --out "$MODEL_DIR/usagi_base.glb" \
+    --in Material/tripo/usagi3d2.glb --out "$MODEL_DIR/usagi_base.glb" \
     --landmarks "$MODEL_DIR/usagi_landmarks.json" --report "$MODEL_DIR/usagi_prep.report.json"
 "$BLENDER" -b --factory-startup --python-exit-code 1 --python "$PIPELINE_DIR/blender/render_preview.py" -- \
     --in "$MODEL_DIR/usagi_base.glb" --out-dir "$MODEL_DIR/preview" --landmarks "$MODEL_DIR/usagi_landmarks.json"
 "$BLENDER" -b --factory-startup --python-exit-code 1 --python "$PIPELINE_DIR/blender/prep_usagi.py" -- \
-    --in Material/tripo/usagi_3d.glb --out "$PREP_TEMP/smoothed.glb" --smooth-waist on \
+    --in Material/tripo/usagi3d2.glb --out "$PREP_TEMP/smoothed.glb" --smooth-waist on \
     --landmarks "$PREP_TEMP/landmarks.json" --report "$PREP_TEMP/report.json"
 "$BLENDER" -b --factory-startup --python-exit-code 1 --python "$PIPELINE_DIR/blender/render_preview.py" -- \
     --in "$PREP_TEMP/smoothed.glb" --out-dir "$MODEL_DIR/preview_nosmooth"
+
+# Keep original sculptures and geometry, align with exactly the same normalized
+# coordinates and camera setup as the prepared model.
+"$BLENDER" -b --factory-startup --python-exit-code 1 --python "$PIPELINE_DIR/blender/render_preview.py" -- \
+    --in Material/tripo/usagi3d2.glb --original-transform --out-dir "$MODEL_DIR/preview_original"
+"$BLENDER" -b --factory-startup --python-exit-code 1 --python "$PIPELINE_DIR/blender/check_shape.py" -- \
+    --original Material/tripo/usagi3d2.glb --prepared "$MODEL_DIR/usagi_base.glb" \
+    --report "$MODEL_DIR/usagi_shape.report.json"
