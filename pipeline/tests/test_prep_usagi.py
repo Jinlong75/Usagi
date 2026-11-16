@@ -19,7 +19,8 @@ from mathutils import Matrix, Vector
 from common import export_glb, import_model, reset_scene
 from cleanup_mesh import face_islands
 from prep_usagi import (ear_inner_region, tail_region, smooth_waist, waist_depth,
-                        prep, smooth_face, linear_color)
+                        prep, smooth_face, linear_color, assign_regions)
+from region_boundary import boundary_metrics
 
 
 def sphere(location, scale, segments=32, rings=16):
@@ -195,6 +196,69 @@ class PrepTests(unittest.TestCase):
             finally:
                 bpy.data.images.remove(base)
                 bpy.data.images.remove(overlay)
+
+    def assert_smooth_boundaries(self, obj, expected):
+        metrics = boundary_metrics(obj)
+        self.assertEqual(set(metrics), set(expected), metrics)
+        for label in expected:
+            self.assertEqual(len(metrics[label]), 1, metrics)
+            loop, = metrics[label]
+            self.assertTrue(loop["closed"], metrics)
+            self.assertLess(loop["max_turn_degrees"], 35, metrics)
+        print("014 boundary metrics: " + json.dumps(metrics), flush=True)
+
+    def test_08_synthetic_cut_ellipse_closed_and_smooth(self):
+        reset_scene()
+        # 三角格平面：旧面中心着色会沿格线产生台阶。
+        bm = bmesh.new()
+        rows = [[bm.verts.new((.025 + x * .0025, -.04, .69 + z * .0025))
+                 for x in range(61)] for z in range(129)]
+        for low, high in zip(rows, rows[1:]):
+            for x in range(60):
+                bm.faces.new((low[x], low[x+1], high[x+1], high[x]))
+        mesh = bpy.data.meshes.new("EllipseGrid")
+        bm.to_mesh(mesh)
+        bm.free()
+        obj = bpy.data.objects.new("EllipseGrid", mesh)
+        bpy.context.collection.objects.link(obj)
+        sections = [{"center": Vector((.1, 0, .7 + i * .075)), "half_width": .05}
+                    for i in range(5)]
+        assign_regions(obj, {"height": 1}, {"l": sections})
+        self.assert_smooth_boundaries(obj, {"ear_l"})
+
+    def test_09_real_product_boundaries(self):
+        product = BLENDER_DIR.parents[1] / "assets/model/usagi_base.glb"
+        if not product.exists():
+            self.skipTest("正式产物尚未生成")
+        reset_scene()
+        obj, = import_model(product)
+        self.assert_smooth_boundaries(obj, {"ear_l", "ear_r", "tail"})
+        bm = bmesh.new()
+        try:
+            bm.from_mesh(obj.data)
+            bmesh.ops.remove_doubles(bm, verts=list(bm.verts), dist=1e-7)
+            self.assertEqual(len(face_islands(bm)), 1)
+            self.assertFalse(any(face.calc_area() <= 1e-14 for face in bm.faces))
+        finally:
+            bm.free()
+        # 同时从正式原始模型临时重建，防止已提交的旧 GLB 掩盖分区代码回退。
+        source = BLENDER_DIR.parents[1] / "Material/tripo/usagi_3d.glb"
+        regenerated = self.root / "real-regenerated.glb"
+        prep(Namespace(input=str(source), output=str(regenerated),
+                       landmarks=str(self.root / "real-landmarks.json"),
+                       report=str(self.root / "real-report.json"),
+                       smooth_waist="off", waist_iterations=100))
+        reset_scene()
+        obj, = import_model(regenerated)
+        self.assert_smooth_boundaries(obj, {"ear_l", "ear_r", "tail"})
+        bm = bmesh.new()
+        try:
+            bm.from_mesh(obj.data)
+            bmesh.ops.remove_doubles(bm, verts=list(bm.verts), dist=1e-7)
+            self.assertEqual(len(face_islands(bm)), 1)
+            self.assertFalse(any(face.calc_area() <= 1e-14 for face in bm.faces))
+        finally:
+            bm.free()
 
     def test_07_face_sphere_local_bump(self):
         reset_scene()

@@ -40,13 +40,13 @@
   },
   "rotation_degrees": -90.0,
   "front_before": [
-    0.9999969601631165,
-    -0.002473403699696064,
+    0.9999970197677612,
+    -0.0024733846075832844,
     0.0
   ],
   "front_after": [
-    -0.002473447471857071,
-    -0.9999969601631165,
+    -0.0024734283797442913,
+    -0.9999970197677612,
     0.0
   ],
   "orientation_feature_islands": 4,
@@ -74,10 +74,47 @@
     "volume_after": 0.13259153089428127,
     "method": "radial Laplacian relaxation toward angular Dirichlet harmonic profiles; signed-volume compensation with sin^2 boundary taper; Z/azimuth/arms pinned; depth vs interpolated fitted boundary ellipses"
   },
+  "region_boundary": {
+    "faces_before_tail_subdivision": 31616,
+    "faces_before_cut": 42902,
+    "faces_after_cut": 44286,
+    "tail_halfspace_blend_m": 0.002,
+    "connected_components": 1,
+    "zero_area_faces": 0,
+    "method": "shared-edge exact implicit zero crossing, triangle face split; continuous interpolated normal and front/back halfspaces",
+    "faces_before_subdivision": 7982,
+    "faces_after_subdivision": 31457,
+    "ear_faces_before_subdivision": 1565,
+    "ear_faces_after_subdivision": 25040,
+    "boundaries": {
+      "ear_l": [
+        {
+          "segments": 217,
+          "closed": true,
+          "max_turn_degrees": 26.345289553357293
+        }
+      ],
+      "ear_r": [
+        {
+          "segments": 213,
+          "closed": true,
+          "max_turn_degrees": 25.923766136277248
+        }
+      ],
+      "tail": [
+        {
+          "segments": 262,
+          "closed": true,
+          "max_turn_degrees": 23.882343829218204
+        }
+      ]
+    },
+    "ear_inner_max_face_normal_y": -0.598377525806427
+  },
   "material_face_counts": {
-    "Body": 28591,
-    "EarInner": 2272,
-    "Tail": 594
+    "Body": 31858,
+    "EarInner": 2706,
+    "Tail": 9722
   },
   "colors_srgb": {
     "Body": "#FFF1C1",
@@ -90,8 +127,8 @@
     "Tail": 4
   },
   "vertex_groups_storage": "_USAGI_REGION point attribute bitmask + usagi_vertex_groups extras; common.import_model restores Blender groups",
-  "vertices": 15810,
-  "faces": 31457,
+  "vertices": 22145,
+  "faces": 44286,
   "profile": {
     "height": 1.0,
     "head_top": 0.7132388949394226,

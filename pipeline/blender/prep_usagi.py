@@ -311,30 +311,125 @@ def ear_sections(points, profile, side):
     return sections
 
 
-def ear_inner_region(point, normal, sections):
-    """耳中轴的长椭圆：横向半宽 60%，两侧各留约 20%；只选前侧。"""
+def ear_inner_field(point, normal, sections):
+    """同一长椭圆的连续隐式量；保留 60%/.43/.51/.08..94 和前侧限制。"""
     z0, z1 = sections[0]["center"].z, sections[-1]["center"].z
     t = (point.z - z0) / max(z1 - z0, 1e-8)
-    if not .08 < t < .94 or normal.y >= -.25:
-        return False
-    index = min(int(t * 4), 3)
-    alpha = t * 4 - index
+    sample = max(0, min(1, t))
+    index = min(int(sample * 4), 3)
+    alpha = sample * 4 - index
     a, b = sections[index:index + 2]
     center = a["center"].lerp(b["center"], alpha)
     width = a["half_width"] * (1 - alpha) + b["half_width"] * alpha
-    ellipse = 1 - ((t - .51) / .43) ** 2
-    return ellipse > 0 and abs(point.x - center.x) < width * .60 * math.sqrt(ellipse) and point.y < center.y
+    ellipse = ((point.x - center.x) / (width * .60)) ** 2 + ((t - .51) / .43) ** 2 - 1
+    return max(ellipse, .08 - t, t - .94, (point.y - center.y) / width, normal.y + .25)
 
 
-def tail_region(point, normal, profile):
-    """背后下躯干中央的凸球；前侧、左右躯干及臀部不属于尾巴。"""
+def ear_inner_region(point, normal, sections):
+    return ear_inner_field(point, normal, sections) < 0
+
+
+def tail_field(point, normal, profile):
+    """球面距离与背面半空间的连续交集；未拟合球面时沿用原回退区间。"""
     h = profile["height"]
     if "tail_center" in profile:
         center = Vector(profile["tail_center"])
         radius = profile["tail_radius"]
-        return (point - center).length < radius * 1.15 and point.y > center.y - radius * .25
-    return (.13 * h < point.z < .27 * h and abs(point.x) < .105 * h
-            and point.y > .205 * h and normal.y > .15)
+        sphere = (point - center).length - radius * 1.15
+        back = center.y - radius * .25 - point.y
+        # 紧支撑 smooth-max：保留球内/背面两个约束，只圆滑它们相交处的尖角。
+        # TODO(lead): 对照尾巴特写确认交界最多 0.5 mm 内收可接受。
+        blend = .002 * h
+        overlap = max(blend - abs(sphere - back), 0)
+        return max(sphere, back) + overlap ** 2 / (4 * blend)
+    return max(.13 * h - point.z, point.z - .27 * h, abs(point.x) - .105 * h,
+               .205 * h - point.y, (.15 - normal.y) * h)
+
+
+def tail_region(point, normal, profile):
+    return tail_field(point, normal, profile) < 0
+
+
+def cut_isocontour(bm, field, material_index):
+    """共享边只切一次，再在原三角面内连接两交点，不复制接缝顶点。
+
+    顶点隐式量异号时沿原边二分求零，
+    法线也沿边连续插值；所有新点仍在原表面上。
+    """
+    values = {v: field(v.co, v.normal) for v in bm.verts}
+    intersections = {}
+    original_faces = list(bm.faces)
+    for edge in list(bm.edges):
+        a, b = edge.verts
+        fa, fb = values[a], values[b]
+        if (fa < 0) == (fb < 0):
+            continue
+        lo, hi = 0.0, 1.0
+        for _ in range(32):
+            mid = (lo + hi) / 2
+            value = field(a.co.lerp(b.co, mid), a.normal.lerp(b.normal, mid))
+            if (value < 0) == (fa < 0):
+                lo = mid
+            else:
+                hi = mid
+        factor = (lo + hi) / 2
+        faces = list(edge.link_faces)
+        if factor < 1e-5:
+            vert = a
+        elif factor > 1 - 1e-5:
+            vert = b
+        else:
+            _, vert = bmesh.utils.edge_split(edge, a, factor)
+        values[vert] = 0.0
+        for face in faces:
+            intersections.setdefault(face, set()).add(vert)
+    for face in original_faces:
+        points = intersections.get(face, set())
+        if len(points) == 2:
+            a, b = points
+            if not any(b in edge.verts for edge in a.link_edges):
+                bmesh.utils.face_split(face, a, b)
+    # 交点处非线性场沿弦会略微向内弯：用原三角面线性场的中心值，
+    # 避免瘦长外侧碎片的几何中心落回理想曲线内而重新染色。
+    for face in bm.faces:
+        samples = [values[v] for v in face.verts if abs(values[v]) > 1e-10]
+        if samples and sum(samples) / len(samples) < 0:
+            face.material_index = material_index
+    bm.normal_update()
+
+
+def split_region_boundaries(obj, profile, ears):
+    bm = bmesh.new()
+    try:
+        bm.from_mesh(obj.data)
+        # Marching triangles has at most two intersections per face.
+        bmesh.ops.triangulate(bm, faces=list(bm.faces))
+        before = len(bm.faces)
+        # 尾根边界局部线性细分，不改原表面。
+        tail_edges = [e for e in bm.edges if all(
+            abs(tail_field(v.co, v.normal, profile)) < .025 * profile["height"]
+            for v in e.verts)]
+        bmesh.ops.subdivide_edges(bm, edges=tail_edges, cuts=3, use_grid_fill=True)
+        bmesh.ops.triangulate(bm, faces=list(bm.faces))
+        after_local = len(bm.faces)
+        bm.normal_update()
+        for sections in ears.values():
+            cut_isocontour(bm, lambda p, n: ear_inner_field(p, n, sections), 1)
+        cut_isocontour(bm, lambda p, n: tail_field(p, n, profile), 2)
+        bmesh.ops.dissolve_degenerate(bm, edges=list(bm.edges), dist=1e-8)
+        remove_loose(bm)
+        bmesh.ops.triangulate(bm, faces=list(bm.faces))
+        bm.normal_update()
+        report = {"faces_before_tail_subdivision": before, "faces_before_cut": after_local, "faces_after_cut": len(bm.faces),
+                  "tail_halfspace_blend_m": .002 * profile["height"],
+                  "connected_components": len(face_islands(bm)),
+                  "zero_area_faces": sum(f.calc_area() <= 1e-14 for f in bm.faces),
+                  "method": "shared-edge exact implicit zero crossing, triangle face split; continuous interpolated normal and front/back halfspaces"}
+        bm.to_mesh(obj.data)
+        obj.data.update()
+        return report
+    finally:
+        bm.free()
 
 
 def classify_region(point, normal, profile, ears):
@@ -363,12 +458,14 @@ def assign_regions(obj, profile, ears):
         bsdf.inputs["Base Color"].default_value = mat.diffuse_color
         bsdf.inputs["Roughness"].default_value = 1
         obj.data.materials.append(mat)
+    boundary_cut = split_region_boundaries(obj, profile, ears)
+    obj["usagi_boundary_cut"] = boundary_cut
     groups = {name: obj.vertex_groups.new(name=name) for name in COLORS}
     membership = {name: set() for name in COLORS}
     counts = dict.fromkeys(COLORS, 0)
     names = list(COLORS)
     for face in obj.data.polygons:
-        name = classify_region(face.center, face.normal, profile, ears)
+        name = names[face.material_index]
         face.material_index = names.index(name)
         face.use_smooth = True
         membership[name].update(face.vertices)
@@ -460,8 +557,12 @@ def prep(args):
                              trunk_limit=profile["trunk_width"], enabled=args.smooth_waist == "on",
                              excluded=tail_verts)
         # 增加耳朵采样，仅线性细分、完全不改变原轮廓，支持平涂长椭圆边界。
+        subdivision_before = len(bm.faces)
+        ear_faces_before = sum(all(v.co.z > profile["head_top"] for v in f.verts) for f in bm.faces)
         ear_edges = [e for e in bm.edges if all(v.co.z > profile["head_top"] for v in e.verts)]
         bmesh.ops.subdivide_edges(bm, edges=ear_edges, cuts=3, use_grid_fill=True)
+        subdivision_after = len(bm.faces)
+        ear_faces_after = sum(all(v.co.z > profile["head_top"] for v in f.verts) for f in bm.faces)
 
         bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
         bm.to_mesh(obj.data)
@@ -471,13 +572,22 @@ def prep(args):
     ears = {suffix: ear_sections([v.co for v in obj.data.vertices], profile, side)
             for suffix, side in (("l", 1), ("r", -1))}
     counts = assign_regions(obj, profile, ears)
+    from region_boundary import boundary_metrics
+    boundary_report = dict(obj["usagi_boundary_cut"])
+    boundary_report.update(faces_before_subdivision=subdivision_before,
+                           faces_after_subdivision=subdivision_after,
+                           ear_faces_before_subdivision=ear_faces_before,
+                           ear_faces_after_subdivision=ear_faces_after,
+                           boundaries=boundary_metrics(obj),
+                           ear_inner_max_face_normal_y=max(
+                               f.normal.y for f in obj.data.polygons if f.material_index == 1))
     landmarks = measure_landmarks(obj, profile, ears)
     # 报告只写仓库相对路径/文件名，不将本机私有路径写进提交产物。
     cleanup.pop("input", None)
     cleanup.pop("output", None)
     report = {"input": Path(args.input).name, "output": Path(args.output).name,
               "cleanup": cleanup, **orientation, "face": face_report, "waist": waist,
-              "material_face_counts": counts, "colors_srgb": {k: "#" + v for k, v in COLORS.items()},
+              "region_boundary": boundary_report, "material_face_counts": counts, "colors_srgb": {k: "#" + v for k, v in COLORS.items()},
               "vertex_groups": REGION_BITS, "vertex_groups_storage": "_USAGI_REGION point attribute bitmask + usagi_vertex_groups extras; common.import_model restores Blender groups",
               "vertices": len(obj.data.vertices), "faces": len(obj.data.polygons),
               "profile": profile}
