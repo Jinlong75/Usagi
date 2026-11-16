@@ -11,6 +11,8 @@ const host = vi.hoisted(() => ({
   events: new Map<string, (...args: any[]) => any>(),
   listeners: new Map<string, (() => void)[]>(),
   menu: [] as any[],
+  bridge: undefined as import('../src/shared/types').PetBridge | undefined,
+  rendererOn: vi.fn(), rendererOff: vi.fn(),
   bounds: { x: 340, y: 90, width: 320, height: 420 },
   area: { x: 0, y: 0, width: 1000, height: 800 },
   visible: false,
@@ -49,7 +51,8 @@ vi.mock('electron', () => {
     loadFile = vi.fn();
     loadURL = vi.fn();
   }
-  return { BrowserWindow, safeStorage: { isAsyncEncryptionAvailable: async () => false },
+  return { BrowserWindow, contextBridge: { exposeInMainWorld: (_name: string, bridge: import('../src/shared/types').PetBridge) => { host.bridge = bridge; } },
+    ipcRenderer: { on: host.rendererOn, removeListener: host.rendererOff }, safeStorage: { isAsyncEncryptionAvailable: async () => false },
     app: { commandLine: host.commandLine, whenReady: () => ({ then: (start: () => Promise<void>) => {
       host.start = start; return { catch: vi.fn() };
     } }), on: vi.fn(), getPath: () => '/unused-fixture', dock: { hide: vi.fn() } },
@@ -92,6 +95,23 @@ describe('可见性与移动 IPC（原生窗口替身，无 GUI）', () => {
     await boot();
   });
   afterEach(() => { Object.defineProperty(process, 'platform', platform); host.send.mockReset(); vi.clearAllTimers(); vi.useRealTimers(); vi.unstubAllGlobals(); });
+
+  it('preload 的 onActivity 订阅并正确解除 pet:activity，不传出 Electron event', async () => {
+    await import('../src/preload/index');
+    const callback = vi.fn();
+    const unsubscribe = host.bridge!.onActivity(callback);
+    const [channel, listener] = host.rendererOn.mock.calls.at(-1)!;
+    expect(channel).toBe('pet:activity');
+    listener({ sender: 'fixture' }, 'jumpRope'); expect(callback).toHaveBeenCalledExactlyOnceWith('jumpRope');
+    unsubscribe(); expect(host.rendererOff).toHaveBeenLastCalledWith(channel, listener);
+  });
+
+  it('玩耍子菜单通过 pet:activity 分别发送跳绳和吹泡泡', () => {
+    const menu = host.menu.find(item => item.label === '玩耍');
+    expect(menu.submenu.map((item: any) => item.label)).toEqual(['跳绳', '吹泡泡']);
+    menu.submenu[0].click(); expect(host.send).toHaveBeenLastCalledWith('pet:activity', 'jumpRope');
+    menu.submenu[1].click(); expect(host.send).toHaveBeenLastCalledWith('pet:activity', 'blowBubbles');
+  });
 
   it('Windows 正式窗口禁用后台降频；blur/focus 即使没有拖动也重设穿透，外部窗口激活后轮询兜底', async () => {
     Object.defineProperty(process, 'platform', { value: 'win32' });

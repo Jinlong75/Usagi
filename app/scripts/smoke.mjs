@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import { runSmokeProcess } from './smoke-process.mjs';
 
-export const BEHAVIORS = ['idle', 'walk', 'happy', 'surprised', 'shout', 'stretch', 'drag', 'ear-shake'];
+export const BEHAVIORS = ['idle', 'walk', 'happy', 'surprised', 'shout', 'stretch', 'drag', 'ear-shake', 'jumpRope', 'blowBubbles', 'napPillow'];
 export function validUiReport(report) { return JSON.stringify(report.ui) === JSON.stringify(['bubble', 'chat', 'settings']); }
 export function validSoundReport(report) {
   return typeof report.sounds?.directory === 'string' && !!report.sounds.directory &&
@@ -16,6 +16,8 @@ export function validBehaviorReport(report) {
     Array.isArray(report.behaviors) && JSON.stringify(report.behaviors) === JSON.stringify(BEHAVIORS) &&
     BEHAVIORS.every((name) => Number.isFinite(report.behaviorOpaqueRatios?.[name]) &&
       report.behaviorOpaqueRatios[name] >= 0.02 && report.behaviorOpaqueRatios[name] <= 0.95) &&
+    ['handles', 'rope', 'wand', 'bubble', 'pillow'].every(name => Number.isFinite(report.propOpaqueRatios?.[name]) && report.propOpaqueRatios[name] > 0 && report.propOpaqueRatios[name] <= 1) &&
+    ['jumpRope', 'blowBubbles', 'napPillow'].every(name => report.propFraming?.[name] === true) &&
     ['happy', 'shout', 'stretch'].every((name) => report.behaviorTopTransparent?.[name] === true);
 }
 

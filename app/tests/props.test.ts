@@ -1,0 +1,122 @@
+import { describe, expect, it, vi } from 'vitest';
+import { BackSide, Box3, Mesh, MeshBasicMaterial, Object3D, Vector3 } from 'three';
+import { createProp, PROP_COLORS, PropRig } from '../src/renderer/props';
+import { BUBBLE_BLOWS, MOTION_SECONDS, neutralPose, ROPE_APEX, ROPE_PERIOD, ROPE_START, sampleMotion } from '../src/renderer/motion';
+import { frameBounds } from '../src/renderer/motion/framing';
+
+describe('道具几何、驱动与释放', () => {
+  it.each(['handles', 'rope', 'wand', 'bubble', 'pillow'] as const)('%s 使用限定平涂与 3.5%% 反壳描边，所有 geometry/material 恰好释放一次', name => {
+    const prop = createProp(name);
+    const geometries = new Set<import('three').BufferGeometry>();
+    const materials = new Set<MeshBasicMaterial>();
+    prop.group.traverse(object => {
+      if (!(object instanceof Mesh)) return;
+      geometries.add(object.geometry);
+      const material = object.material as MeshBasicMaterial; materials.add(material);
+      expect(Object.values(PROP_COLORS)).toContain(`#${material.color.getHexString()}`);
+      expect(material.toneMapped).toBe(false);
+      if (name === 'bubble' && material.side !== BackSide) { expect(material.opacity).toBe(0.45); expect(material.depthWrite).toBe(true); }
+      if (material.side === BackSide) {
+        expect(object.scale.toArray()).toEqual([1.035, 1.035, 1.035]);
+        expect(material.color.getHexString()).toBe('2b1a14');
+      }
+    });
+    expect(geometries.size).toBeGreaterThan(0);
+    const spies = [...geometries, ...materials].map(resource => vi.spyOn(resource, 'dispose'));
+    prop.apply({ name, position: [0.1, 0.2, 0.3], rotation: [0.2, 0, 0], scale: [2, 3, 4], opacity: 0.3, visible: false });
+    expect(prop.group.position.toArray()).toEqual([0.1, 0.2, 0.3]);
+    expect(prop.group.rotation.x).toBe(0.2); expect(prop.group.scale.toArray()).toEqual([2, 3, 4]);
+    expect(prop.group.visible).toBe(false); materials.forEach(material => expect(material.opacity).toBe(0.3));
+    prop.dispose(); prop.dispose(); spies.forEach(spy => expect(spy).toHaveBeenCalledTimes(1));
+  });
+  it('换动作、隐藏和 reload 释放旧道具，按 H 和模型脚底定位，不残留 Group', () => {
+    const root = new Object3D(); root.position.set(3, 4, 5); root.updateMatrixWorld(true);
+    const props = new PropRig(root, 2, new Box3(new Vector3(2, 4, 4), new Vector3(4, 6, 6)));
+    props.apply(sampleMotion('napPillow', 2).props);
+    const pillow = root.getObjectByName('prop:pillow')!;
+    const mesh = pillow.children[0]!.children[0] as Mesh;
+    const dispose = vi.spyOn(mesh.geometry, 'dispose');
+    expect(pillow.getWorldPosition(new Vector3()).toArray()).toEqual([3, 4.36, 5.6]);
+    props.apply(sampleMotion('jumpRope', 2).props);
+    expect(dispose).toHaveBeenCalledOnce(); expect(root.getObjectByName('prop:pillow')).toBeUndefined();
+    expect(root.getObjectByName('prop:rope')).toBeDefined();
+    props.apply(); expect(root.children[0]!.children).toHaveLength(0);
+    props.dispose(); expect(root.children).toHaveLength(0);
+  });
+  it('像素证据比较真实合成帧，透明泡泡也能检查，测量后恢复显隐与画面', () => {
+    const root = new Object3D(); const props = new PropRig(root, 1, new Box3(new Vector3(), new Vector3(1, 1, 1)));
+    props.apply({ a: { name: 'bubble', position: [0, 0, 0] }, b: { name: 'wand', position: [0, 0, 0] } });
+    const render = vi.fn(() => new Uint8Array([root.getObjectByName('prop:bubble')!.visible ? 10 : 0,
+      root.getObjectByName('prop:wand')!.visible ? 20 : 0, 0, 100, 0, 0, 0, 0]));
+    expect(props.visiblePixelRatios(render)).toEqual({ bubble: 0.5, wand: 0.5 });
+    expect(root.getObjectByName('prop:bubble')!.visible).toBe(true);
+    expect(render).toHaveBeenCalledTimes(4);
+    props.dispose();
+  });
+});
+
+describe('三种互动动作', () => {
+  it.each(['jumpRope', 'blowBubbles', 'napPillow'] as const)('%s 有限片段首尾 neutral 且没有可见道具', name => {
+    for (const t of [0, MOTION_SECONDS[name], MOTION_SECONDS[name] + 1]) expect(sampleMotion(name, t)).toEqual(neutralPose());
+  });
+  it('六圈绳最低点恰在腾空顶点 0.06H，包含落地压缩与结束 happy 半秒', () => {
+    for (let cycle = 0; cycle < 6; cycle++) {
+      const t = ROPE_START + cycle * ROPE_PERIOD + ROPE_APEX;
+      const pose = sampleMotion('jumpRope', t);
+      const angle = pose.props!.rope!.rotation![0];
+      expect(Math.cos(angle)).toBeCloseTo(1);
+      expect(pose.position[1]).toBeGreaterThan(0.03); expect(pose.position[1]).toBeCloseTo(0.06);
+      expect(sampleMotion('jumpRope', t, { modelHeight: 2 }).position[1]).toBeCloseTo(0.12);
+      const landed = sampleMotion('jumpRope', ROPE_START + cycle * ROPE_PERIOD + 0.46);
+      expect(landed.position[1]).toBe(0); expect(landed.scale[1]).toBeCloseTo(0.85);
+    }
+    for (let cycle = 0; cycle < 6; cycle++) expect(sampleMotion('jumpRope', ROPE_START + cycle * ROPE_PERIOD + 0.59).position[1]).toBe(0);
+    // At the smoke timestamp the arc faces +Z, in front of the character.
+    expect(Math.sin(sampleMotion('jumpRope', 2.4).props!.rope!.rotation![0])).toBeLessThan(-0.9);
+    expect(sampleMotion('jumpRope', 4.81).expressions.happy).toBe(1);
+    expect(sampleMotion('jumpRope', 5.29).expressions.happy).toBe(1);
+    expect(sampleMotion('jumpRope', 5.31).expressions.happy).toBeUndefined();
+  });
+  it('每次吹气 0.4 秒有 ou，两个批次各三个，存活 1.5 秒后彻底消失', () => {
+    for (const start of BUBBLE_BLOWS) {
+      const pose = sampleMotion('blowBubbles', start + 0.35);
+      const bubbles = Object.values(pose.props!).filter(prop => prop.name === 'bubble');
+      expect(bubbles).toHaveLength(3); expect(pose.expressions.ou).toBe(1);
+      expect(sampleMotion('blowBubbles', start + 0.41).expressions.ou).toBeUndefined();
+      bubbles.forEach(bubble => { expect(bubble.scale![0]).toBeGreaterThan(0); expect(bubble.scale![0]).toBeLessThanOrEqual(0.03); });
+      const before = sampleMotion('blowBubbles', start + 1.79).props!;
+      const after = sampleMotion('blowBubbles', start + 1.81).props!;
+      expect(Object.values(before).filter(prop => prop.name === 'bubble')).toHaveLength(1);
+      expect(Object.values(after).filter(prop => prop.name === 'bubble')).toHaveLength(0);
+    }
+  });
+  it('napPillow 无限循环连续，2 秒下点 0.12rad，4 秒回，呼吸幅度双倍', () => {
+    for (const cycle of [0, 1, 1000, 1_000_000]) {
+      expect(sampleMotion('napPillow', cycle * 4, { loop: true })).toEqual(sampleMotion('napPillow', 0, { loop: true }));
+      const before = sampleMotion('napPillow', cycle * 4 + 3.999999, { loop: true });
+      const after = sampleMotion('napPillow', cycle * 4 + 4.000001, { loop: true });
+      expect(before.props).toEqual(after.props); expect(before.expressions).toEqual({ relaxed: 1 });
+      expect(Math.abs(before.bones.head![0] - after.bones.head![0])).toBeLessThan(1e-6);
+      expect(Math.abs(before.bones.chest![0] - after.bones.chest![0])).toBeLessThan(1e-6);
+    }
+    expect(sampleMotion('napPillow', 2, { loop: true }).bones.head![0]).toBeCloseTo(0.12);
+    expect(sampleMotion('napPillow', 1, { loop: true }).bones.chest![0]).toBeCloseTo(0.07);
+  });
+  it('取景包含完整绳旋转和所有漂浮泡泡的包围盒，缩放窗口也保留边距', () => {
+    const neutral = new Box3(new Vector3(-0.35, 0, -0.3), new Vector3(0.35, 1, 0.3));
+    const root = new Object3D(); const props = new PropRig(root, 1, neutral);
+    const bounds: Box3[] = [];
+    for (const name of ['jumpRope', 'blowBubbles', 'napPillow'] as const) {
+      for (let t = 0.025; t < MOTION_SECONDS[name]; t += 0.025) {
+        const pose = sampleMotion(name, t); props.apply(pose.props);
+        root.position.set(...pose.position); root.scale.set(...pose.scale);
+        bounds.push(new Box3().setFromObject(root, true));
+      }
+    }
+    for (const aspect of [0.4, 320 / 420, 2]) {
+      const frame = frameBounds(neutral, bounds, aspect);
+      expect(bounds.every(box => box.min.x > frame.left && box.max.x < frame.right && box.min.y > frame.bottom && box.max.y < frame.top)).toBe(true);
+    }
+    props.dispose();
+  });
+});

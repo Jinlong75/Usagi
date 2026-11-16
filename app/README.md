@@ -179,12 +179,31 @@ TODO(lead): 门禁生成截图后核对五官贴片、耳朵碰撞与动作观�
 
 ### 作息与问候
 
-默认每 30 秒读取本机时钟与系统空闲秒数。早上 06:00–10:00 问好和问早饭，中午 11:30–13:00 问午饭，13:00–14:00 午睡，17:30–19:00 问晚饭；从 22:30 起每 30 分钟催睡一次，最多三次，00:00–06:00 睡觉。设置页“作息”可改时间、关闭整个调度或开启免打扰，开始时间等于结束时间表示关闭该时段。托盘和角色右键菜单也能切换免打扰。免打扰只抑制作息气泡和对应叫声，仍切换休息状态；关闭作息则不发送状态事件。午睡和睡觉期间暂停自言自语，本任务尚不改变角色动作与眼睛。
+默认每 30 秒读取本机时钟与系统空闲秒数。早上 06:00–10:00 问好和问早饭，中午 11:30–13:00 问午饭，13:00–14:00 午睡，17:30–19:00 问晚饭；从 22:30 起每 30 分钟催睡一次，最多三次，00:00–06:00 睡觉。设置页“作息”可改时间、关闭整个调度或开启免打扰，开始时间等于结束时间表示关闭该时段。托盘和角色右键菜单也能切换免打扰。免打扰只抑制作息气泡和对应叫声，仍切换休息状态；关闭作息则不发送状态事件。午睡和睡觉期间暂停自言自语，角色抱枕打盹并停止眨眼。
 
 用户空闲达到 60 秒，或桌宠隐藏、拖动、聊天/设置窗口打开、聊天气泡占用时，问候推迟到条件解除；错过整个时段不补。离开电脑至少 30 分钟后恢复活动会招呼，间隔至少两小时，午睡/睡觉期间不招呼。早上问好默认附带天气，可在作息中取消“早上说天气”。IP 自动定位按 ip.sb、geojs.io 顺序回退，再从 Open-Meteo 查询当天预报，无需账号；设置页显示缓存中的城市。定位缓存 24 小时，天气缓存 1 小时，同存于 userData/weather-cache.json，采用临时文件加 rename 原子写入。每次网络请求最多 5 秒，问好最多等 3 秒，失败或超时保留原句、不弹提示；启动前 5 分钟内进入早上时段会预取一次。使用 Electron net.fetch 跟随系统代理，关闭天气后不发请求。
 
 早上、中午、晚饭的问话气泡可点击，10 秒后消失。点击会把括号里的中文原文作为 assistant 消息存入当前聊天记录，再打开聊天窗口，用户可直接回答；已有聊天窗口通过 chat:history-changed 重读记录并保留输入草稿，读取完成前暂时禁止发送。普通气泡仍穿透鼠标。未填 Key 时沿用聊天发送后的设置提示。
 
-去重文件位于 userData/routine-state.json，采用临时文件加 rename 原子写入，损坏文件改名为 routine-state.broken-时间戳.json。逻辑日以本地 05:00 为界，跨越该边界的一段连续睡眠仍只说一次晚安，重启不会重复。主进程 Routine 注入 now、idleSeconds、blocked、weatherLine、state、show、sound；天气最多等 3 秒。preload 的 onRoutine 订阅 routine:state（nap、sleep、awake），角色渲染层留待动作任务接入。
+去重文件位于 userData/routine-state.json，采用临时文件加 rename 原子写入，损坏文件改名为 routine-state.broken-时间戳.json。逻辑日以本地 05:00 为界，跨越该边界的一段连续睡眠仍只说一次晚安，重启不会重复。主进程 Routine 注入 now、idleSeconds、blocked、weatherLine、state、show、sound；天气最多等 3 秒。preload 的 onRoutine 订阅 routine:state（nap、sleep、awake），角色渲染层据此切换抱枕打盹或醒来伸展。
 
 本任务聚焦自测：`npm --prefix app test -- tests/routine.test.ts tests/ui.test.ts tests/ui-ipc.test.ts tests/config.test.ts tests/settings-renderer.test.ts tests/renderer-cursor.test.ts tests/chat/service.test.ts tests/chat/renderer.test.ts`。完整 typecheck/test/smoke 由门禁运行，设置截图沿用 `AR_GATE_ARTIFACT_DIR/smoke-settings.png`（默认 `app/smoke-out/smoke-settings.png`），新增作息卡片可滚动查看。
+
+
+### 道具互动（024）
+
+角色右键和托盘菜单的“玩耍”可立即播放“跳绳”（6.5 秒）或“吹泡泡”（5 秒），会取消当前移动/动作，拖动期间不接管。两项也进入随机动作池，每项权重 0.5，原四项各 1，只排除上次动作。跳绳六圈每圈 0.6 秒，绳过脚底与身体 0.06H 腾空顶点同相，最后落地后开心半秒，片段结束播放现有 click_shout。
+
+道具实现位于 `src/renderer/props/`，`createProp(name)` 返回含 Group、apply、dispose 的句柄，`PropRig` 将 Pose.props 的位置、角度、缩放与透明度应用到模型局部空间；位置以模型高度 H 的分数表示。Usagi VRM 1 的正面为 +Z。道具使用限定单色 MeshBasicMaterial 和同几何体放大 3.5% 的深棕 BackSide 外壳。缺失道具立即释放几何与材质，隐藏、换模型和重新载入均清理。抱枕用缩放球体，泡泡以缩放完成出生与消失。
+
+| 事件 | 行为 |
+| --- | --- |
+| routine nap / sleep | 取消移动和随机动作，循环四秒抱枕打盹，relaxed 闭眼表情，呼吸幅度为待机两倍 |
+| 打盹时点击 | surprised + click_surprise，正常状态机保持清醒 60 秒；到期仍是 nap/sleep 才重新打盹 |
+| 打盹时拖动 | 道具隐藏并释放；放手后两秒重新打盹 |
+| routine awake | 伸懒腰一次后回正常状态机；拖动中收到则等放手 |
+| 休息时选择玩耍 | 立即播放并清醒 60 秒，随后按当前作息决定是否打盹 |
+
+取景测量补充完整一圈绳旋转/弹跳、泡泡漂浮和抱枕点头姿态，并把道具实际包围盒与角色蒙皮顶点求并集，沿用四边 4% 边距和耳朵余量。
+
+门禁冒烟新增 `smoke-jumpRope.png`、`smoke-blowBubbles.png`、`smoke-napPillow.png`，路径为 `AR_GATE_ARTIFACT_DIR`（默认 `app/smoke-out/`）。取样年龄分别为 2.4 秒（绳在前）、1.25 秒（三个泡泡已吹出）、2 秒（抱枕点头）。JSON 的 `propOpaqueRatios` 记录 handles、rope、wand、bubble、pillow 的可见像素占比：在同一冻结姿态下逐类隐藏道具重绘，比较真实合成帧 RGBA，仅计原帧 alpha > 0 且有变化的像素；这样包含角色遮挡和半透明泡泡，不依赖色差猜测。每项必须 > 0，`propFraming` 要求三个动作道具的全部包围盒顶点都位于视口内。完整 test/smoke 由门禁执行。

@@ -2,6 +2,7 @@ import { Box3, Vector3 } from 'three';
 import type { VRM } from '@pixiv/three-vrm';
 import { sampleMotion } from './index';
 import type { MotionRig, Pose } from './index';
+import { PropRig } from '../props';
 import { TURN_ANGLE } from '../behavior/machine';
 
 /** Pose extrema, sampled once before the first rendered frame. */
@@ -25,6 +26,10 @@ export function framingPoses(modelHeight = 1): Pose[] {
     pose.position = pose.position.map(value => value * modelHeight) as Pose['position'];
     if (pose.hipsY) pose.hipsY *= modelHeight;
   }
+  // Dense full rotations include rope, jumping root and landing scale together.
+  for (let i = 0; i <= 48; i++) poses.push(sampleMotion('jumpRope', 1.2 + i * 0.6 / 48, { modelHeight }));
+  for (let t = 0.1; t < 5; t += 0.1) poses.push(sampleMotion('blowBubbles', t, { modelHeight }));
+  for (const t of [0.001, 1, 2, 3, 3.999]) poses.push(sampleMotion('napPillow', t, { modelHeight }));
   return poses;
 }
 
@@ -39,13 +44,17 @@ export function measureMotionBounds(vrm: VRM, rig: MotionRig): { neutral: Box3; 
   rig.reset();
   const neutral = measure();
   const motion = neutral.clone();
+  const props = new PropRig(vrm.scene, neutral.getSize(new Vector3()).y, neutral);
   try {
     for (const pose of framingPoses(neutral.getSize(new Vector3()).y)) {
+      props.apply();
       rig.reset();
       rig.apply(pose);
+      props.apply(pose.props);
       motion.union(measure());
     }
   } finally {
+    props.dispose();
     rig.reset();
     vrm.update(0);
     vrm.scene.updateMatrixWorld(true);

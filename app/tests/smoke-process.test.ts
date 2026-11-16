@@ -4,8 +4,10 @@ import { BEHAVIORS, validBehaviorReport, validUiReport, validSoundReport, should
 import { runSmokeProcess } from '../scripts/smoke-process.mjs';
 
 const success = { ok: true, ui: ['bubble', 'chat', 'settings'], model: '/repo/assets/models/usagi.vrm', earDifferenceRatio: 0.06, happyFaceDifferenceRatio: 0.1, opaqueRatio: 0.21, vrmVersion: '1', expressions: ['blink', 'happy'],
-  behaviors: ['idle', 'walk', 'happy', 'surprised', 'shout', 'stretch', 'drag', 'ear-shake'],
-  behaviorOpaqueRatios: { idle: 0.21, walk: 0.2, happy: 0.23, surprised: 0.19, shout: 0.25, stretch: 0.24, drag: 0.2, 'ear-shake': 0.2 },
+  behaviors: ['idle', 'walk', 'happy', 'surprised', 'shout', 'stretch', 'drag', 'ear-shake', 'jumpRope', 'blowBubbles', 'napPillow'],
+  behaviorOpaqueRatios: { idle: 0.21, walk: 0.2, happy: 0.23, surprised: 0.19, shout: 0.25, stretch: 0.24, drag: 0.2, 'ear-shake': 0.2, jumpRope: 0.22, blowBubbles: 0.22, napPillow: 0.22 },
+  propOpaqueRatios: { handles: 0.001, rope: 0.003, wand: 0.002, bubble: 0.002, pillow: 0.01 },
+  propFraming: { jumpRope: true, blowBubbles: true, napPillow: true },
   behaviorTopTransparent: { happy: true, shout: true, stretch: true } };
 
 async function run(source: string, timeoutMs = 5_000) {
@@ -81,7 +83,7 @@ describe('冒烟子进程结果与诊断（Node fixture，不启动 GUI）', () 
   });
 });
 
-describe('八种行为冒烟报告', () => {
+describe('十一种行为冒烟报告', () => {
   it('必须依序包含原有全部行为及甩耳朵，每张图的 alpha 占比有效', () => {
     expect(success.behaviors).toEqual(BEHAVIORS);
     expect(validBehaviorReport(success)).toBe(true);
@@ -139,4 +141,16 @@ describe('Electron UnknownVizError 只重跑一次', () => {
     expect(shouldRetryFreshElectron(true, 0, viz)).toBe(false);
     expect(shouldRetryFreshElectron(true, 1, '{"ok":false,"reason":"冒烟缺少界面"}')).toBe(false);
   });
+});
+
+
+it('新增道具每种必须有可见像素，三个活动道具必须全部在窗内', () => {
+  for (const name of ['handles', 'rope', 'wand', 'bubble', 'pillow']) {
+    for (const ratio of [undefined, 0, NaN, Infinity, 1.1]) {
+      expect(validBehaviorReport({ ...success, propOpaqueRatios: { ...success.propOpaqueRatios, [name]: ratio } })).toBe(false);
+    }
+  }
+  for (const name of ['jumpRope', 'blowBubbles', 'napPillow']) {
+    expect(validBehaviorReport({ ...success, propFraming: { ...success.propFraming, [name]: false } })).toBe(false);
+  }
 });

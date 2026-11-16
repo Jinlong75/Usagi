@@ -54,7 +54,9 @@ let lastDragEndedAt = -Infinity;
 let dragSample = { point: { x: 0, y: 0 }, time: 0 };
 const runtime = { isPackaged: app.isPackaged, resourcesPath: process.resourcesPath };
 const sounds = SoundLibrary.fromRuntime(root, runtime);
-const smokeBehaviors: SmokeBehavior[] = ['idle', 'walk', 'happy', 'surprised', 'shout', 'stretch', 'drag', 'ear-shake'];
+const smokeBehaviors: SmokeBehavior[] = ['idle', 'walk', 'happy', 'surprised', 'shout', 'stretch', 'drag', 'ear-shake', 'jumpRope', 'blowBubbles', 'napPillow'];
+const propOpaqueRatios: Record<string, number> = {};
+const propFraming: Record<string, boolean> = {};
 const behaviorRatios: Partial<Record<SmokeBehavior, number>> = {};
 const behaviorTopTransparent: Partial<Record<SmokeBehavior, boolean>> = {};
 let smokeIndex = -1;
@@ -188,6 +190,10 @@ function petMenu(): Electron.MenuItemConstructorOptions[] {
       refreshMenu();
     } },
     { label: '和乌萨奇聊天', click: () => { void ui.chat.open(); } },
+    { label: '玩耍', submenu: [
+      { label: '跳绳', click: () => win?.webContents.send('pet:activity', 'jumpRope') },
+      { label: '吹泡泡', click: () => win?.webContents.send('pet:activity', 'blowBubbles') },
+    ] },
     { label: '设置…', click: () => { void ui.settings.open(); } },
     { label: '自言自语', type: 'checkbox', checked: state.selfTalk, click: item => {
       updateFromMenu({ ...config, selfTalk: { ...config.selfTalk, enabled: item.checked } });
@@ -238,6 +244,16 @@ async function capture(result: RenderResult): Promise<void> {
     await mkdir(directory, { recursive: true });
     await writeFile(join(directory, expected ? `smoke-${expected}.png` : 'smoke.png'), image.toPNG());
     const { width, height } = image.getSize(1);
+    const requiredProps: Record<string, string[]> = { jumpRope: ['handles', 'rope'], blowBubbles: ['wand', 'bubble'], napPillow: ['pillow'] };
+    if (expected && requiredProps[expected]) {
+      for (const name of requiredProps[expected]) {
+        const ratio = result.propOpaqueRatios?.[name];
+        if (!Number.isFinite(ratio) || ratio! <= 0 || ratio! > 1) return fail(`道具没有可见像素：${expected}/${name}`);
+        propOpaqueRatios[name] = ratio!;
+      }
+      propFraming[expected] = result.propsInFrame === true;
+      if (!propFraming[expected]) return fail(`道具超出取景：${expected}`);
+    }
     if (expected === 'idle') idleImage = { bitmap, width, height, face: result.face };
     if (expected && result.earDegrees !== undefined) earDegrees[expected] = result.earDegrees;
     if (expected === 'ear-shake') {
@@ -279,7 +295,7 @@ async function capture(result: RenderResult): Promise<void> {
       completed = true;
       exitSmoke(0, { ok: true, model: modelPath, opaqueRatio: initialRatio, vrmVersion: result.vrmVersion,
         expressions: result.expressions ?? [], behaviors: smokeBehaviors, behaviorOpaqueRatios: behaviorRatios,
-        behaviorTopTransparent, earDifferenceRatio, happyFaceDifferenceRatio, earDegrees, ui: ['bubble', 'chat', 'settings'],
+        propOpaqueRatios, propFraming, behaviorTopTransparent, earDifferenceRatio, happyFaceDifferenceRatio, earDegrees, ui: ['bubble', 'chat', 'settings'],
         sounds: { directory: audio.directory, clips: audio.clips, decoded: true } });
     }
   } catch (error) { fail(String(error)); }

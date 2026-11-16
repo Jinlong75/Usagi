@@ -5,6 +5,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { VRMLoaderPlugin } from '@pixiv/three-vrm';
 import type { VRM } from '@pixiv/three-vrm';
 import { ARM_FOREARM, ARM_RAISE, ARM_REST, MotionRig, sampleMotion } from '../src/renderer/motion';
+import { PropRig, ROPE_SPAN, ROPE_PIVOT_Y } from '../src/renderer/props';
 import { DragSprings } from '../src/renderer/motion/springs';
 import { frameBounds, measureMotionBounds, motionAspect, springEnvelope } from '../src/renderer/motion/framing';
 
@@ -84,6 +85,33 @@ describe('真实 Usagi 资源的无界面验证', () => {
     });
     expect(vertices).toBeGreaterThan(9000);
     expect(maximum).toBeLessThan(1e-6);
+  });
+  it('跳绳握柄在真实小手外侧，新增道具进入取景并在测量后释放', async () => {
+    const vrm = await load();
+    const neutral = new Box3().setFromObject(vrm.scene, true);
+    const height = neutral.getSize(new Vector3()).y;
+    for (const side of ['leftHand', 'rightHand'] as const) {
+      const hand = vrm.humanoid.getRawBoneNode(side)!.getWorldPosition(new Vector3());
+      const gap = ROPE_SPAN * height - Math.abs(hand.x);
+      expect(gap).toBeGreaterThan(0); expect(gap).toBeLessThan(height * 0.04);
+      expect(Math.abs(ROPE_PIVOT_Y * height - hand.y)).toBeLessThan(height * 0.01);
+    }
+    const rig = new MotionRig(vrm);
+    const measured = measureMotionBounds(vrm, rig);
+    expect(vrm.scene.getObjectByName('props')).toBeUndefined();
+    const props = new PropRig(vrm.scene, height, neutral);
+    for (const name of ['jumpRope', 'blowBubbles', 'napPillow'] as const) {
+      for (let t = 0.025; t < 5; t += 0.075) {
+        props.apply(); rig.reset();
+        const pose = sampleMotion(name, t, { modelHeight: height }); rig.apply(pose); props.apply(pose.props);
+        vrm.update(0); vrm.scene.updateMatrixWorld(true);
+        const box = new Box3().setFromObject(vrm.scene, true);
+        // Dense samples supplement the extrema measured at load. A tiny epsilon
+        // only absorbs Float32 bone/vertex arithmetic at otherwise equal bounds.
+        expect(measured.motion.clone().expandByScalar(height * 0.001).containsBox(box)).toBe(true);
+      }
+    }
+    props.dispose(); rig.reset();
   });
   it.each([['stretch', 1.1], ['shout', 0.55]] as const)('%s 的两只小手向两侧斜上举、伸出身体轮廓，结束后回中性', async (name, age) => {
     const vrm = await load();
