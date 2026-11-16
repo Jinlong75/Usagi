@@ -47,7 +47,7 @@ review: true
 
 ## 要求
 
-### 1. `prep_usagi.py`（参数：`--in`、`--out`、`--landmarks`、`--report`、`--smooth-waist on|off`，默认 on）
+### 1. `prep_usagi.py`（参数：`--in`、`--out`、`--landmarks`、`--report`、`--smooth-waist on|off`，默认 **off**（2026-11-16 用户决定：腰线保留，不平滑））
 按顺序：
 1. 复用 cleanup 的流程（合并、去碎片、法线、高 1.0、原点脚底中心）。
 2. **转正**：自动判断正面方向——脸上的小块（面数 < 主块 5% 的连通块）中心所在的水平方向就是正面；把模型绕 Z 旋转到正面朝 **-Y**，应用变换。报告里写旋转角度。
@@ -63,7 +63,7 @@ review: true
 7. 导出 `assets/model/usagi_base.glb`（保留材质与顶点组；glTF 的 Y 向上）。
 
 ### 2. `pipeline/build_usagi.sh`
-- `sh pipeline/build_usagi.sh prep`：用 `Material/tripo/usagi_3d.glb` 跑 `prep_usagi.py`，产出 `assets/model/usagi_base.glb`、`usagi_landmarks.json`、`usagi_prep.report.json`、`assets/model/preview/`（`render_preview.py` 出的 6 张图，着色要显示材质颜色）；另外用 `--smooth-waist off` 再跑一份 `assets/model/preview_nosmooth/` 只出预览（不覆盖底模），方便主导对比。
+- `sh pipeline/build_usagi.sh prep`：用 `Material/tripo/usagi_3d.glb` 跑 `prep_usagi.py`，产出 `assets/model/usagi_base.glb`、`usagi_landmarks.json`、`usagi_prep.report.json`、`assets/model/preview/`（`render_preview.py` 出的 6 张图，着色要显示材质颜色）；另外底模用默认的 `--smooth-waist off`（保留腰线）；另用 `--smooth-waist on` 跑一份只出预览到 `assets/model/preview_nosmooth/`（目录名沿用，内容是平滑版对照，不覆盖底模）。
 - Blender 路径逻辑与 `run_tests.sh` 一致（`BLENDER` 环境变量优先）。
 - 其他阶段名（`rig`、`face`、`vrm`）先打印"尚未实现"并退出 0。
 
