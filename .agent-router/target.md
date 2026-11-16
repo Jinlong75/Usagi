@@ -18,6 +18,7 @@
 - D10 吸附窗口顶端（2026-11-16 用户确认"两种都有"）：拖到别的窗口上沿附近松手就坐上去；闲逛时也会偶尔自己跳上去（低频、可在设置关）。窗口移动跟随，最小化/关闭/被挡住就跳下。系统窗口位置用 koffi 调 Win32 `EnumWindows` / mac `CGWindowListCopyWindowInfo`。排在 016 合入后。
 - D11 动作与道具互动（2026-11-16 用户："多加一些动作的互动，比如说乌萨奇可以吃东西，跳绳等与其他物品互动"，参考 dsh-pet-indesktop）：019 出清单后主导选型，道具用 three.js 几何体/小模型，动作程序化。
 - D12 模型（2026-11-16 用户）："我在 material/tripo 下放了一个更加细致的乌撒气3d模型usagi3d2"；此前"身子旁边有凸起……tripo 生成的原始 3d 模型那个形状就是最标准的形状"。→ 流水线输入改为 `Material/tripo/usagi3d2.glb`，除删雕刻五官外形状必须与它一致（022 加形状一致性检查）；D8 的 usagi_3d.glb 作为旧版保留。
+- D13（2026-11-16 23:2x 用户回答）：道具动作 + 吸附窗口本轮就做；新模型可减面但形状误差 ≤ 0.5 mm；本轮收尾推送代码到私有仓库，安装包传私有仓库 Release 附件（不进 git）。
 - D6 目录：原始素材 `Material/`；Blender 脚本 `pipeline/`；中间与最终模型 `assets/`；桌宠程序 `app/`；给用户的操作指南 `docs/guides/`。占位模型 `assets/placeholder/Seed-san.vrm`（VRM Public License 1.0，VirtualCast），只供开发，不打进安装包。
 
 ## 里程碑与完成条件

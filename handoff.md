@@ -4,7 +4,7 @@
 
 ## 一句话
 
-**暂离中（用户 11-16 23:0x 起 12 小时，日志 docs/autonomy/2026-11-16-夜间.md）**。本轮：022 模型形状（usagi3d2）→ 023 五官重画；020 作息 → 021 天气；全部合入后全量验收、打 dmg/exe，停在待用户 Windows 复测，SendMessage agentrouter-dev 主导"Usagi 已完成"。道具动作、吸附窗口下一轮。
+**暂离中（用户 11-16 23:0x 起 12 小时，日志 docs/autonomy/2026-11-16-夜间.md）**。本轮：022 模型形状（usagi3d2）→ 023 五官重画；020 作息 → 021 天气；全部合入后全量验收、打 dmg/exe，停在待用户 Windows 复测，SendMessage agentrouter-dev 主导"Usagi 已完成"。道具动作（5a 七个）与吸附窗口（5c）本轮就做（D13）；收尾 `ar push` 推送 + `gh release create` 私有仓库 Release 传 dmg/exe（用户已同意）。
 
 ## 开工必做
 
