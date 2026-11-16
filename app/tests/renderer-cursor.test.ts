@@ -75,6 +75,17 @@ describe('真实渲染入口接线，无 Electron/DOM/WebGL 宿主', () => {
   });
   afterEach(() => { vi.clearAllTimers(); vi.useRealTimers(); vi.unstubAllGlobals(); });
 
+  it.each(['sit', 'snap'] as const)('%s保留MotionRig保存的VRM0基准朝向Math.PI', async phase => {
+    host.model.scene.rotation.y = Math.PI;
+    host.callbacks.get('reload')!();
+    await vi.waitFor(() => expect(bridge.framed).toHaveBeenCalledTimes(2));
+    draw(); expect(host.model.scene.rotation.y).toBe(Math.PI);
+    host.callbacks.get('perch')!({ phase, canHop: false });
+    for (const delta of [20, 750, 3500]) {
+      draw(delta); expect(host.model.scene.rotation.y).toBe(Math.PI);
+    }
+  });
+
   it('只有 pet:cursor 没有 DOM mousemove，也能从穿透恢复命中；坐标使用原生窗口偏移', () => {
     expect(host.ratio).toHaveBeenCalledWith(1.25);
     cursor(20); expect(bridge.setHit).not.toHaveBeenCalled();

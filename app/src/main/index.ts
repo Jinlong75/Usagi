@@ -382,7 +382,9 @@ async function start(): Promise<void> {
       enabled: () => config.perch.enabled && reader.available, auto: () => config.perch.auto,
       visible: () => !!win?.isVisible(), seat: () => seatAnchor,
       ground: () => { const b = win!.getBounds(), area = screen.getDisplayMatching(b).workArea; return Math.max(area.y, area.y + area.height - b.height - 40); },
-      move: point => win?.setPosition(point.x, point.y), cancelWalk: () => motion?.cancel(),
+      move: point => win?.setPosition(point.x, point.y),
+      position: () => { const [x, y] = win!.getPosition(); return { x: x!, y: y! }; },
+      cancelWalk: () => motion?.cancel(),
       notify: status => { win?.webContents.send('pet:perch', status); refreshMenu(); },
     });
     let lastRead = -Infinity, lastFullscreen = -Infinity;

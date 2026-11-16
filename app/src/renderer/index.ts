@@ -233,6 +233,7 @@ function wake(): void { lastActivity = performance.now(); }
 function renderPose(now: number, delta: number): void {
   if (!vrm || !rig) return;
   rig.reset(); activeProps = undefined;
+  const baseYaw = vrm.scene.rotation.y;
   if (smoke) {
     const name = smokePose ?? 'idle';
     const step = Math.min(1 / 60, Math.max(0, smokeAges[name] - smokeAge));
@@ -287,7 +288,7 @@ function renderPose(now: number, delta: number): void {
     if (perch.phase === 'sit' || perch.phase === 'snap') {
       // Seated posture owns the legs; upper-body actions/props continue normally.
       applyPose(sampleMotion('sit', now / 1000, { modelHeight }), true);
-      vrm.scene.rotation.y = 0;
+      vrm.scene.rotation.y = baseYaw;
     } else if (perch.phase === 'hop' || perch.phase === 'down') {
       applyPose(sampleMotion(perch.phase === 'hop' ? 'perchHop' : 'perchDown', (now - perchStarted) / 1000, { modelHeight }));
     }

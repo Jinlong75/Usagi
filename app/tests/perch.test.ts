@@ -42,6 +42,17 @@ describe('窗口上沿可坐区域', () => {
       expect(followSeat(list, seat, area)).toBeUndefined();
     }
   });
+  it.each([area, { ...area, y: -875 }])('按座位局部偏移判断窗口顶部是否能留在工作区：$y', workArea => {
+    const offsetY = 200, top = workArea.y + offsetY;
+    const high = window('high', { y: top - 1, width: 240 }), reachable = window('reachable', { y: top });
+    const seat = { x: 200, y: top };
+    expect(canSit([high], 0, seat.x, workArea, offsetY)).toBe(false);
+    expect(dropTarget([high], seat, workArea, offsetY)).toBeUndefined();
+    expect(hopTarget([high], { ...seat, y: top + 100 }, workArea, options, offsetY)).toBeUndefined();
+    expect(followSeat([high], { id: high.id, offsetX: 100 }, workArea, offsetY)).toBeUndefined();
+    expect(dropTarget([reachable], seat, workArea, offsetY)?.id).toBe('reachable');
+    expect(hopTarget([high, reachable], { ...seat, y: top + 100 }, workArea, options, offsetY)?.id).toBe('reachable');
+  });
 });
 describe('自动跳上去与全屏', () => {
   it('只找上方、同屏、水平400px内最近可坐点，寻找未遮挡侧边', () => {
@@ -81,18 +92,50 @@ describe('自动跳上去与全屏', () => {
     }
   });
 });
-function controller() {
+function controller(options: { clamp?: boolean; bounds?: Partial<Rect> } = {}) {
   let now = 0, enabled = true, auto = true;
-  let bounds: Rect = { x: 100, y: 200, width: 200, height: 250 };
+  let bounds: Rect = { x: 100, y: 200, width: 200, height: 250, ...options.bounds };
+  let error = { x: 0, y: 0 };
   const notify = vi.fn<(status: PerchStatus) => void>(), cancel = vi.fn();
+  const position = vi.fn(() => ({ x: bounds.x, y: bounds.y }));
   const perch = new PerchController({ bounds: () => bounds, area: () => area, enabled: () => enabled, auto: () => auto,
+    position,
     visible: () => true, seat: () => ({ x: 0.5, y: 0.8 }), ground: () => 610,
-    move: (p: Point) => { bounds = { ...bounds, ...p }; }, cancelWalk: cancel, notify }, () => now);
+    move: (p: Point) => { bounds = { ...bounds, x: p.x + error.x,
+      y: options.clamp ? Math.max(area.y, p.y + error.y) : p.y + error.y }; }, cancelWalk: cancel, notify }, () => now);
   perch.update([window()], false);
-  return { perch, notify, cancel, bounds: () => bounds, enabled: (v: boolean) => { enabled = v; }, auto: (v: boolean) => { auto = v; },
+  return { perch, notify, cancel, position, bounds: () => bounds, error: (p: Point) => { error = p; },
+    enabled: (v: boolean) => { enabled = v; }, auto: (v: boolean) => { auto = v; },
     advance(ms: number) { now += ms; perch.tick(); } };
 }
 describe('吸附状态与原生动画所有权', () => {
+  it('位置钳制到workArea.y的窗口不能吸到高处，边界可坐；坐着上移一像素就跳下', () => {
+    const f = controller({ clamp: true, bounds: { y: area.y } });
+    const targetY = area.y + f.bounds().height * 0.8;
+    f.perch.update([window('one', { y: targetY - 1 })], false);
+    expect(f.perch.drop()).toBe(false);
+    f.perch.hop(); expect(f.perch.active).toBe(false);
+    f.perch.update([window('one', { y: targetY })], false);
+    expect(f.perch.drop()).toBe(true); f.advance(180);
+    expect(f.perch.sitting).toBe(true); expect(f.bounds().y).toBe(area.y);
+    f.perch.update([window('one', { y: targetY - 1 })], false);
+    expect(f.notify).toHaveBeenLastCalledWith({ phase: 'down', canHop: false });
+    f.advance(720); expect(f.perch.active).toBe(false); expect(f.bounds().y).toBe(610);
+  });
+  it.each([{ x: 0, y: 5 }, { x: 5, y: 0 }])('放置读回与目标相差超过4 DIP时普通松手，不进入sit：%j', error => {
+    const f = controller(); f.error(error);
+    expect(f.perch.drop()).toBe(true); f.advance(180);
+    expect(f.position).toHaveBeenCalled();
+    expect(f.perch.active).toBe(false);
+    expect(f.notify.mock.calls.some(([status]) => status.phase === 'sit')).toBe(false);
+    expect(f.notify).toHaveBeenLastCalledWith({ phase: 'free', canHop: error.y > 0 });
+  });
+  it('放置读回容许4 DIP误差，坐着跟随的读回误差超过容差时跳下', () => {
+    const f = controller(); f.error({ x: 0, y: 4 }); f.perch.drop(); f.advance(180);
+    expect(f.perch.sitting).toBe(true);
+    f.error({ x: 0, y: 5 }); f.perch.update([window('one', { y: 450 })], false);
+    expect(f.notify).toHaveBeenLastCalledWith({ phase: 'down', canHop: false });
+  });
   it('松手180ms对齐，移动跟随，手动拖动解除', () => {
     const f = controller(); expect(f.perch.drop()).toBe(true); expect(f.cancel).toHaveBeenCalled();
     expect(f.notify).toHaveBeenLastCalledWith({ phase: 'snap', canHop: false });
