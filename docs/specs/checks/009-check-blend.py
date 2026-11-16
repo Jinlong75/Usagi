@@ -10,7 +10,7 @@ def fail(msg):
 args = sys.argv[sys.argv.index("--") + 1:]
 glb, lm_path = args[0], args[1]
 bpy.ops.wm.read_factory_settings(use_empty=True)
-bpy.ops.import_scene.gltf(filepath=glb)
+bpy.ops.import_scene.gltf(filepath=glb, merge_vertices=True)  # glTF 按材质拆点，合并后再数连通块
 meshes = [o for o in bpy.context.scene.objects if o.type == "MESH"]
 if len(meshes) != 1:
     fail("网格对象数应为 1，实际 %d" % len(meshes))
