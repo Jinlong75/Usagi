@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]/"blender"))
 import bpy
 from mathutils import Vector
 from common import export_glb, reset_scene
-from rig_usagi import rig, HUMANOID, weight_report, vertex_weights, enable_vrm
+from rig_usagi import rig, HUMANOID, weight_report, vertex_weights, enable_vrm, geometry_weights
 
 
 def sphere(center, scale, material):
@@ -167,10 +167,15 @@ class RigTests(unittest.TestCase):
         sb = ext["VRMC_springBone"]
         self.assertEqual(len(sb["colliders"]), 2)
         self.assertEqual(len(sb["colliderGroups"]), 2)
-        self.assertEqual([len(s["joints"]) for s in sb["springs"]], [4, 4, 1])
-        for spring in sb["springs"]:
+        self.assertEqual([len(s["joints"]) for s in sb["springs"]], [5, 5, 2])
+        for spring, tip in zip(sb["springs"], ("EarL_Tip", "EarR_Tip", "TailTip")):
             leaf = self.gltf["nodes"][spring["joints"][-1]["node"]]
-            self.assertTrue(leaf.get("children"), "spring endpoint must be explicit")
+            self.assertEqual(leaf["name"], tip, "last joint must be the explicit endpoint")
+            for parent, child in zip(spring["joints"], spring["joints"][1:]):
+                self.assertIn(child["node"], self.gltf["nodes"][parent["node"]].get("children", []))
+        self.assertEqual([s["joints"] for s in self.report["springs"]],
+                         [[f"Ear{side}_{i}" for i in range(1, 5)]+[f"Ear{side}_Tip"]
+                          for side in ("L", "R")]+[["Tail", "TailTip"]])
         for spring in sb["springs"][:2]:
             self.assertEqual(spring["colliderGroups"], [0, 1])
             for j in spring["joints"]:
@@ -211,6 +216,46 @@ class RigTests(unittest.TestCase):
         for m in outlines:
             m.show_viewport = True
 
+    def test_06_vrm1_simulated_spring_joints(self):
+        # VRM 1.0 uses the last entry as an endpoint, without simulating it.
+        springs = self.gltf["extensions"]["VRMC_springBone"]["springs"]
+        simulated = [[self.gltf["nodes"][j["node"]]["name"] for j in s["joints"][:-1]]
+                     for s in springs]
+        self.assertEqual(simulated, [[f"Ear{side}_{i}" for i in range(1, 5)]
+                                     for side in ("L", "R")]+[["Tail"]])
+        self.assertEqual(sum(map(len, simulated)), 9)
+        self.assertIn("Tail", [name for chain in simulated for name in chain])
+
+    def test_07_neck_transition_spreads_head_turn(self):
+        # Samples beyond the old 0.05m band must both retain gradual blending.
+        neck = self.lm["neck"][2]
+        lower = geometry_weights(Vector((0, .05, neck-.04)), "trunk", self.arm, self.lm)
+        upper = geometry_weights(Vector((0, .05, neck+.04)), "trunk", self.arm, self.lm)
+        self.assertGreater(lower.get("Head", 0), 0)
+        self.assertLess(lower["Head"], upper["Head"])
+        self.assertLess(upper["Head"], 1)
+        for weights in (lower, upper):
+            self.assertIn("Head", weights)
+            self.assertTrue(set(weights) <= {"Hips", "Spine", "Chest", "Head"})
+            self.assertLessEqual(len(weights), 3)
+            self.assertAlmostEqual(sum(weights.values()), 1)
+        # Lower-face protection must remain continuous across the height-band edge.
+        below = geometry_weights(Vector((0, -.22, neck-.06001)), "trunk", self.arm, self.lm)
+        above = geometry_weights(Vector((0, -.22, neck-.05999)), "trunk", self.arm, self.lm)
+        self.assertGreater(below.get("Head", 0), 0)
+        self.assertLess(abs(above["Head"]-below["Head"]), .001)
+
+    def test_08_neck_face_blend_has_no_slope_kink(self):
+        # In this fixture both bands cross at weight 0.5. A hard max leaves
+        # different slopes on either side, which becomes a visible turn crease.
+        y = -.22 + math.sqrt(.192**2 - .16**2)
+        dz = .00001
+        weights = [geometry_weights(Vector((0, y, .33+offset)), "trunk", self.arm, self.lm)["Head"]
+                   for offset in (-dz, 0, dz)]
+        left_slope = (weights[1]-weights[0])/dz
+        right_slope = (weights[2]-weights[1])/dz
+        self.assertLess(abs(left_slope-right_slope), .05)
+
     def test_99_plugin_round_trip(self):
         expected = self.report["humanoid_mapping"]
         reset_scene()
@@ -227,7 +272,8 @@ class RigTests(unittest.TestCase):
         self.assertEqual(len(sb.colliders), 2)
         self.assertEqual(len(sb.collider_groups), 2)
         self.assertEqual([[j.node.bone_name for j in s.joints] for s in sb.springs],
-                         [[f"Ear{side}_{i}" for i in range(1, 5)] for side in ("L", "R")]+[["Tail"]])
+                         [[f"Ear{side}_{i}" for i in range(1, 5)]+[f"Ear{side}_Tip"]
+                          for side in ("L", "R")]+[["Tail", "TailTip"]])
         self.assertEqual([len(s.collider_groups) for s in sb.springs], [2, 2, 1])
         for spring in sb.springs[:2]:
             for joint in spring.joints:

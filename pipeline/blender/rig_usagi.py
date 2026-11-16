@@ -21,7 +21,7 @@ EAR_SPRING = dict(stiffness=1.6, gravity_power=0.15, gravity_dir=(0, 0, -1),
                   drag_force=0.45, hit_radius=0.012)  # Blender Z-up -> VRM (0,-1,0)
 TAIL_SPRING = dict(stiffness=2.5, gravity_power=0.15, gravity_dir=(0, 0, -1),
                    drag_force=0.6, hit_radius=0.012)
-NECK_HALF_WIDTH = 0.025
+NECK_HALF_WIDTH = 0.06
 ARM_ROOT_BLEND = 0.024
 LEG_ROOT_BLEND = 0.025
 MATERIAL_COLORS = {"Body": ("FFF1C1", "F0D9A0"), "EarInner": ("F7B8C4", "E9A0B0"),
@@ -187,18 +187,20 @@ def geometry_weights(point, kind, arm, lm):
         root_z = lm[f"leg_root_{side}"][2]
         blend = 1-smoothstep(root_z-LEG_ROOT_BLEND, root_z+LEG_ROOT_BLEND, point.z)
         return {**{name: w*blend for name, w in weights.items()}, "Hips": 1-blend}
-    # Head rotation remains local: only the narrow neck band blends into the body.
+    # Spread head rotation through a broad height band to avoid a waist crease.
     neck = lm["neck"][2]
-    # TODO(lead): Review the 30-degree head-turn crease on the prepared, non-manifold
-    # neck surface; topology repair belongs to 009 and is not changed by rigging.
-    if point.z >= neck - NECK_HALF_WIDTH:
-        blend = smoothstep(neck-NECK_HALF_WIDTH, neck+NECK_HALF_WIDTH, point.z)
-        # Blend toward the protected face continuously outside its rigid core.
-        distance = (point-Vector(lm["face_center"])).length
-        protection = 1-smoothstep(lm["face_radius"]*.6, lm["face_radius"]*.8, distance)
-        blend = max(blend, protection)
-        return {"Chest": 1-blend, "Head": blend}
-    return chain_weights(point, ["Hips", "Spine", "Chest"], arm)
+    blend = smoothstep(neck-NECK_HALF_WIDTH, neck+NECK_HALF_WIDTH, point.z)
+    # Use the same broad band outside the rigid face core: a narrower radial
+    # transition can still pinch the lower face when the Head turns 30 degrees.
+    distance = (point-Vector(lm["face_center"])).length
+    face_core = lm["face_radius"]*.6
+    protection = 1-smoothstep(face_core, face_core+NECK_HALF_WIDTH*2, distance)
+    # Smooth union avoids the derivative kink where the two bands intersect.
+    blend += (1-blend)*protection
+    # Face protection can extend below the height band. Blend it into the normal
+    # torso chain there too, instead of cutting it off at neck - half_width.
+    torso = chain_weights(point, ["Hips", "Spine", "Chest"], arm)
+    return {**{name: w*(1-blend) for name, w in torso.items()}, "Head": blend}
 
 
 def vertex_weights(obj, arm):
@@ -334,9 +336,9 @@ def configure_vrm(arm, lm):
                                     offset=list(collider.shape.sphere.offset)))
     spring_report = []
     for name, joints, params, groups in (
-        ("LeftEar", [f"EarL_{i}" for i in range(1, 5)], EAR_SPRING, [0, 1]),
-        ("RightEar", [f"EarR_{i}" for i in range(1, 5)], EAR_SPRING, [0, 1]),
-        ("Tail", ["Tail"], TAIL_SPRING, [1])):
+        ("LeftEar", [f"EarL_{i}" for i in range(1, 5)]+["EarL_Tip"], EAR_SPRING, [0, 1]),
+        ("RightEar", [f"EarR_{i}" for i in range(1, 5)]+["EarR_Tip"], EAR_SPRING, [0, 1]),
+        ("Tail", ["Tail", "TailTip"], TAIL_SPRING, [1])):
         spring = sb.springs.add()
         spring.vrm_name = name
         for bone in joints:
@@ -428,7 +430,7 @@ def render_poses(obj, arm, destination, size=384):
     # TODO(lead): Short 009 arms enter the head silhouette when raised; confirm
     # acceptable animation ranges without changing the source proportions here.
     poses = ("neutral_t", "arms_up", "arms_down_70", "head_left_30", "ears_back_25", "one_leg_up")
-    for pose in poses:
+    for pose in (*poses, "head_left_20"):
         for pb in arm.pose.bones:
             pb.rotation_mode = "QUATERNION"
             pb.rotation_quaternion = Quaternion()
@@ -436,8 +438,8 @@ def render_poses(obj, arm, destination, size=384):
             angle = 70 if pose == "arms_up" else -70
             rotate("LeftUpperArm", (0, -1, 0), angle)
             rotate("RightUpperArm", (0, -1, 0), -angle)
-        elif pose == "head_left_30":
-            rotate("Head", (0, 0, 1), 30)
+        elif pose in {"head_left_20", "head_left_30"}:
+            rotate("Head", (0, 0, 1), 20 if pose == "head_left_20" else 30)
         elif pose == "ears_back_25":
             for side in ("L", "R"):
                 for i in range(1, 5):
@@ -447,12 +449,15 @@ def render_poses(obj, arm, destination, size=384):
             rotate("LeftLowerLeg", (1, 0, 0), 35)
         bpy.context.view_layer.update()
         for view, direction in (("front", (0, -1, 0)), ("45", (1, -1, .35))):
+            if pose == "head_left_20" and view != "front":
+                continue
             camera.location = target + Vector(direction).normalized()*3
             camera.rotation_euler = (target-camera.location).to_track_quat("-Z", "Y").to_euler()
             path = destination / f"{pose}_{view}.png"
             scene.render.filepath = str(path)
             bpy.ops.render.render(write_still=True)
-            paths.append(path)
+            if pose in poses:
+                paths.append(path)
     # Two rows (front / 45), six columns. make_sheet preserves pixels; then stack rows.
     make_sheet(paths[::2], destination/".front.png", size)
     make_sheet(paths[1::2], destination/".45.png", size)
@@ -507,7 +512,8 @@ def rig(input_path, landmarks, output, report_path, blend_path=None, preview_dir
                   bones=[dict(name=b.name, length=b.length, parent=b.parent.name if b.parent else None,
                               head=list(b.head_local), tail=list(b.tail_local)) for b in arm.data.bones],
                   colliders=colliders, springs=springs, plugin_validation=warnings,
-                  transition_widths=dict(neck=NECK_HALF_WIDTH*2, arm_root=ARM_ROOT_BLEND*2,
+                  transition_widths=dict(neck=NECK_HALF_WIDTH*2, face_protection=NECK_HALF_WIDTH*2,
+                                         arm_root=ARM_ROOT_BLEND*2,
                                          leg_root=LEG_ROOT_BLEND*2),
                   coordinate_system="Blender Z-up, front -Y; spring gravity exports as VRM (0,-1,0)")
     Path(report_path).parent.mkdir(parents=True, exist_ok=True)

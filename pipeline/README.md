@@ -131,14 +131,14 @@ sh pipeline/build_usagi.sh rig
 
 本机插件模块为 **`bl_ext.blender_org.vrm`**。脚本通过 `addon_utils.modules()` 发现 `.vrm` 扩展，再调用 `addon_utils.enable(module, default_set=False)`，不写用户插件设置。rig 和 rig 测试启动 Blender **不带 `--factory-startup`**。调用 `bpy.ops.export_scene.vrm(filepath=..., armature_object_name="Armature", export_only_selections=False, use_addon_preferences=False, ignore_warning=True)` 导出；导出前先执行插件 `WM_OT_vrm_validator.detect_errors`，任何错误直接终止，提示和警告原文保存在报告的 `plugin_validation`。`ignore_warning` 只允许已记录的非错误信息继续导出。人形姿态设为 `restPositionPose`，保留关键点定义的 T 姿，不自动改变休息姿态。VRM 的固定 `licenseUrl` 由插件写入 `https://vrm.dev/licenses/1.0/`，其他元信息通过插件属性设置。
 
-骨架包含 Hips→Spine→Chest→Neck→Head、左右肩与三段短臂、三段短腿、两耳各四节、Tail。骨骼局部 +Y 沿头尾方向，统一 `align_roll((0,-1,0))`，使局部 +Z 尽量朝前；与前向近乎平行的尾巴和脚骨使用世界 +Z 作为滚转参考，避免退化。耳尖和尾尖另加 `EarL_Tip`、`EarR_Tip`、`TailTip`，长度 0.012 米，作为运行时求末关节方向的显式子节点；不参与人形映射和权重，也不增加 spring joints（仍为 4、4、1）。
+骨架包含 Hips→Spine→Chest→Neck→Head、左右肩与三段短臂、三段短腿、两耳各四节、Tail。骨骼局部 +Y 沿头尾方向，统一 `align_roll((0,-1,0))`，使局部 +Z 尽量朝前；与前向近乎平行的尾巴和脚骨使用世界 +Z 作为滚转参考，避免退化。耳尖和尾尖另加 `EarL_Tip`、`EarR_Tip`、`TailTip`，长度 0.012 米，不参与人形映射和权重，分别作为对应 spring joints 的最后一项。VRM 1.0 最后一项只定义末端、不参与模拟，因此 joints 长度为 5、5、2，实际受模拟骨骼为两耳各四节和 Tail，共九个。
 
 先实际运行 `bpy.ops.object.parent_set(type="ARMATURE_AUTO")`，检查热量权重的归一化、影响数和全部区域硬约束；算子即使返回 FINISHED 也可能不合格。`automatic_weights.operator_finished` 与 `accepted` 分开记录，失败原因和尝试的统计一起保留。合格才采用热量权重，否则清除并重新生成几何权重：
 
 - 用骨骼线段距离选择邻近关节，并在相邻骨骼中心之间按投影参数做 smoothstep 过渡。每条链最多两个骨骼；耳根、臂根、腿根再混入一个躯干骨骼，最终最多三个影响，逐点归一化。
 - 耳朵按 `head_top` 以上和左右侧分区，仅用本侧四节与 Head。耳根在第一节前半段平滑脱离 Head；中心间过渡宽度约一节耳长，末端 8% 顶点要求第四节 ≥0.8。
 - 手臂根部混合宽 0.048 米，腿根 0.050 米。臂区限定根部附近的高度和深度；腿区限定低高度；左右分别处理。躯干只用 Hips、Spine、Chest 或 Head，避免远端四肢拉动身体。
-- 颈部高度混合宽 0.050 米。`face_radius*0.6` 球内严格 100% Head，球外到 `face_radius*0.8` 连续退回颈部权重，避免保护区边缘突变；耳弯不影响头，脸部给 011 贴片保留刚性附着面。
+- 颈部高度混合宽 0.120 米，将转头扭转分摊到更大的高度范围。`face_radius*0.6` 球内严格 100% Head，球外再用 0.120 米径向过渡退回躯干权重，避免下脸保护区边缘仍然过窄、在腹部腰线附近产生折线；高度权重 h 与脸部保护权重 p 连续合成为 `h+(1-h)*p`，避免 max 拼接的斜率突变。该保护过渡低于颈部高度带时也连续混入正常躯干链。耳弯不影响头，脸部给 011 贴片保留刚性附着面。
 - Tail 仅使用 009 保留的同名区域组，先缓存区域再执行自动权重，避免自动权重覆盖区域标签。Body/EarInner 分界不改变耳朵几何权重。
 
 弹簧参数位于脚本顶部 `EAR_SPRING`、`TAIL_SPRING`，均使用基础 VRMC_springBone 1.0，无扩展碰撞形状。重力在 Blender 中为 `(0,0,-1)`，插件导出成 VRM `(0,-1,0)`。Head 球中心为 head_center、半径 `face_radius*0.95`；Chest 球中心为 hips/chest 中点、半径 `min(face_radius*0.70, 0.17)`。碰撞球偏移由世界关键点乘骨骼矩阵逆变换到骨骼局部坐标；两耳使用头与身体组，尾巴只使用身体组。三种 MToon 材质均使用任务指定底色/阴影色、`shadingShift=-0.05`、`shadingToony=0.95`、世界宽度 0.006 的深棕描边；十六进制 sRGB 颜色先转线性 RGB 后写入插件属性。
@@ -148,8 +148,8 @@ sh pipeline/build_usagi.sh rig
 - `usagi_body.vrm`：VRM 1.0，供 three-vrm / UniVRM 后续导入。
 - `usagi_rig.blend`：中性姿态，保留插件材质、骨架与权重，当前小于 20 MB。
 - `usagi_rig.report.json`：逐骨长度/头尾/父级、人形映射、热量权重尝试与最终权重统计、各区域采样数及违规数、碰撞体/弹簧与校验消息。
-- `preview_rig/`：`neutral_t`、`arms_up`（70°）、`arms_down_70`、`head_left_30`、`ears_back_25`（每节25°）、`one_leg_up`（大腿55°/小腿35°）各 `front` 和 `45` 两张图；`pose_sheet.png` 为六列两行，第一行正面、第二行斜45°，顺序同上。用 Cycles CPU、16 samples、插件实际 MToon 节点和描边渲染，固定相机画幅，便于比较变形；不依赖 Workbench 的替代轮廓线。
+- `preview_rig/`：`neutral_t`、`arms_up`（70°）、`arms_down_70`、`head_left_30`、`ears_back_25`（每节25°）、`one_leg_up`（大腿55°/小腿35°）各 `front` 和 `45` 两张图；`pose_sheet.png` 为六列两行，第一行正面、第二行斜45°，顺序同上。另输出 `head_left_20_front.png` 检查较小转头角度的过渡，不加入六姿态拼图。用 Cycles CPU、16 samples、插件实际 MToon 节点和描边渲染，固定相机画幅，便于比较变形；不依赖 Workbench 的替代轮廓线。
 
-`pipeline/run_tests.sh` 最后运行 `test_rig_usagi.py`：合成球身/头、耳柱、短臂柱、短腿柱和尾球，附独立关键点与区域数据；实际尝试热量权重并验证最终结果。覆盖骨长与映射、独立坐标掩码的权重约束、故意写坏脸部权重后检查能否检出、耳弯变形局部性、GLB JSON 内元信息/材质/弹簧参数、碰撞体世界位置，以及 VRM 插件重新导入后的人形映射与 spring/collider 数量。原 cleanup/preview/prep 测试不变。测试成功清理临时产物，失败保留现场并返回非零；姿态截图由 rig 自测与 010 门禁生成。
+`pipeline/run_tests.sh` 最后运行 `test_rig_usagi.py`：合成球身/头、耳柱、短臂柱、短腿柱和尾球，附独立关键点与区域数据；实际尝试热量权重并验证最终结果。覆盖骨长与映射、独立坐标掩码的权重约束、故意写坏脸部权重后检查能否检出、耳弯变形局部性、GLB JSON 内元信息/材质/弹簧参数、碰撞体世界位置，以及 VRM 插件重新导入后的人形映射与 spring/collider 数量。另验证 spring 显式末端和父子链、九个实际模拟关节（包含 Tail）、旧颈部带之外仍有平滑权重混合、高度带下边界连续性，以及颈部/脸部渐变交界处的斜率连续性。原 cleanup/preview/prep 测试不变。测试成功清理临时产物，失败保留现场并返回非零；姿态截图由 rig 自测与 010 门禁生成。
 
 UniVRM / Mate Engine 尚未实测。导出只使用 VRM 1.0、MToon 1.0、标准球碰撞体与最多四个权重通道，减少格式差异；Q 版极短四肢的通用人形动画重定向、单关节尾巴弹簧及 MToon 世界坐标描边在具体运行时中的表现，需要合流后确认。短臂上举会进入大头轮廓，几何比例没有在本阶段更改。

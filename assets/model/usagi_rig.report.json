@@ -74,10 +74,10 @@
   "weights": {
     "per_bone_vertex_count": {
       "Hips": 774,
-      "Spine": 353,
-      "Chest": 479,
+      "Spine": 372,
+      "Chest": 547,
       "Neck": 0,
-      "Head": 2409,
+      "Head": 2508,
       "EarL_1": 1600,
       "EarL_2": 2048,
       "EarL_3": 2367,
@@ -658,7 +658,8 @@
         "EarL_1",
         "EarL_2",
         "EarL_3",
-        "EarL_4"
+        "EarL_4",
+        "EarL_Tip"
       ],
       "stiffness": 1.6,
       "gravity_power": 0.15,
@@ -680,7 +681,8 @@
         "EarR_1",
         "EarR_2",
         "EarR_3",
-        "EarR_4"
+        "EarR_4",
+        "EarR_Tip"
       ],
       "stiffness": 1.6,
       "gravity_power": 0.15,
@@ -699,7 +701,8 @@
     {
       "name": "Tail",
       "joints": [
-        "Tail"
+        "Tail",
+        "TailTip"
       ],
       "stiffness": 2.5,
       "gravity_power": 0.15,
@@ -717,7 +720,8 @@
   ],
   "plugin_validation": [],
   "transition_widths": {
-    "neck": 0.05,
+    "neck": 0.12,
+    "face_protection": 0.12,
     "arm_root": 0.048,
     "leg_root": 0.05
   },
