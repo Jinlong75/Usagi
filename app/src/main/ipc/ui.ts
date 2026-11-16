@@ -59,13 +59,17 @@ export class UiController {
     });
     handle('settings:reveal', () => this.settings.window, async () => (await options.keys.load()).apiKey);
     handle('settings:save', () => this.settings.window, async (config: unknown, key: unknown) => {
-      if (!config || typeof config !== 'object' || Array.isArray(config)) throw new Error('设置格式不正确');
-      const settings = config as Partial<Config>;
-      // The settings page owns these controls only; tray-owned switches cannot be rewound by a stale snapshot.
-      options.update({ ...options.config(), chat: settings.chat, selfTalk: settings.selfTalk, volume: settings.volume });
-      const saved = typeof key === 'string' ? await options.keys.save(key.trim()) : undefined;
-      const loaded = await options.keys.load();
-      return { config: options.config(), key: saved, maskedKey: loaded.apiKey ? maskKey(loaded.apiKey) : '' };
+      try {
+        if (!config || typeof config !== 'object' || Array.isArray(config)) throw new Error('设置格式不正确');
+        const settings = config as Partial<Config>;
+        // The settings page owns these controls only; tray-owned switches cannot be rewound by a stale snapshot.
+        options.update({ ...options.config(), chat: settings.chat, selfTalk: settings.selfTalk, volume: settings.volume });
+        const saved = typeof key === 'string' ? await options.keys.save(key.trim()) : undefined;
+        const loaded = await options.keys.load();
+        return { ok: true, config: options.config(), key: saved, maskedKey: loaded.apiKey ? maskKey(loaded.apiKey) : '' };
+      } catch (error) {
+        return { ok: false, reason: error instanceof Error ? error.message : String(error) };
+      }
     });
     handle('settings:test', () => this.settings.window, () => options.service.testConnection());
     ipcMain.on('settings:close-ready', event => { if (trusted(event, this.settings.window)) this.settings.closeReady(); });
@@ -112,5 +116,6 @@ export class UiController {
       if (win && !win.isDestroyed()) win.webContents.send('config:changed', this.options.config());
     }
   }
+  stopChat(): void { this.options.service.stop(); }
   quit(): void { if (this.disposed) return; this.disposed = true; this.options.service.stop(); this.unsubscribe(); clearTimeout(this.streamTimer); this.chat.quit(); this.settings.quit(); this.bubble.destroy(); }
 }

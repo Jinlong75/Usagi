@@ -34,14 +34,22 @@ function save(): Promise<void> {
   if (!loaded) return Promise.resolve();
   const next = collect(), secret = dirtyKey ? key.value : undefined;
   const operation = saveQueue.then(async () => {
-    const result = await window.settings.save(next, secret); config = result.config;
+    const result = await window.settings.save(next, secret);
+    if (!result.ok) throw new Error(result.reason);
+    config = result.config;
     if (secret !== undefined && key.value === secret) {
       dirtyKey = false; revealed = false; key.type = 'password'; maskedKey = result.maskedKey; key.value = ''; key.placeholder = maskedKey || '输入 API Key'; field('reveal').textContent = '显示';
     }
     if (result.key) warning.textContent = result.key.persisted ? '' : result.key.reason;
-    status.textContent = '已保存，立即生效';
+    status.classList.remove('error'); status.textContent = '已保存，立即生效';
   });
-  saveQueue = operation.catch(() => {}); return operation;
+  const reported = operation.catch(error => {
+    const reason = error instanceof Error ? error.message : String(error);
+    status.classList.add('error');
+    status.textContent = `设置保存失败：${reason}。请检查磁盘空间和文件权限。`;
+    throw error;
+  });
+  saveQueue = reported.catch(() => {}); return reported;
 }
 key.addEventListener('input', () => { dirtyKey = true; });
 field('reveal').onclick = async () => {
@@ -50,7 +58,7 @@ field('reveal').onclick = async () => {
     key.type = 'text'; revealed = true; field('reveal').textContent = '隐藏';
   } else { key.type = 'password'; if (!dirtyKey) { key.value = ''; key.placeholder = maskedKey || '输入 API Key'; } revealed = false; field('reveal').textContent = '显示'; }
 };
-field('save').onclick = () => { void save().catch(() => { status.textContent = '保存失败，请检查文件权限。'; }); };
+field('save').onclick = () => { void save().catch(() => {}); };
 field('test').onclick = async () => {
   const button = field<HTMLButtonElement>('test'); button.disabled = true;
   field('connection').textContent = '正在测试…';
@@ -68,7 +76,7 @@ window.settings.onConfig(next => {
   if (next.selfTalk.enabled !== config.selfTalk.enabled) value('self-talk').checked = next.selfTalk.enabled;
   config = { ...config, selfTalk: { ...config.selfTalk, enabled: next.selfTalk.enabled }, alwaysOnTop: next.alwaysOnTop, size: next.size, position: next.position, mousePassthrough: next.mousePassthrough };
 });
-window.settings.onSaveClose(() => { void save().then(() => window.settings.closeReady()).catch(() => { status.textContent = '保存失败，请检查文件权限后重试。'; }); });
+window.settings.onSaveClose(() => { void save().then(() => window.settings.closeReady()).catch(() => {}); });
 void window.settings.load().then(snapshot => {
   display(snapshot.config); maskedKey = snapshot.maskedKey; key.placeholder = maskedKey || '输入 API Key';
   warning.textContent = snapshot.needsReentry ? 'Key 无法解密，请重新填写。' : '';

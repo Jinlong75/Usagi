@@ -70,7 +70,7 @@ npm --prefix app run smoke
 }
 ```
 
-大小固定为 240×315、320×420、440×578。窗口恢复时须完整落在任一当前屏幕工作区，否则回到主屏右下角、距边缘 40px。配置损坏时原文件改名为 `config.broken-<时间>.json`，使用默认值；写入采用临时文件加 rename。配置 I/O 失败会记录日志，应用继续使用内存配置。
+大小固定为 240×315、320×420、440×578。窗口恢复时须完整落在任一当前屏幕工作区，否则回到主屏右下角、距边缘 40px。配置损坏时原文件改名为 `config.broken-<时间>.json`，使用默认值；写入采用临时文件加 rename。设置写盘失败会记录日志、保留原有内存配置，不广播或应用失败的设置；设置页用红字显示具体原因，保留编辑内容和窗口，供修复磁盘空间或权限后重试。
 
 模型路径顺序：有效的 `modelPath` → `assets/models/usagi.vrm` → `assets/placeholder/Seed-san.vrm`；相对路径以仓库根目录解析，可指定绝对路径。VRM 以二进制 IPC 传给隔离的渲染进程，当前支持自包含 VRM（贴图等资源内嵌）。加载失败显示“模型加载失败：原因”并记录日志，可从托盘重新加载。Seed-san 仅用于开发，不应随安装包分发，模型许可和来源见项目目标文档。
 
@@ -107,7 +107,7 @@ TODO(lead): 打包后的音效路径。TODO(lead): Windows 实测走动流畅度
 
 从右键或托盘打开“和乌萨奇聊天”，Enter 发送，Shift+Enter 换行，流式回复时按“停止”可中断。关闭聊天窗只隐藏，保留本次运行的位置与消息；下次启动打开时从本机单会话记录恢复。“清空对话”有二次确认。消息只作为纯文本显示，不解释 HTML 或 Markdown。
 
-设置包含 AI 对话、桌宠、关于三组，点击“保存”或关闭设置窗都会保存并立即生效。首次填写 DeepSeek Key 后可“测试连接”；可选择模型、温度、深度思考和高级 API 地址。API Key 不写入 config.json，主进程在 app.whenReady() 后用 Electron 45 的 isAsyncEncryptionAvailable/encryptStringAsync/decryptStringAsync，接线层 AsyncKeyStore 适配核心 KeyStore 的同步注入接口，实际加解密不调用弃用的同步 API。默认只给设置页掩码，点击“显示”才返回 Key；加密不可用时返回 KeyStore 原因并用红字提示仅本次运行有效，不把 Key 明文写盘。退出会先请求可见设置页保存，再等待 sessionStore/keyStore.flush()，整个等待最多 2 秒。
+设置包含 AI 对话、桌宠、关于三组，点击“保存”或关闭设置窗都会保存并立即生效。首次填写 DeepSeek Key 后可“测试连接”；可选择模型、温度、深度思考和高级 API 地址。API Key 不写入 config.json，主进程在 app.whenReady() 后用 Electron 45 的 isAsyncEncryptionAvailable/encryptStringAsync/decryptStringAsync，接线层 AsyncKeyStore 适配核心 KeyStore 的同步注入接口，实际加解密不调用弃用的同步 API。默认只给设置页掩码，点击“显示”才返回 Key；加密不可用时返回 KeyStore 原因并用红字提示仅本次运行有效，不把 Key 明文写盘。退出先停止聊天请求，无条件启动 sessionStore.flush()（独立最多 2 秒），同时请求可见设置页保存（独立最多 1.5 秒），随后等待 keyStore.flush()（最多 1.5 秒）。设置页失败、超时或无响应都不会阻止会话写盘，总退出等待最多 3 秒，快路径提前结束。
 
 自言自语默认开启，每 20～60 秒随机一句，下一轮再加本次显示的 3.2 秒；间隔下限 5 秒，空台词使用内置十句，只排除上一句。桌宠隐藏、拖动、聊天请求或聊天气泡占用时跳过并正常重排，30% 概率播 idle_talk。聊天发送时出现思考气泡，首段正文后以 200ms 节流更新前 60 字；完成显示 5 秒，并按情绪叠加 2 秒 happy/surprised/angry/sad 表情，平静保持当前动作，50% 概率播 chat_reply。所有音效使用设置中的音量。
 

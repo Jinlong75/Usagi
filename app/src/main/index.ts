@@ -7,6 +7,7 @@ import { prepareMove, WindowMotion } from './motion';
 import { SoundLibrary } from './sounds';
 import { UiController } from './ipc/ui';
 import { AsyncKeyStore } from './ipc/keys';
+import { waitForQuitTask } from './ipc/quit';
 import { ChatService } from './chat/service';
 import { DeepSeekClient } from './chat/client';
 import { SessionStore } from './chat/sessionStore';
@@ -61,10 +62,14 @@ function fail(reason: string): void {
 }
 const watchdog = smoke ? setTimeout(() => fail('模型渲染在 60 秒内未完成'), 59_000) : undefined;
 
-function save(): void {
-  if (smoke) return;
-  try { writeConfig(configPath, config); }
-  catch (error) { console.error('配置保存失败', error); }
+function save(next = config): { ok: true } | { ok: false; reason: string } {
+  try {
+    if (!smoke) writeConfig(configPath, next);
+    return { ok: true };
+  } catch (error) {
+    console.error('配置保存失败', error);
+    return { ok: false, reason: error instanceof Error ? error.message : String(error) };
+  }
 }
 
 function currentBounds(size = config.size) {
@@ -130,9 +135,12 @@ function finishDrag(cancelled: boolean): void {
 function updateConfig(value: unknown): void {
   // A settings snapshot cannot rewind a pet moved/resized while the page was open.
   const next = normalizeConfig(value);
-  config = { ...next, position: config.position, size: config.size, modelPath: config.modelPath };
+  const candidate = { ...next, position: config.position, size: config.size, modelPath: config.modelPath };
+  const saved = save(candidate);
+  if (!saved.ok) throw new Error(saved.reason);
+  config = candidate;
   win?.setAlwaysOnTop(config.alwaysOnTop, 'floating');
-  applyHit(); save(); refreshMenu(); ui?.broadcast(); if (!quitting) selfTalk?.restart();
+  applyHit(); refreshMenu(); ui?.broadcast(); if (!quitting) selfTalk?.restart();
 }
 
 function petMenu(): Electron.MenuItemConstructorOptions[] {
@@ -376,17 +384,17 @@ app.on('before-quit', event => {
     event.preventDefault();
     if (quitting) return;
     quitting = true; selfTalk?.stop();
-    // Bound the flush without leaving a 2-second timer alive on the fast path.
-    let timeout: ReturnType<typeof setTimeout>;
-    void Promise.race([
+    ui?.stopChat();
+    // Session persistence starts independently of renderer responsiveness. Settings
+    // and the following key flush each get 1.5s; total quit wait is at most 3s.
+    void Promise.all([
+      waitForQuitTask(() => sessionStore?.flush(), 2000),
       (async () => {
-        await ui?.settings.saveBeforeQuit();
-        ui?.quit();
-        await Promise.all([sessionStore?.flush(), keyStore?.flush()]);
+        await waitForQuitTask(() => ui?.settings.saveBeforeQuit(), 1500);
+        await waitForQuitTask(() => keyStore?.flush(), 1500);
       })(),
-      new Promise<void>(resolve => { timeout = setTimeout(resolve, 2000); }),
-    ]).catch(() => { console.error('退出前写盘失败'); }).finally(() => {
-      clearTimeout(timeout); ui?.quit(); quitFlushed = true; app.quit();
+    ]).finally(() => {
+      ui?.quit(); quitFlushed = true; app.quit();
     });
     return;
   }

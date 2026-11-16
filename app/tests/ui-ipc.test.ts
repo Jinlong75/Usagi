@@ -7,7 +7,8 @@ const host = vi.hoisted(() => ({
   appEvents: new Map<string, (...args: any[]) => any>(), windows: [] as any[], menu: [] as any[],
   emit: (_event: ChatEvent) => {}, send: vi.fn(() => 'request-1'), stop: vi.fn(), save: vi.fn(),
   keySave: vi.fn(async (_key: string) => ({ persisted: false, reason: '仅本次有效' })),
-  flush: vi.fn(async () => {}), quit: vi.fn(), confirm: vi.fn(async () => ({ response: 0 })), popup: vi.fn(),
+  flush: vi.fn(async () => {}), sessionFlush: vi.fn(async () => {}),
+  quit: vi.fn(), confirm: vi.fn(async () => ({ response: 0 })), popup: vi.fn(),
 }));
 vi.mock('electron', () => {
   class BrowserWindow {
@@ -53,7 +54,7 @@ vi.mock('../src/main/ipc/keys', () => ({ AsyncKeyStore: class {
   load = async () => ({ apiKey: 'sk-123456789abcd', needsReentry: false }); save = host.keySave; flush = host.flush;
 } }));
 vi.mock('../src/main/chat/sessionStore', () => ({ SessionStore: class {
-  load = async () => ({ messages: [] }); clear = async () => {}; flush = host.flush;
+  load = async () => ({ messages: [] }); clear = async () => {}; flush = host.sessionFlush;
 } }));
 vi.mock('../src/main/chat/service', () => ({ ChatService: class {
   onEvent(fn: (event: ChatEvent) => void) { host.emit = fn; return () => {}; }
@@ -73,6 +74,7 @@ describe('008 主进程接线：原生窗口替身，无 GUI', () => {
     vi.stubGlobal('__dirname', fileURLToPath(new URL('../out', import.meta.url)));
     host.windows = []; host.invokes.clear(); host.sends.clear(); host.appEvents.clear();
     host.confirm.mockResolvedValue({ response: 0 }); host.flush.mockImplementation(async () => {});
+    host.sessionFlush.mockImplementation(async () => {}); host.save.mockReset();
     await import('../src/main/index'); await host.start!(); pet().emit('ready-to-show');
   });
   afterEach(() => { vi.clearAllTimers(); vi.useRealTimers(); vi.unstubAllGlobals(); });
@@ -109,6 +111,23 @@ describe('008 主进程接线：原生窗口替身，无 GUI', () => {
     send('pet:context-menu', pet()); expect(host.popup).toHaveBeenCalledTimes(1);
     item('鼠标穿透').click({ checked: false }); expect(pet().setIgnoreMouseEvents).toHaveBeenLastCalledWith(false, { forward: true });
   });
+  it('配置写盘抛 EACCES 时 IPC 返回失败，内存和界面状态保持原值，可重试', async () => {
+    const settings = await open('设置…');
+    const initial = await invoke('settings:load', settings);
+    settings.webContents.send.mockClear(); pet().setAlwaysOnTop.mockClear();
+    const error = Object.assign(new Error('EACCES: permission denied'), { code: 'EACCES' });
+    host.save.mockImplementationOnce(() => { throw error; });
+    const edited = { ...initial.config, volume: 0.2, chat: { ...initial.config.chat, model: 'custom-model' },
+      selfTalk: { ...initial.config.selfTalk, enabled: false } };
+    expect(await invoke('settings:save', settings, edited, 'new-key')).toEqual({ ok: false, reason: error.message });
+    expect((await invoke('settings:load', settings)).config).toEqual(initial.config);
+    expect(invoke('pet:config', pet())).toEqual(initial.config);
+    expect(item('自言自语').checked).toBe(true);
+    expect(settings.webContents.send).not.toHaveBeenCalledWith('config:changed', expect.anything());
+    expect(pet().setAlwaysOnTop).not.toHaveBeenCalled(); expect(host.keySave).not.toHaveBeenCalled();
+    const retried = await invoke('settings:save', settings, edited);
+    expect(retried).toMatchObject({ ok: true, config: edited });
+  });
   it('聊天发送、流式节流、完成表情和错误气泡；窗口关闭只隐藏', async () => {
     const chat = await open('和乌萨奇聊天');
     expect(await invoke('chat:send', chat, '你好')).toEqual({ requestId: 'request-1' });
@@ -142,16 +161,90 @@ describe('008 主进程接线：原生窗口替身，无 GUI', () => {
     pet().setPosition(400, 400); expect(bubble.getBounds()).not.toEqual(old);
     for (const win of host.windows) expect(win.options.webPreferences).toMatchObject({ contextIsolation: true, nodeIntegration: false, sandbox: true });
   });
-  it('退出时先等可见设置页保存确认，再 flush；快路径不必等满 2 秒', async () => {
+  it('退出时先停止聊天并启动 session flush，同时等设置保存；快路径不必等满 2 秒', async () => {
+    const chat = await open('和乌萨奇聊天'); await invoke('chat:send', chat, 'hi');
     const settings = await open('设置…');
     const preventDefault = vi.fn(); host.appEvents.get('before-quit')!({ preventDefault });
     await vi.advanceTimersByTimeAsync(0);
     expect(settings.webContents.send).toHaveBeenCalledWith('settings:save-close');
+    expect(host.sessionFlush).toHaveBeenCalledTimes(1);
+    expect(host.stop.mock.invocationCallOrder[0]).toBeLessThan(host.sessionFlush.mock.invocationCallOrder[0]!);
     expect(host.flush).not.toHaveBeenCalled(); expect(host.quit).not.toHaveBeenCalled();
     const initial = await invoke('settings:load', settings);
     await invoke('settings:save', settings, { ...initial.config, volume: 0.2 });
     send('settings:close-ready', settings); await vi.advanceTimersByTimeAsync(0);
-    expect(host.flush).toHaveBeenCalledTimes(2); expect(host.quit).toHaveBeenCalledTimes(1);
+    expect(host.sessionFlush).toHaveBeenCalledTimes(1); expect(host.flush).toHaveBeenCalledTimes(1);
+    expect(host.quit).toHaveBeenCalledTimes(1);
+  });
+  it('设置页不确认也会启动 session flush，1.5 秒后仍能退出', async () => {
+    const settings = await open('设置…');
+    host.appEvents.get('before-quit')!({ preventDefault: vi.fn() });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(settings.webContents.send).toHaveBeenCalledWith('settings:save-close');
+    expect(host.sessionFlush).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1499); expect(host.quit).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(host.flush).toHaveBeenCalledTimes(1); expect(host.quit).toHaveBeenCalledTimes(1);
+  });
+  it('设置页慢保存超过 1.5 秒，不会占用 session flush 的等待时间或阻止退出', async () => {
+    const settings = await open('设置…');
+    const initial = await invoke('settings:load', settings);
+    let completeSave = () => {};
+    host.keySave.mockImplementationOnce(() => new Promise(done => {
+      completeSave = () => done({ persisted: false, reason: '仅本次有效' });
+    }));
+    let rendererSave: Promise<void> | undefined;
+    settings.webContents.send.mockImplementation((channel: string) => {
+      if (channel === 'settings:save-close') rendererSave = invoke('settings:save', settings, initial.config, 'new-key')
+        .then(() => { send('settings:close-ready', settings); });
+    });
+    host.appEvents.get('before-quit')!({ preventDefault: vi.fn() });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(host.keySave).toHaveBeenCalledTimes(1); expect(host.sessionFlush).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1499); expect(host.quit).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1); expect(host.quit).toHaveBeenCalledTimes(1);
+    completeSave(); await rendererSave;
+    expect(host.sessionFlush).toHaveBeenCalledTimes(1); expect(host.quit).toHaveBeenCalledTimes(1);
+  });
+  it('设置页保存请求抛错也不会阻止 session flush 和退出', async () => {
+    const settings = await open('设置…');
+    settings.webContents.send.mockImplementation((channel: string) => {
+      if (channel === 'settings:save-close') throw new Error('renderer unavailable');
+    });
+    host.appEvents.get('before-quit')!({ preventDefault: vi.fn() });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(host.sessionFlush).toHaveBeenCalledTimes(1); expect(host.flush).toHaveBeenCalledTimes(1);
+    expect(host.quit).toHaveBeenCalledTimes(1);
+  });
+  it('退出时设置写盘抛 EACCES 且不确认，仍 flush 会话并退出', async () => {
+    const settings = await open('设置…');
+    const initial = await invoke('settings:load', settings);
+    host.appEvents.get('before-quit')!({ preventDefault: vi.fn() });
+    await vi.advanceTimersByTimeAsync(0);
+    host.save.mockImplementationOnce(() => { throw new Error('EACCES'); });
+    expect(await invoke('settings:save', settings, { ...initial.config, volume: 0.2 }))
+      .toEqual({ ok: false, reason: 'EACCES' });
+    expect(host.sessionFlush).toHaveBeenCalledTimes(1);
+    expect((await invoke('settings:load', settings)).config).toEqual(initial.config);
+    await vi.advanceTimersByTimeAsync(1500); expect(host.quit).toHaveBeenCalledTimes(1);
+  });
+  it('设置页和 session flush 同时卡住，session 的独立上限仍是 2 秒', async () => {
+    await open('设置…'); host.sessionFlush.mockImplementation(() => new Promise(() => {}));
+    host.appEvents.get('before-quit')!({ preventDefault: vi.fn() });
+    await vi.advanceTimersByTimeAsync(0); expect(host.sessionFlush).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1999); expect(host.quit).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1); expect(host.quit).toHaveBeenCalledTimes(1);
+  });
+  it('设置页与两项 flush 都无响应时，总等待不超过 3 秒；重复退出不重启写盘', async () => {
+    await open('设置…');
+    host.sessionFlush.mockImplementation(() => new Promise(() => {}));
+    host.flush.mockImplementation(() => new Promise(() => {}));
+    host.appEvents.get('before-quit')!({ preventDefault: vi.fn() });
+    host.appEvents.get('before-quit')!({ preventDefault: vi.fn() });
+    await vi.advanceTimersByTimeAsync(2999);
+    expect(host.sessionFlush).toHaveBeenCalledTimes(1); expect(host.flush).toHaveBeenCalledTimes(1);
+    expect(host.quit).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1); expect(host.quit).toHaveBeenCalledTimes(1);
   });
   it('清空需要二次确认且聊天中拒绝，退出等待 flush 最多 2 秒', async () => {
     const chat = await open('和乌萨奇聊天');
@@ -159,9 +252,11 @@ describe('008 主进程接线：原生窗口替身，无 GUI', () => {
     expect(host.confirm).toHaveBeenCalledWith(chat, expect.objectContaining({ buttons: ['取消', '清空对话'] }));
     host.confirm.mockResolvedValueOnce({ response: 1 }); expect(await invoke('chat:clear', chat)).toBe(true);
     await invoke('chat:send', chat, 'hi'); expect(await invoke('chat:clear', chat)).toBe(false);
+    host.sessionFlush.mockImplementation(() => new Promise(() => {}));
     let resolve = () => {}; host.flush.mockImplementation(() => new Promise<void>(done => { resolve = done; }));
     const preventDefault = vi.fn(); host.appEvents.get('before-quit')!({ preventDefault });
-    expect(preventDefault).toHaveBeenCalled(); await vi.advanceTimersByTimeAsync(0); expect(host.flush).toHaveBeenCalledTimes(2);
+    expect(preventDefault).toHaveBeenCalled(); await vi.advanceTimersByTimeAsync(0);
+    expect(host.sessionFlush).toHaveBeenCalledTimes(1); expect(host.flush).toHaveBeenCalledTimes(1);
     expect(host.quit).not.toHaveBeenCalled();
     resolve(); await vi.advanceTimersByTimeAsync(1999); expect(host.quit).not.toHaveBeenCalled();
     await vi.advanceTimersByTimeAsync(1); expect(host.quit).toHaveBeenCalledTimes(1);

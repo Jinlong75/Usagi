@@ -28,6 +28,8 @@ export function menuState(config: Config, visible: boolean) {
     alwaysOnTop: config.alwaysOnTop, size: config.size, visibility: visible ? '隐藏桌宠' : '显示桌宠' };
 }
 export interface SettingsSnapshot { config: Config; maskedKey: string; needsReentry: boolean; version: string }
+export type SettingsSaveResult = { ok: true; config: Config; key?: SaveKeyResult; maskedKey: string } |
+  { ok: false; reason: string };
 export interface ChatSnapshot { session: Session; active: boolean; text: string }
 export interface ChatBridge {
   load(): Promise<ChatSnapshot>;
@@ -39,7 +41,7 @@ export interface ChatBridge {
 }
 export interface SettingsBridge {
   load(): Promise<SettingsSnapshot>;
-  save(config: Config, key?: string): Promise<{ config: Config; key?: SaveKeyResult; maskedKey: string }>;
+  save(config: Config, key?: string): Promise<SettingsSaveResult>;
   revealKey(): Promise<string>;
   test(): Promise<{ ok: true; models: string[] } | { ok: false; message: string }>;
   onConfig(callback: (config: Config) => void): () => void;
