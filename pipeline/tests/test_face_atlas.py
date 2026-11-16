@@ -5,7 +5,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from PIL import Image
+from PIL import Image, ImageDraw
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]/'face'))
 from draw_atlas import generate, eyes, mouth
@@ -13,7 +13,7 @@ from layout import (CELL, MARGIN, EYES, MOUTHS, FRAMES, MOUTH_BOUNDS,
                     CHEEK_CENTERS, CHEEK_SIZE, LINE_M, EYE_CENTERS, EYE_DIAMETER)
 import layout
 from measure_layout import measure, layout_values
-from compare_reference import compare as compare_reference
+from compare_reference import compare as compare_reference, reference_head_width
 
 
 class AtlasTests(unittest.TestCase):
@@ -159,8 +159,54 @@ class AtlasTests(unittest.TestCase):
             self.assertTrue(cavity, name)
             frame = FRAMES['FaceMouth']
             depth = (max(y for x, y in cavity+tongue)-min(y for x, y in cavity+tongue))/CELL*(frame[3]-frame[2])
-            self.assertAlmostEqual(depth/w, 1.4 if name in ('aa', 'oh', 'angry') else .6, delta=.08)
+            # Visible cavity excludes the omega's ink. Check the complete ink
+            # separately so a detached chin arc cannot hide below this region.
+            self.assertAlmostEqual(depth/w, .925 if name in ('aa', 'oh', 'angry') else .475, delta=.08)
+            alpha = tile.getchannel('A').point(lambda a: 255 if a >= 128 else 0)
+            box = alpha.getbbox()
+            ink_height = (box[3]-box[1])/CELL*(frame[3]-frame[2])
+            ink_width = (box[2]-box[0])/CELL*(frame[1]-frame[0])
+            self.assertLessEqual(ink_height/ink_width, 1.4 if name in ('aa', 'oh', 'angry') else .9)
+            # Every occupied row must touch the next: no independent chin arc.
+            self.assertTrue(all(alpha.crop((0, y, CELL, y+1)).getbbox()
+                                for y in range(box[1], box[3])))
+            # U stays broad near its base, unlike the old pointed long strip.
+            y = box[3]-round((box[3]-box[1])*.12)
+            row = alpha.crop((0, y, CELL, y+1)).getbbox()
+            self.assertGreater(row[2]-row[0], (box[2]-box[0])*.40)
         self.assertNotEqual(neutral.tobytes(), mouth('happy').tobytes())
+        box = neutral.getchannel('A').point(lambda a: 255 if a >= 128 else 0).getbbox()
+        self.assertLessEqual((box[3]-box[1])*(FRAMES['FaceMouth'][3]-FRAMES['FaceMouth'][2])/
+                             ((box[2]-box[0])*(FRAMES['FaceMouth'][1]-FRAMES['FaceMouth'][0])), .75)
+
+    def test_f01_artwork_proportions_and_four_saturated_cheek_strokes(self):
+        self.assertAlmostEqual(EYE_DIAMETER, .0917*.70)
+        self.assertAlmostEqual((EYE_CENTERS[1][0]-EYE_CENTERS[0][0])/layout.HEAD_WIDTH, .2592, delta=.001)
+        self.assertAlmostEqual(EYE_DIAMETER/layout.HEAD_WIDTH, .09784, delta=.001)
+        for brow, source, eye in zip(layout.BROW_BOUNDS, layout.SCULPTURE_BROW_BOUNDS, EYE_CENTERS):
+            self.assertAlmostEqual(brow[1]-brow[0], (source[1]-source[0])*.75)
+            self.assertAlmostEqual(brow[3]-eye[1], (source[3]-eye[1])*.70)
+        tile = eyes('neutral')
+        for cx, cv in CHEEK_CENTERS:
+            for shift in (-.039, -.013, .013, .039):
+                self.assertEqual(self.pixel(tile, 'FaceEyes', cx+shift, cv)[:3], (224, 96, 126))
+                # Width doubled from .42 to .84 of the unchanged line width.
+                color = self.pixel(tile, 'FaceEyes', cx+shift+.003, cv)[:3]
+                self.assertLessEqual(max(abs(a-b) for a, b in zip(color, (224, 96, 126))), 5)
+            for shift in (-.026, 0, .026):
+                self.assertEqual(self.pixel(tile, 'FaceEyes', cx+shift, cv)[:3], (246, 163, 181))
+
+    def test_left_clipped_reference_infers_complete_width_from_f01_eyes(self):
+        full = Image.new('RGB', (440, 300), '#888888')
+        ImageDraw.Draw(full).ellipse((20, 20, 420, 280), fill='#fff1c1', outline='#2b1a14', width=5)
+        eyes = ((170, 145), (270, 145))
+        self.assertEqual(reference_head_width(full, eyes, 400), (400, False, False))
+        clipped = full.crop((70, 0, 440, 300))
+        width, inferred, edge_fill = reference_head_width(clipped, ((100, 145), (200, 145)), 370)
+        self.assertTrue(edge_fill)
+        self.assertTrue(inferred)
+        self.assertAlmostEqual(width, 100*347/(92**2+2**2)**.5)
+        self.assertNotEqual(width, clipped.width)
 
     def test_reference_comparison_has_five_pairs_at_equal_head_width(self):
         source = self.root/'renders'
@@ -177,7 +223,8 @@ class AtlasTests(unittest.TestCase):
             self.assertAlmostEqual(e['source_head_width_px']*e['source_scale'], 320)
             self.assertAlmostEqual(e['render_head_width_px']*e['render_scale'], 320)
         self.assertEqual([e['width_inferred_from_F01_eyes'] for e in evidence],
-                         [False, True, True, False, True])
+                         [False, True, True, True, True])
+        self.assertTrue(evidence[3]['head_fill_at_image_edge'])
 
 
 

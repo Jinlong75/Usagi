@@ -140,9 +140,9 @@ def layout_values(measured):
                              math.ceil((max(abs(mouth[0]), abs(mouth[1]))+.04)*100)/100,
                              math.floor((mouth[2]-.15)*100)/100,
                              math.ceil((mouth[3]+.03)*100)/100)}
-    return dict(FRAMES=frames, MOUTH_BOUNDS=mouth, CHEEK_CENTERS=cheeks,
-                CHEEK_SIZE=size, BROW_BOUNDS=brows,
-                EYE_CENTERS=tuple(tuple((lo[k]+hi[k])/2 for k in (0, 1))
+    return dict(FRAMES=frames, SCULPTURE_MOUTH_BOUNDS=mouth, CHEEK_CENTERS=cheeks,
+                CHEEK_SIZE=size, SCULPTURE_BROW_BOUNDS=brows,
+                SCULPTURE_EYE_CENTERS=tuple(tuple((lo[k]+hi[k])/2 for k in (0, 1))
                     for lo, hi in (projected[n] for n in ('eyeRight', 'eyeLeft'))))
 
 

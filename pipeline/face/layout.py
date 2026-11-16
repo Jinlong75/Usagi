@@ -13,13 +13,25 @@ FRAMES = {'FaceEyes': (-.310, .310, .300, .660),
 HEAD_WIDTH = .656082
 NORMAL = (-.0000274714457, -.996761798859, .080411151052)
 LINE_M = .01065  # 25% thinner than .0142 m, 1.62% of measured head width.
-EYE_CENTERS = ((-.103558, .444379), (.103819, .444379))
-EYE_DIAMETER = .0917  # old horizontal diameter .07054 m * 1.3; now circular.
-BROW_BOUNDS = ((-.211766, -.073515, .500327, .627630),
+SCULPTURE_EYE_CENTERS = ((-.103558, .444379), (.103819, .444379))
+SCULPTURE_BROW_BOUNDS = ((-.211766, -.073515, .500327, .627630),
                (.077926, .216177, .500327, .627630))
-MOUTH_BOUNDS = (-.052996, .055455, .282696, .385879)
-# TODO(lead): usagi3d2 has no sculpted/colored cheeks. Confirm F01-derived anchors
-# (0.27 head widths sideways, 0.10 below eyes) on the measured source surface.
+SCULPTURE_MOUTH_BOUNDS = (-.052996, .055455, .282696, .385879)
+# F01 artwork corrections approved by lead; keep source measurements separate.
+EYE_DIAMETER = .0917*.70
+_eye_mid = sum(x for x, v in SCULPTURE_EYE_CENTERS)/2
+EYE_CENTERS = tuple((_eye_mid+(x-_eye_mid)*.82, v) for x, v in SCULPTURE_EYE_CENTERS)
+BROW_BOUNDS = tuple((
+    (left+right)/2+eye[0]-source_eye[0]-(right-left)*.75/2,
+    (left+right)/2+eye[0]-source_eye[0]+(right-left)*.75/2,
+    eye[1]+(bottom-eye[1])*.70, eye[1]+(top-eye[1])*.70)
+    for (left, right, bottom, top), eye, source_eye in
+    zip(SCULPTURE_BROW_BOUNDS, EYE_CENTERS, SCULPTURE_EYE_CENTERS))
+_left, _right, _bottom, _top = SCULPTURE_MOUTH_BOUNDS
+_hook_start = _top-LINE_M/2-(_right-_left-LINE_M)*.38
+# Halve only the downward extension from the unchanged omega lobe.
+MOUTH_BOUNDS = (_left, _right, (_hook_start+_bottom+LINE_M/2)/2-LINE_M/2, _top)
+# No cheek sculpture in source. Lead accepted these F01-derived anchors.
 CHEEK_CENTERS = ((-.177142, .378770), (.177142, .378770))
 CHEEK_SIZE = (.1312164, .0874776)  # F01 width/head ~0.20; oval aspect 1.5.
 CELL = 512

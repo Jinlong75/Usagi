@@ -17,9 +17,27 @@ REFERENCES = (
     ('F01', 'neutral', '常态圆眼闭ω-2ca57d0d-f000.png', ((155, 124), (247, 122)), 347),
     ('F05', 'aa', '竖开ω舌口-video-002.133s.png', ((77, 130), (250, 94)), None),
     ('F09', 'blink', '短横闭眼-f3581eb5-f009.png', ((119, 65), (265, 106)), None),
-    ('F19', 'happy', '哈圆眼开ω-video-157.267s.png', ((84, 110), (193, 114)), 376),
+    ('F19', 'happy', '哈圆眼开ω-video-157.267s.png', ((84, 110), (193, 114)), None),
     ('F12', 'sad', '鼓颊紧缩ω-d1107d90-f000.png', ((159, 160), (310, 174)), None),
 )
+
+
+def reference_head_width(picture, eyes, visible_width=None):
+    """A cream head interior on an image edge means the contour is clipped.
+
+    Inspect the eye-centre scanline, away from the ears and mouth. This only
+    identifies clipping in these cream/yellow reference drawings; a supplied
+    complete width is otherwise a manually measured source anchor.
+    """
+    y = max(0, min(picture.height-1, round(sum(p[1] for p in eyes)/2)))
+    def head_fill(x):
+        r, g, b = picture.convert('RGB').getpixel((x, y))
+        return r > 180 and g > 150 and r >= g and b < g*.95
+    clipped = head_fill(0) or head_fill(picture.width-1)
+    inferred = visible_width is None or clipped
+    if inferred:
+        visible_width = math.dist(*eyes)*REFERENCES[0][4]/math.dist(*REFERENCES[0][3])
+    return visible_width, inferred, clipped
 
 
 def compare(source, output):
@@ -32,13 +50,10 @@ def compare(source, output):
     draw.text((438, 10), 'Our model / frontal render', font=font, fill='#2b1a14')
     draw.text((18, 38), 'Same head width: 320 px; pale gutters = unavailable source',
               font=ImageFont.load_default(size=15), fill='#2b1a14')
-    f01_distance = math.dist(*REFERENCES[0][3])
     evidence = []
     for i, (ref, expression, filename, eyes, head_width) in enumerate(REFERENCES):
-        inferred = head_width is None
-        if inferred:
-            head_width = math.dist(*eyes)*347/f01_distance
         original = Image.open(REFERENCE/filename).convert('RGB')
+        head_width, inferred, clipped = reference_head_width(original, eyes, head_width)
         rendered = Image.open(Path(source)/(expression+'.png')).convert('RGB')
         # Camera contract: 384 px, orthographic .77m, horizontal view at z=.475.
         # Eye surface z ~= .468, from the measured plane and front body depth.
@@ -58,6 +73,7 @@ def compare(source, output):
         draw.text((438, row_top+row-27), expression, font=font, fill='#2b1a14')
         evidence.append(dict(reference=ref, expression=expression, source=filename,
             source_head_width_px=head_width, width_inferred_from_F01_eyes=inferred,
+            head_fill_at_image_edge=clipped,
             source_scale=width/head_width, render_head_width_px=model_width,
             render_scale=width/model_width, aligned_head_width_px=width))
     output = Path(output)

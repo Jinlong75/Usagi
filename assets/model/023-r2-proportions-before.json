@@ -1,0 +1,122 @@
+{
+  "head_width_px": 320,
+  "diameter_method": "mean geometric diameter sqrt(ink width * ink height)",
+  "reference_F01": {
+    "eye_diameter_over_head": 0.09525004351970282,
+    "eye_distance_over_head": 0.2641780442476248,
+    "brow_width_over_head": 0.1546875,
+    "brow_peak_above_eye_over_head": 0.20078125,
+    "mouth_height_over_width": 0.8085106382978723,
+    "boxes": {
+      "eyes": [
+        [
+          153,
+          195,
+          183,
+          228
+        ],
+        [
+          238,
+          194,
+          267,
+          224
+        ]
+      ],
+      "brows": [
+        [
+          123,
+          146,
+          175,
+          182
+        ],
+        [
+          236,
+          146,
+          283,
+          179
+        ]
+      ],
+      "mouth": [
+        193,
+        233,
+        240,
+        271
+      ]
+    }
+  },
+  "model": {
+    "eye_diameter_over_head": 0.1375,
+    "eye_distance_over_head": 0.31875,
+    "brow_width_over_head": 0.2078125,
+    "brow_peak_above_eye_over_head": 0.271875,
+    "mouth_height_over_width": 0.9807692307692307,
+    "boxes": {
+      "eyes": [
+        [
+          557,
+          189,
+          601,
+          233
+        ],
+        [
+          659,
+          189,
+          703,
+          233
+        ]
+      ],
+      "brows": [
+        [
+          527,
+          124,
+          593,
+          184
+        ],
+        [
+          669,
+          124,
+          736,
+          185
+        ]
+      ],
+      "mouth": [
+        605,
+        239,
+        657,
+        290
+      ],
+      "aa_mouth_components": [
+        [
+          605,
+          599,
+          657,
+          695
+        ],
+        [
+          622,
+          701,
+          639,
+          709
+        ]
+      ],
+      "happy_mouth_components": [
+        [
+          605,
+          1319,
+          657,
+          1371
+        ],
+        [
+          622,
+          1377,
+          639,
+          1385
+        ]
+      ]
+    },
+    "aa_mouth_height_over_width": 1.8461538461538463,
+    "aa_mouth_including_detached_ink_height_over_width": 2.1153846153846154,
+    "happy_mouth_height_over_width": 1.0,
+    "happy_mouth_including_detached_ink_height_over_width": 1.2692307692307692
+  }
+}

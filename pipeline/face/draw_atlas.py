@@ -9,8 +9,8 @@ from layout import (EYES, MOUTHS, CELL, MARGIN, FRAMES, LINE_M,
                     EYE_DIAMETER, BROW_BOUNDS)
 
 INK = '#2b1a14'
-PINK = '#f5aebb'
-CHEEK_INK = '#cc7d90'
+PINK = '#f6a3b5'
+CHEEK_INK = '#e0607e'
 TONGUE = '#f08aa0'
 SCALE = 3
 
@@ -104,9 +104,9 @@ def eyes(name):
         bx, bv = CHEEK_CENTERS[i]
         w, h = CHEEK_SIZE
         p.ellipse((bx, bv), w, h, PINK)
-        for shift in (-.033, 0, .033):
+        for shift in (-.039, -.013, .013, .039):
             p.line([(bx+shift+.005, bv+.016), (bx+shift-.005, bv-.016)],
-                   .42, CHEEK_INK)
+                   .84, CHEEK_INK)
     return canvas.resize((CELL, CELL), Image.Resampling.LANCZOS)
 
 
@@ -128,31 +128,32 @@ def mouth(name):
     large = name in ('aa', 'oh', 'angry')
     if small or large:
         # The opening grows DOWN from the omega, not from an ellipse's top.
-        # Attach below the lobe troughs; preserve both outer upturned corners.
-        # The visible cavity also includes ~0.10 omega widths between the
-        # central cusp stroke and the lobe joins. Total heights: .60 / 1.40.
-        depth = (right-left)*(.50 if small else 1.30)
-        left_join = bezier(omega[0])[40]
-        right_join = bezier(omega[1])[40]
-        # Cubic U reaches 3/4 of its control-point depth at its midpoint.
-        base = min(left_join[1], right_join[1])-depth*4/3
-        opening = [left_join, (left_join[0]+width*.05, base),
-                   (right_join[0]-width*.05, base), right_join]
-        u = bezier(opening)
-        top_edge = bezier(omega[0])[40:]+bezier(omega[1])[:41]
+        # Broad sides and two quarter-ellipse curves form a rounded U base.
+        # Total ink height / full omega width is .85 (small) or 1.30 (large).
+        depth = (right-left)*(.85 if small else 1.30)
+        left_join = bezier(omega[0])[24]
+        right_join = bezier(omega[1])[56]
+        lowest = top-depth+r
+        half = (right_join[0]-left_join[0])/2
+        ry = min(half, (left_join[1]-lowest)*.80)
+        lx, rx = left_join[0], right_join[0]
+        u = [left_join]+bezier([(lx, lowest+ry), (lx, lowest+ry*.4477),
+              (cx-half*.5523, lowest), (cx, lowest)])
+        u += bezier([(cx, lowest), (cx+half*.5523, lowest),
+              (rx, lowest+ry*.4477), (rx, lowest+ry)])+[right_join]
+        top_edge = bezier(omega[0])[24:]+bezier(omega[1])[:57]
         p.fill(top_edge+list(reversed(u)), '#54232b')
         p.line(u)
         # Tongue clipped to the same U cavity, occupying its lower third.
         tongue = Image.new('RGBA', canvas.size)
         tp = FacePen(tongue, p.frame)
-        lowest = min(v for x, v in u)
-        tp.ellipse((cx, lowest+depth*.12), width*.40, depth*.42, TONGUE)
+        cavity_height = min(left_join[1], right_join[1])-lowest
+        tp.ellipse((cx, lowest+cavity_height*.10), half*1.7,
+                   cavity_height*.48, TONGUE)
         mask = Image.new('RGBA', canvas.size)
         FacePen(mask, p.frame).fill(top_edge+list(reversed(u)), '#ffffff')
         tongue.putalpha(ImageChops.multiply(tongue.getchannel('A'), mask.getchannel('A')))
         canvas.alpha_composite(tongue)
-        p.curve([(cx-width*.16, lowest-.018), (cx-width*.10, lowest-.028),
-                 (cx+width*.05, lowest-.030), (cx+width*.16, lowest-.027)], .65)
     for curve in omega:
         p.curve(curve)
     if name == 'neutral':

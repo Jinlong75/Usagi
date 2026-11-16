@@ -1,0 +1,27 @@
+03:28:17 | INFO: Data are loaded, start creating Blender stuff
+03:28:17 | INFO: Blender create Mesh node FaceEyes
+03:28:17 | INFO: Blender create Mesh node FaceMouth
+03:28:17 | INFO: Blender create Mesh node tripo_7f0710d5_2d7f_4ae2_95ba_a3929a66c6cf
+03:28:18 | INFO: Blender create Mesh node BlenderVrmAddonImport241325184543446Temp_3_
+03:28:18 | INFO: Blender create Mesh node BlenderVrmAddonImport241325184543446Temp_6_
+03:28:18 | INFO: glTF import finished in 0.68s
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.HIPS"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.SPINE"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.CHEST"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.NECK"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.HEAD"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_UPPER_LEG"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_LOWER_LEG"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_FOOT"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_UPPER_LEG"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_LOWER_LEG"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_FOOT"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_SHOULDER"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_UPPER_ARM"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_LOWER_ARM"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_HAND"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_SHOULDER"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_UPPER_ARM"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_LOWER_ARM"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_HAND"
+011 Blender 检查通过：网格 ['Cube', 'FaceEyes', 'FaceMouth', 'Usagi_Body']
