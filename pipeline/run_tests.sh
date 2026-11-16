@@ -10,3 +10,4 @@ PIPELINE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 export BLENDER
 # --python-exit-code 覆盖测试入口本身的导入/语法错误；业务脚本另有进程失败保护。
 "$BLENDER" -b --factory-startup --python-exit-code 1 --python "$PIPELINE_DIR/tests/test_pipeline.py"
+"$BLENDER" -b --factory-startup --python-exit-code 1 --python "$PIPELINE_DIR/tests/test_prep_usagi.py"

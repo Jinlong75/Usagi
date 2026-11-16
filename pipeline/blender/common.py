@@ -61,7 +61,22 @@ def import_model(path, allow_vrm=False):
     objects = [obj for obj in bpy.context.scene.objects if obj.type == "MESH"]
     if not objects or not any(obj.data.polygons for obj in objects):
         raise ValueError("输入模型不包含网格面")
+    for obj in objects:
+        restore_region_groups(obj)
     return objects
+
+
+def restore_region_groups(obj):
+    """glTF 自定义逐点位掩码还原无骨架顶点组（材质边界拆点后仍有效）。"""
+    groups = obj.get("usagi_vertex_groups")
+    attribute = obj.data.attributes.get("_USAGI_REGION")
+    if not groups or attribute is None:
+        return
+    for name, bit in groups.items():
+        group = obj.vertex_groups.get(name) or obj.vertex_groups.new(name=name)
+        indices = [i for i, item in enumerate(attribute.data) if round(item.value) & int(bit)]
+        if indices:
+            group.add(indices, 1, "REPLACE")
 
 
 def bounds(objects):
@@ -70,9 +85,9 @@ def bounds(objects):
             Vector(tuple(max(p[i] for p in points) for i in range(3))))
 
 
-def export_glb(path):
+def export_glb(path, **options):
     path = Path(path).resolve()
     path.parent.mkdir(parents=True, exist_ok=True)
     bpy.ops.export_scene.gltf(filepath=str(path), export_format="GLB",
                               export_apply=True, export_yup=True,
-                              use_selection=True)
+                              use_selection=True, **options)

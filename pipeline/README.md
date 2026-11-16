@@ -79,6 +79,27 @@ Workbench 提供快速几何与基础颜色预览，不呈现完整 PBR/VRM 材�
 
 VRM 的骨架依赖保留用于显示，脚本不编辑或导出骨架。自动测试只覆盖 GLB。
 
+## Usagi 底模整备（009）
+
+```sh
+sh pipeline/build_usagi.sh prep
+```
+
+入口使用 `Material/tripo/usagi_3d.glb`，复用清理流程，自动转正到 Blender -Y、删除雕刻五官、修整脸部、分配 Body／EarInner／Tail 材质和同名顶点组，并测量绑骨关键点。原始模型不改写，Blender 路径规则与测试入口一致。`rig`、`face`、`vrm` 阶段暂时只打印“尚未实现”。
+
+`prep_usagi.py` 接受 `--in`、`--out`、`--landmarks`、`--report`，以及 `--smooth-waist on|off`（默认 **off**）和 `--waist-iterations`（默认 100）。用户已决定保留腰线，正式底模不做腰线平滑。
+
+`prep` 产物：
+
+- `assets/model/usagi_base.glb`：保留腰线的正式底模，含三种材质与顶点组数据。
+- `assets/model/usagi_landmarks.json`、`usagi_prep.report.json`：正式底模的关键点与处理报告。
+- `assets/model/preview/`：正式底模的六张预览，以及正面、左侧两张关键点叠图。
+- `assets/model/preview_nosmooth/`：沿用历史目录名，内容为 `--smooth-waist on` 的**平滑版对照**六张预览。对照模型、关键点和报告只写临时目录，生成预览后清理，不覆盖正式产物。
+
+`render_preview.py --landmarks <json>` 可额外输出 `<prefix>_landmarks_front.png` 和 `<prefix>_landmarks_left.png`。关键点使用米、Blender Z 向上、正面 -Y、角色左侧 +X；`neck` 取手臂根部上方 0.01～0.07 米的中央躯干最窄 X 截面。卡通模型没有清晰解剖颈部，`hips`、`chest`、`neck` 与四肢根部为绑骨参考值，绑定前需结合预览确认。
+
+glTF 导入会在材质边界拆点；连通性测试在临时 BMesh 中以 `1e-6` 米距离焊接后，仍严格要求一个连通块。顶点组、材质和颜色的回读检查使用原导入网格。
+
 ## 自动测试
 
 ```sh
