@@ -125,6 +125,28 @@ describe('真实渲染入口接线，无 Electron/DOM/WebGL 宿主', () => {
     expect(host.model.scene.getObjectByName('prop:wand')).toBeUndefined();
   });
 
+  it.each(['nap', 'sleep'] as const)('%s 中关闭作息立即收枕清醒，迟来状态与 reload 不复睡，开启后等新状态再打盹', async state => {
+    host.callbacks.get('routine')!(state); draw();
+    const pillow = host.model.scene.getObjectByName('prop:pillow');
+    expect(pillow).toBeDefined();
+    const dispose = vi.spyOn(pillow.children[0].children[0].geometry, 'dispose');
+    const disabled = { ...DEFAULT_CONFIG, routine: { ...DEFAULT_CONFIG.routine, enabled: false } };
+    host.callbacks.get('config')!(disabled);
+    expect(dispose).toHaveBeenCalledOnce();
+    expect(host.model.scene.getObjectByName('prop:pillow')).toBeUndefined();
+    draw();
+    expect(host.model.expressionManager.setValue).toHaveBeenCalledWith('relaxed', 0);
+    host.callbacks.get('routine')!(state); draw(61_000);
+    expect(host.model.scene.getObjectByName('prop:pillow')).toBeUndefined();
+    host.callbacks.get('reload')!();
+    await vi.waitFor(() => expect(host.model.scene.getObjectByName('props')).toBeDefined());
+    draw(61_000); expect(host.model.scene.getObjectByName('prop:pillow')).toBeUndefined();
+    host.callbacks.get('config')!(structuredClone(DEFAULT_CONFIG)); draw();
+    expect(host.model.scene.getObjectByName('prop:pillow')).toBeUndefined();
+    host.callbacks.get('routine')!(state); draw();
+    expect(host.model.scene.getObjectByName('prop:pillow')).toBeDefined();
+  });
+
   it('诊断默认隐藏；开启才采样、每10秒发屏幕同样的数字，关闭和隐藏停止记录', () => {
     expect(host.overlay.hidden).toBe(true);
     for (let i = 0; i < 5; i++) draw();

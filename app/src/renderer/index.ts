@@ -31,6 +31,7 @@ let rig: MotionRig | null = null;
 let propRig: PropRig | null = null;
 let activeProps: Pose['props'];
 let routineState: import('../shared/types').RoutineState = 'awake';
+let routineEnabled = true;
 function applyPose(pose: Pose): void { activeProps = pose.props; rig?.apply(pose); }
 let springs: DragSprings | null = null;
 let machine = new BehaviorMachine();
@@ -48,7 +49,7 @@ let smokePose: SmokeBehavior | undefined;
 let smokePoseFrames = 0;
 let smokeAge = 0;
 let smokeDragImpulse = false;
-const smokeAges = { idle: 0.875, walk: 0.7, happy: 0.175, surprised: 0.45, shout: 0.55, stretch: 1.1, drag: 0.32, 'ear-shake': 0.3, jumpRope: 2.4, blowBubbles: 1.25, napPillow: 2 };
+const smokeAges = { idle: 0.875, walk: 0.7, happy: 0.175, surprised: 0.45, shout: 0.55, stretch: 1.1, drag: 0.32, 'ear-shake': 0.3, jumpRope: 2.575, blowBubbles: 1.65, napPillow: 2 };
 let chatExpression: { name: PetExpression; until: number } | undefined;
 let volume = 0.7;
 let gaze = { x: 0, y: 0 };
@@ -73,6 +74,13 @@ document.body.append(fpsOverlay);
 function resetFps(): void { frameStats.reset(); lastFpsLoggedAt = performance.now(); }
 function receiveConfig(config: Config): void {
   volume = config.volume;
+  const routineWasEnabled = routineEnabled;
+  routineEnabled = config.routine.enabled;
+  if (routineWasEnabled && !routineEnabled) {
+    routineState = 'awake'; machine.disableRoutine();
+    propRig?.apply(); activeProps = undefined;
+    wake(); flushCommands();
+  }
   if (showFps !== config.showFps) {
     showFps = config.showFps; resetFps();
     fpsOverlay.hidden = !showFps;
@@ -352,7 +360,10 @@ try {
   window.pet.onActivity(activity => {
     if (petVisible && !dragging) { wake(); audio.stop(); machine.activity(activity); flushCommands(); }
   });
-  window.pet.onRoutine(state => { routineState = state; wake(); audio.stop(); machine.routine(state); flushCommands(); });
+  window.pet.onRoutine(state => {
+    if (!routineEnabled) return;
+    routineState = state; wake(); audio.stop(); machine.routine(state); flushCommands();
+  });
   window.pet.onClick(() => { if (petVisible) { wake(); machine.click(); flushCommands(); } });
   window.pet.onPress((pressed) => {
     if (!pressed) pointerDown = false;

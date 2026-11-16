@@ -130,6 +130,23 @@ describe('008 主进程接线：原生窗口替身，无 GUI', () => {
     expect(host.weatherFetch).toHaveBeenCalledTimes(2);
   });
 
+  it('R1-1 午睡中关闭作息后重新开启，主进程立即补发 nap，即使 Routine 缓存没变', async () => {
+    await atWithTicks(13); await host.routine!.tick();
+    expect(pet().webContents.send).toHaveBeenCalledWith('routine:state', 'nap');
+    const settings = await open('设置…'); const initial = await invoke('settings:load', settings);
+    const disabled = { ...initial.config, routine: { ...initial.config.routine, enabled: false } };
+    expect(await invoke('settings:save', settings, disabled)).toMatchObject({ ok: true });
+    pet().webContents.send.mockClear();
+    await vi.advanceTimersByTimeAsync(61_000);
+    expect(pet().webContents.send.mock.calls.filter(([channel]: string[]) => channel === 'routine:state')).toEqual([]);
+    expect(await invoke('settings:save', settings, initial.config)).toMatchObject({ ok: true });
+    const calls = pet().webContents.send.mock.calls;
+    expect(calls).toContainEqual(['routine:state', 'nap']);
+    const configIndex = calls.findLastIndex(([channel]: string[]) => channel === 'config:changed');
+    const napIndex = calls.findLastIndex(([channel, state]: string[]) => channel === 'routine:state' && state === 'nap');
+    expect(napIndex).toBeGreaterThan(configIndex);
+  });
+
   it('R4-1 Routine 构造抛错时主进程继续启动，不启动作息定时器且设置和聊天仍可用', async () => {
     vi.clearAllTimers(); host.windows = [];
     const { Routine } = await import('../src/main/routine');

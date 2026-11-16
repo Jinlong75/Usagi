@@ -1,12 +1,17 @@
-import { BackSide, Box3, BufferGeometry, CatmullRomCurve3, CylinderGeometry, Group, Mesh, MeshBasicMaterial,
+import { BackSide, Box3, BufferGeometry, QuadraticBezierCurve3, CylinderGeometry, Group, Mesh, MeshBasicMaterial,
   Object3D, SphereGeometry, TorusGeometry, TubeGeometry, Vector3 } from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
-export const PROP_COLORS = { outline: '#2b1a14', handles: '#e8584f', rope: '#f2c94c', wand: '#7ec8e3', bubbles: '#bfe8ff', pillow: '#f6e7c8' } as const;
+export const PROP_COLORS = { outline: '#2b1a14', handles: '#e8584f', rope: '#f2c94c', wand: '#7ec8e3', bubbles: '#bfe8ff', pillow: '#f6c9d3' } as const;
 // Rest hand centers measured on the deployed VRM: ±0.3284H, y=0.2626H.
 // Handles sit just outside the hand surface (±0.3466H), rather than inside the torso.
 export const ROPE_SPAN = 0.355;
 export const ROPE_PIVOT_Y = 0.263;
-export const ROPE_RADIUS = 0.285;
+export const ROPE_RADIUS = 0.42;
+export const WAND_RING: [number, number, number] = [-0.108, 0.355, 0.32];
+export const WAND_GRIP: [number, number, number] = [-0.328, 0.263, 0.015];
+export const PILLOW_SIZE = [0.46, 0.184, 0.10] as const;
+export const PILLOW_CENTER: [number, number, number] = [0, 0.06, 0.295];
 export type PropName = 'handles' | 'rope' | 'wand' | 'bubble' | 'pillow';
 type Triple = [number, number, number];
 export interface PropState { name: PropName; position: Triple; rotation?: Triple; scale?: Triple; visible?: boolean; opacity?: number }
@@ -28,6 +33,7 @@ export function createProp(name: PropName): PropHandle {
     const outline = new MeshBasicMaterial({ color: PROP_COLORS.outline, side: BackSide, toneMapped: false,
       transparent: opacity < 1, opacity, depthWrite: opacity === 1 });
     materials.add(material); materials.add(outline);
+    material.userData.baseOpacity = opacity; outline.userData.baseOpacity = opacity;
     part.add(new Mesh(geometry, material));
     const shell = new Mesh(geometry, outline); shell.scale.setScalar(1.035); part.add(shell);
     return part;
@@ -36,19 +42,23 @@ export function createProp(name: PropName): PropHandle {
     for (const x of [-ROPE_SPAN, ROPE_SPAN]) add(new CylinderGeometry(0.009, 0.009, 0.06, 12), PROP_COLORS.handles, [x, 0, 0]);
   } else if (name === 'rope') {
     // Open U: its ends stay at the handles while the arc rotates around the X axis.
-    const points = Array.from({ length: 33 }, (_, i) => {
-      const a = i / 32 * Math.PI;
-      return new Vector3(-ROPE_SPAN * Math.cos(a), -ROPE_RADIUS * Math.sin(a), 0);
-    });
-    add(new TubeGeometry(new CatmullRomCurve3(points), 64, 0.004, 8, false), PROP_COLORS.rope);
+    const arc = new QuadraticBezierCurve3(new Vector3(-ROPE_SPAN, 0, 0),
+      new Vector3(0, -2 * ROPE_RADIUS, 0), new Vector3(ROPE_SPAN, 0, 0));
+    add(new TubeGeometry(arc, 64, 0.004, 8, false), PROP_COLORS.rope);
   } else if (name === 'wand') {
     add(new TorusGeometry(0.035, 0.005, 8, 24), PROP_COLORS.wand);
-    add(new CylinderGeometry(0.005, 0.005, 0.075, 12), PROP_COLORS.wand, [0, -0.07, 0]);
+    // The ring is the origin; a diagonal shaft ends at the actual right hand.
+    const grip = new Vector3(...WAND_GRIP).sub(new Vector3(...WAND_RING));
+    const neck = new Vector3(0, -0.035, 0);
+    const shaft = add(new CylinderGeometry(0.005, 0.005, grip.distanceTo(neck), 12), PROP_COLORS.wand,
+      grip.clone().add(neck).multiplyScalar(0.5).toArray() as Triple);
+    shaft.quaternion.setFromUnitVectors(new Vector3(0, 1, 0), neck.sub(grip).normalize());
   } else if (name === 'bubble') {
     add(new SphereGeometry(1, 20, 12), PROP_COLORS.bubbles, [0, 0, 0], 0.45);
+    // Same palette, stronger opacity: a small pale highlight on the front cap.
+    add(new SphereGeometry(1, 12, 8).scale(0.16, 0.24, 0.07), PROP_COLORS.bubbles, [-0.28, 0.35, 0.9], 0.95);
   } else {
-    // Scaled sphere gives a soft rounded pillow with exact 0.42 × 0.18 × 0.12H dimensions.
-    add(new SphereGeometry(1, 24, 16).scale(0.21, 0.09, 0.06), PROP_COLORS.pillow);
+    add(new RoundedBoxGeometry(...PILLOW_SIZE, 2, 0.035), PROP_COLORS.pillow);
   }
   let disposed = false;
   return { group, apply(state) {
@@ -56,7 +66,7 @@ export function createProp(name: PropName): PropHandle {
     group.position.set(...state.position); group.rotation.set(...(state.rotation ?? [0, 0, 0]));
     group.scale.set(...(state.scale ?? [1, 1, 1]));
     for (const material of materials) {
-      material.opacity = state.opacity ?? (name === 'bubble' ? 0.45 : 1);
+      material.opacity = state.opacity ?? material.userData.baseOpacity;
       material.transparent = material.opacity < 1; material.depthWrite = !material.transparent || material.side !== BackSide;
     }
   }, dispose() {

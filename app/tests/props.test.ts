@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { BackSide, Box3, Mesh, MeshBasicMaterial, Object3D, Vector3 } from 'three';
-import { createProp, PROP_COLORS, PropRig } from '../src/renderer/props';
+import { createProp, PILLOW_CENTER, PILLOW_SIZE, PROP_COLORS, PropRig, ROPE_RADIUS, ROPE_SPAN, WAND_GRIP, WAND_RING } from '../src/renderer/props';
 import { BUBBLE_BLOWS, MOTION_SECONDS, neutralPose, ROPE_APEX, ROPE_PERIOD, ROPE_START, sampleMotion } from '../src/renderer/motion';
 import { frameBounds } from '../src/renderer/motion/framing';
 
@@ -15,7 +15,10 @@ describe('道具几何、驱动与释放', () => {
       const material = object.material as MeshBasicMaterial; materials.add(material);
       expect(Object.values(PROP_COLORS)).toContain(`#${material.color.getHexString()}`);
       expect(material.toneMapped).toBe(false);
-      if (name === 'bubble' && material.side !== BackSide) { expect(material.opacity).toBe(0.45); expect(material.depthWrite).toBe(true); }
+      if (name === 'bubble' && material.side !== BackSide) {
+        expect(material.opacity).toBe(object === prop.group.children[0]!.children[0] ? 0.45 : 0.95);
+        expect(material.depthWrite).toBe(true);
+      }
       if (material.side === BackSide) {
         expect(object.scale.toArray()).toEqual([1.035, 1.035, 1.035]);
         expect(material.color.getHexString()).toBe('2b1a14');
@@ -36,12 +39,37 @@ describe('道具几何、驱动与释放', () => {
     const pillow = root.getObjectByName('prop:pillow')!;
     const mesh = pillow.children[0]!.children[0] as Mesh;
     const dispose = vi.spyOn(mesh.geometry, 'dispose');
-    expect(pillow.getWorldPosition(new Vector3()).toArray()).toEqual([3, 4.36, 5.6]);
+    expect(pillow.getWorldPosition(new Vector3()).toArray()).toEqual([3, 4.12, 5.59]);
     props.apply(sampleMotion('jumpRope', 2).props);
     expect(dispose).toHaveBeenCalledOnce(); expect(root.getObjectByName('prop:pillow')).toBeUndefined();
     expect(root.getObjectByName('prop:rope')).toBeDefined();
     props.apply(); expect(root.children[0]!.children).toHaveLength(0);
     props.dispose(); expect(root.children).toHaveLength(0);
+  });
+  it('绳是手柄间下垂 0.42H 的二次曲线；棒杆接右手且全在嘴侧；软枕为圆角长方体', () => {
+    const rope = createProp('rope');
+    const mesh = rope.group.children[0]!.children[0] as Mesh<import('three').TubeGeometry>;
+    const curve = mesh.geometry.parameters.path;
+    expect(curve.getPoint(0).toArray()).toEqual([-ROPE_SPAN, 0, 0]);
+    expect(curve.getPoint(1).toArray()).toEqual([ROPE_SPAN, 0, 0]);
+    expect(curve.getPoint(0.5).toArray()).toEqual([0, -ROPE_RADIUS, 0]);
+    expect(ROPE_RADIUS).toBeGreaterThanOrEqual(0.35); expect(ROPE_RADIUS).toBeLessThanOrEqual(0.5);
+    const wand = createProp('wand'); wand.apply(sampleMotion('blowBubbles', 1.25).props!.wand!);
+    wand.group.updateMatrixWorld(true);
+    const shaft = wand.group.children[1]!;
+    const cylinder = (shaft.children[0] as Mesh<import('three').CylinderGeometry>).geometry;
+    const grip = shaft.localToWorld(new Vector3(0, -cylinder.parameters.height / 2, 0));
+    expect(grip.distanceTo(new Vector3(...WAND_GRIP))).toBeLessThan(1e-6);
+    expect(WAND_RING[0] + 0.04).toBeLessThan(-0.055); // whole ring clears the ω mouth
+    expect(new Box3().setFromObject(wand.group).max.x).toBeLessThan(-0.055);
+    const pillow = createProp('pillow');
+    const box = new Box3().setFromObject(pillow.group);
+    const size = box.getSize(new Vector3());
+    PILLOW_SIZE.forEach((value, i) => expect(size.getComponent(i)).toBeCloseTo(value * 1.035, 5));
+    expect(PILLOW_SIZE[1] / PILLOW_SIZE[0]).toBeCloseTo(0.4);
+    expect(PILLOW_CENTER[1] + size.y / 2).toBeLessThan(0.27 - (0.35532 - 0.24984));
+    expect(PROP_COLORS.pillow).toBe('#f6c9d3');
+    for (const prop of [rope, wand, pillow]) prop.dispose();
   });
   it('像素证据比较真实合成帧，透明泡泡也能检查，测量后恢复显隐与画面', () => {
     const root = new Object3D(); const props = new PropRig(root, 1, new Box3(new Vector3(), new Vector3(1, 1, 1)));
@@ -71,8 +99,9 @@ describe('三种互动动作', () => {
       expect(landed.position[1]).toBe(0); expect(landed.scale[1]).toBeCloseTo(0.85);
     }
     for (let cycle = 0; cycle < 6; cycle++) expect(sampleMotion('jumpRope', ROPE_START + cycle * ROPE_PERIOD + 0.59).position[1]).toBe(0);
-    // At the smoke timestamp the arc faces +Z, in front of the character.
-    expect(Math.sin(sampleMotion('jumpRope', 2.4).props!.rope!.rotation![0])).toBeLessThan(-0.9);
+    // Smoke freezes the third flight apex with the U below the feet, clear of the face.
+    expect(Math.cos(sampleMotion('jumpRope', 2.575).props!.rope!.rotation![0])).toBeCloseTo(1);
+    for (const t of [0.5, 1.1, 5, 6]) expect(sampleMotion('jumpRope', t).props!.rope!.rotation![0]).toBe(0);
     expect(sampleMotion('jumpRope', 4.81).expressions.happy).toBe(1);
     expect(sampleMotion('jumpRope', 5.29).expressions.happy).toBe(1);
     expect(sampleMotion('jumpRope', 5.31).expressions.happy).toBeUndefined();
@@ -84,6 +113,7 @@ describe('三种互动动作', () => {
       expect(bubbles).toHaveLength(3); expect(pose.expressions.ou).toBe(1);
       expect(sampleMotion('blowBubbles', start + 0.41).expressions.ou).toBeUndefined();
       bubbles.forEach(bubble => { expect(bubble.scale![0]).toBeGreaterThan(0); expect(bubble.scale![0]).toBeLessThanOrEqual(0.03); });
+      bubbles.forEach(bubble => { expect(bubble.position[0]).toBeLessThan(WAND_RING[0]); expect(bubble.position[1]).toBeGreaterThan(WAND_RING[1]); });
       const before = sampleMotion('blowBubbles', start + 1.79).props!;
       const after = sampleMotion('blowBubbles', start + 1.81).props!;
       expect(Object.values(before).filter(prop => prop.name === 'bubble')).toHaveLength(1);
@@ -100,6 +130,7 @@ describe('三种互动动作', () => {
       expect(Math.abs(before.bones.chest![0] - after.bones.chest![0])).toBeLessThan(1e-6);
     }
     expect(sampleMotion('napPillow', 2, { loop: true }).bones.head![0]).toBeCloseTo(0.12);
+    expect(sampleMotion('napPillow', 2, { loop: true }).bones.head![2]).toBeCloseTo(10 * Math.PI / 180);
     expect(sampleMotion('napPillow', 1, { loop: true }).bones.chest![0]).toBeCloseTo(0.07);
   });
   it('取景包含完整绳旋转和所有漂浮泡泡的包围盒，缩放窗口也保留边距', () => {

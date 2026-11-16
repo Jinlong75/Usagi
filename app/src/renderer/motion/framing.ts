@@ -27,6 +27,8 @@ export function framingPoses(modelHeight = 1): Pose[] {
     if (pose.hipsY) pose.hipsY *= modelHeight;
   }
   // Dense full rotations include rope, jumping root and landing scale together.
+  // The parked U hangs lower than the rope on a jumping root during a turn.
+  poses.push(sampleMotion('jumpRope', 0.6, { modelHeight }), sampleMotion('jumpRope', 5.2, { modelHeight }));
   for (let i = 0; i <= 48; i++) poses.push(sampleMotion('jumpRope', 1.2 + i * 0.6 / 48, { modelHeight }));
   for (let t = 0.1; t < 5; t += 0.1) poses.push(sampleMotion('blowBubbles', t, { modelHeight }));
   for (const t of [0.001, 1, 2, 3, 3.999]) poses.push(sampleMotion('napPillow', t, { modelHeight }));

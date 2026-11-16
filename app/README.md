@@ -194,7 +194,7 @@ TODO(lead): 门禁生成截图后核对五官贴片、耳朵碰撞与动作观�
 
 角色右键和托盘菜单的“玩耍”可立即播放“跳绳”（6.5 秒）或“吹泡泡”（5 秒），会取消当前移动/动作，拖动期间不接管。两项也进入随机动作池，每项权重 0.5，原四项各 1，只排除上次动作。跳绳六圈每圈 0.6 秒，绳过脚底与身体 0.06H 腾空顶点同相，最后落地后开心半秒，片段结束播放现有 click_shout。
 
-道具实现位于 `src/renderer/props/`，`createProp(name)` 返回含 Group、apply、dispose 的句柄，`PropRig` 将 Pose.props 的位置、角度、缩放与透明度应用到模型局部空间；位置以模型高度 H 的分数表示。Usagi VRM 1 的正面为 +Z。道具使用限定单色 MeshBasicMaterial 和同几何体放大 3.5% 的深棕 BackSide 外壳。缺失道具立即释放几何与材质，隐藏、换模型和重新载入均清理。抱枕用缩放球体，泡泡以缩放完成出生与消失。
+道具实现位于 `src/renderer/props/`，`createProp(name)` 返回含 Group、apply、dispose 的句柄，`PropRig` 将 Pose.props 的位置、角度、缩放与透明度应用到模型局部空间；位置以模型高度 H 的分数表示。Usagi VRM 1 的正面为 +Z。道具使用限定单色 MeshBasicMaterial 和同几何体放大 3.5% 的深棕 BackSide 外壳。缺失道具立即释放几何与材质，隐藏、换模型和重新载入均清理。绳为两手柄间下垂 0.42H 的二次贝塞尔 U 弧，绕 X 轴转动，准备和收尾时停在脚下。泡泡棒从右手 (-0.328, 0.263, 0.015)H 斜伸到嘴角外侧圆环 (-0.108, 0.355, 0.32)H，泡泡从圆环向外向上漂浮，以缩放完成出生与消失，带同色高光。软枕为浅粉 #F6C9D3 圆角长方体，宽 0.46H（约身体宽度的 0.7）、高 0.184H（枕宽 0.4）、厚 0.10H，中心 (0, 0.06, 0.295)H，上沿低于嘴至少一个嘴高；头侧倾 10° 并使用 relaxed 闭眼表情。
 
 | 事件 | 行为 |
 | --- | --- |
@@ -203,7 +203,11 @@ TODO(lead): 门禁生成截图后核对五官贴片、耳朵碰撞与动作观�
 | 打盹时拖动 | 道具隐藏并释放；放手后两秒重新打盹 |
 | routine awake | 伸懒腰一次后回正常状态机；拖动中收到则等放手 |
 | 休息时选择玩耍 | 立即播放并清醒 60 秒，随后按当前作息决定是否打盹 |
+| 关闭作息 | 渲染层立即清除休息状态与枕头，恢复正常待机；忽略停用期间迟来的作息事件 |
+| 重新开启作息 | 等主进程状态事件；主进程立即按当前时钟补发，仍在 nap/sleep 时段就恢复打盹 |
 
 取景测量补充完整一圈绳旋转/弹跳、泡泡漂浮和抱枕点头姿态，并把道具实际包围盒与角色蒙皮顶点求并集，沿用四边 4% 边距和耳朵余量。
 
-门禁冒烟新增 `smoke-jumpRope.png`、`smoke-blowBubbles.png`、`smoke-napPillow.png`，路径为 `AR_GATE_ARTIFACT_DIR`（默认 `app/smoke-out/`）。取样年龄分别为 2.4 秒（绳在前）、1.25 秒（三个泡泡已吹出）、2 秒（抱枕点头）。JSON 的 `propOpaqueRatios` 记录 handles、rope、wand、bubble、pillow 的可见像素占比：在同一冻结姿态下逐类隐藏道具重绘，比较真实合成帧 RGBA，仅计原帧 alpha > 0 且有变化的像素；这样包含角色遮挡和半透明泡泡，不依赖色差猜测。每项必须 > 0，`propFraming` 要求三个动作道具的全部包围盒顶点都位于视口内。完整 test/smoke 由门禁执行。
+门禁冒烟新增 `smoke-jumpRope.png`、`smoke-blowBubbles.png`、`smoke-napPillow.png`，路径为 `AR_GATE_ARTIFACT_DIR`（默认 `app/smoke-out/`）。取样年龄分别为 2.575 秒（第三次腾空顶点，绳在脚下，避开脸）、1.65 秒（三个泡泡已分散上飘）、2 秒（抱枕点头）。JSON 的 `propOpaqueRatios` 记录 handles、rope、wand、bubble、pillow 的可见像素占比：在同一冻结姿态下逐类隐藏道具重绘，比较真实合成帧 RGBA，仅计原帧 alpha > 0 且有变化的像素；这样包含角色遮挡和半透明泡泡，不依赖色差猜测。每项必须 > 0，`propFraming` 要求三个动作道具的全部包围盒顶点都位于视口内。完整 test/smoke 由门禁执行。
+
+只复查这三种道具截图：先 `ar gui check Electron --headless`，通过后执行 `npm --prefix app run build`，再 `node app/scripts/smoke.mjs --only=jumpRope,blowBubbles,napPillow`。使用同一隐藏离屏渲染入口，只捕获指定行为和初始模型图，不打开聊天、气泡、设置界面；聚焦报告仍要求每类道具有可见像素且包围盒在窗内。全量冒烟的十一种行为、界面和音效检查保持完整。

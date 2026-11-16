@@ -63,6 +63,13 @@ export class BehaviorMachine {
   private sleepingGesture = false;
   private wakeStretch = false;
   private startNap(): void { this.cancel(); this.enter('nap', Infinity); }
+  disableRoutine(): void {
+    this.routineState = 'awake';
+    this.awakeUntil = 0; this.resumeNapAt = 0;
+    this.pressedNap = false; this.sleepingGesture = false; this.wakeStretch = false;
+    // Keep an ongoing pointer gesture; otherwise resume ordinary idle immediately.
+    if (this.snapshot.state === 'nap') { this.cancel(); this.enter('idle', DURATIONS.idle); }
+  }
   routine(state: RoutineState): void {
     if (state === this.routineState) return;
     this.routineState = state;
@@ -75,7 +82,7 @@ export class BehaviorMachine {
   activity(action: Activity): void {
     if (!this.visible || this.snapshot.state === 'drag' || this.pressed) return;
     this.cancel();
-    // TODO(lead): 休息时手动玩耍暂沿用点击的 60 秒清醒期，待确认产品规则。
+    // 休息时手动玩耍与点击一致：保持清醒 60 秒后再按作息回到打盹。
     if (this.routineState !== 'awake') this.awakeUntil = this.now() + 60_000;
     this.lastAction = action; this.enter('act', DURATIONS[action], { action });
   }

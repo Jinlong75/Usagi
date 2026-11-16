@@ -2,7 +2,7 @@ import { Euler, Vector3 } from 'three';
 import type { VRM, VRMHumanBoneName } from '@pixiv/three-vrm';
 import { DURATIONS, SPEED } from '../behavior/machine';
 import { setEmotion } from '../behaviors/expressions';
-import { ROPE_PIVOT_Y } from '../props';
+import { PILLOW_CENTER, ROPE_PIVOT_Y, WAND_RING } from '../props';
 import type { PropState } from '../props';
 import type { Action, Reaction } from '../behavior/machine';
 
@@ -66,13 +66,15 @@ export function sampleMotion(name: MotionName, t: number, options: MotionOptions
       pose.scale = [1 + jump.squash * 0.08 / 0.15, 1 - jump.squash, 1 + jump.squash * 0.08 / 0.15];
     }
     const phase = Math.max(0, Math.min(6 * ROPE_PERIOD, age));
+    // Park below the face before/after the six continuously rotating turns.
+    const ropeAngle = age >= 0 && age < 6 * ROPE_PERIOD ? 2 * Math.PI * (phase - ROPE_APEX) / ROPE_PERIOD : 0;
     pose.props = { handles: { name: 'handles', position: [0, ROPE_PIVOT_Y, 0.02], scale: [weight, weight, weight] },
-      rope: { name: 'rope', position: [0, ROPE_PIVOT_Y, 0.02], rotation: [2 * Math.PI * (phase - ROPE_APEX) / ROPE_PERIOD, 0, 0], scale: [weight, weight, weight] } };
+      rope: { name: 'rope', position: [0, ROPE_PIVOT_Y, 0.02], rotation: [ropeAngle, 0, 0], scale: [weight, weight, weight] } };
     const swing = Math.sin(phase / ROPE_PERIOD * Math.PI * 2) * 0.06 * weight;
     pose.bones.leftUpperArm = [swing, 0, 0]; pose.bones.rightUpperArm = [swing, 0, 0];
     if (age >= 3.6 && age < 4.1) pose.expressions.happy = 1;
   } else if (name === 'blowBubbles') {
-    pose.props = { wand: { name: 'wand', position: [-0.015, 0.31, 0.34], scale: [weight, weight, weight] } };
+    pose.props = { wand: { name: 'wand', position: [...WAND_RING], scale: [weight, weight, weight] } };
     let blowing = 0;
     for (const start of BUBBLE_BLOWS) {
       const age = t - start;
@@ -86,14 +88,18 @@ export function sampleMotion(name: MotionName, t: number, options: MotionOptions
         const age = t - (start + 0.12 + i * 0.09);
         if (age < 0 || age >= 1.5) continue;
         const radius = (0.015 + i * 0.0075) * Math.min(1, age / 0.1) * Math.min(1, (1.5 - age) / 0.3);
-        pose.props![`bubble-${batch}-${i}`] = { name: 'bubble', position: [0.04 + age * (0.075 + i * 0.018), 0.33 + age * (0.14 + i * 0.025), 0.37], scale: [radius, radius, radius] };
+        // Fan out instead of converging into one indistinguishable cluster.
+        // Ease the outward drift so late bubbles stay inside the pet's framing.
+        const outward = 0.75 * (1 - Math.exp(-age / 0.75));
+        const upward = 0.9 * (1 - Math.exp(-age / 0.9));
+        pose.props![`bubble-${batch}-${i}`] = { name: 'bubble', position: [WAND_RING[0] - outward * (0.6 - i * 0.16), WAND_RING[1] + upward * (0.24 + i * 0.24), WAND_RING[2] + 0.025], scale: [radius, radius, radius] };
       }
     });
   } else if (name === 'napPillow') {
     const w = looping ? 1 : weight;
-    pose.props = { pillow: { name: 'pillow', position: [0, 0.18, 0.3], scale: [w, w, w] } };
+    pose.props = { pillow: { name: 'pillow', position: [...PILLOW_CENTER], scale: [w, w, w] } };
     pose.expressions.relaxed = 1;
-    pose.bones.head = [0.06 * (1 - Math.cos(2 * Math.PI * p)) * w, 0, 0];
+    pose.bones.head = [0.06 * (1 - Math.cos(2 * Math.PI * p)) * w, 0, Math.PI / 18 * w];
     pose.bones.chest = [Math.sin(2 * Math.PI * p) * 0.07 * w, 0, 0];
     pose.bones.spine = [Math.sin(2 * Math.PI * p) * 0.07 * 0.35 * w, 0, 0];
     pose.bones.leftUpperArm = [0.08 * w, 0, 0.06 * w];

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 // @ts-expect-error The allowed smoke entry is JavaScript; its validation is tested directly.
-import { BEHAVIORS, validBehaviorReport, validUiReport, validSoundReport, shouldRetryFreshElectron } from '../scripts/smoke.mjs';
+import { BEHAVIORS, validBehaviorReport, validFocusedReport, validUiReport, validSoundReport, shouldRetryFreshElectron } from '../scripts/smoke.mjs';
 import { runSmokeProcess } from '../scripts/smoke-process.mjs';
 
 const success = { ok: true, ui: ['bubble', 'chat', 'settings'], model: '/repo/assets/models/usagi.vrm', earDifferenceRatio: 0.06, happyFaceDifferenceRatio: 0.1, opaqueRatio: 0.21, vrmVersion: '1', expressions: ['blink', 'happy'],
@@ -152,5 +152,21 @@ it('新增道具每种必须有可见像素，三个活动道具必须全部在�
   }
   for (const name of ['jumpRope', 'blowBubbles', 'napPillow']) {
     expect(validBehaviorReport({ ...success, propFraming: { ...success.propFraming, [name]: false } })).toBe(false);
+  }
+});
+
+it('聚焦截图只接受点名道具行为，仍要求每类道具可见且完整入画，全量校验不接受聚焦结果', () => {
+  const only = ['jumpRope', 'blowBubbles', 'napPillow'];
+  const report = { ...success, focused: true, behaviors: only };
+  expect(validFocusedReport(report, only)).toBe(true);
+  expect(validBehaviorReport(report)).toBe(false);
+  expect(validFocusedReport(report, [])).toBe(false);
+  expect(validFocusedReport(report, ['settings'])).toBe(false);
+  expect(validFocusedReport({ ...report, focused: undefined }, only)).toBe(false);
+  for (const name of only) expect(validFocusedReport({ ...report, propFraming: { ...report.propFraming, [name]: false } }, only)).toBe(false);
+  for (const name of Object.keys(success.propOpaqueRatios)) {
+    for (const ratio of [0, undefined, Infinity, NaN, 1.1]) {
+      expect(validFocusedReport({ ...report, propOpaqueRatios: { ...report.propOpaqueRatios, [name]: ratio } }, only)).toBe(false);
+    }
   }
 });

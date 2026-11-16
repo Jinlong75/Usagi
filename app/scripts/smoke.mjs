@@ -4,6 +4,15 @@ import { resolve } from 'node:path';
 import { runSmokeProcess } from './smoke-process.mjs';
 
 export const BEHAVIORS = ['idle', 'walk', 'happy', 'surprised', 'shout', 'stretch', 'drag', 'ear-shake', 'jumpRope', 'blowBubbles', 'napPillow'];
+export function validFocusedReport(report, only) {
+  const props = { jumpRope: ['handles', 'rope'], blowBubbles: ['wand', 'bubble'], napPillow: ['pillow'] };
+  const expected = BEHAVIORS.filter(name => only.includes(name));
+  return only.length > 0 && only.every(name => Object.hasOwn(props, name)) && report.focused === true &&
+    report.vrmVersion === '1' && JSON.stringify(report.behaviors) === JSON.stringify(expected) &&
+    expected.every(name => report.behaviorOpaqueRatios?.[name] >= 0.02 && report.behaviorOpaqueRatios[name] <= 0.95 &&
+      report.propFraming?.[name] === true && props[name].every(prop => Number.isFinite(report.propOpaqueRatios?.[prop]) &&
+        report.propOpaqueRatios[prop] > 0 && report.propOpaqueRatios[prop] <= 1));
+}
 export function validUiReport(report) { return JSON.stringify(report.ui) === JSON.stringify(['bubble', 'chat', 'settings']); }
 export function validSoundReport(report) {
   return typeof report.sounds?.directory === 'string' && !!report.sounds.directory &&
@@ -31,13 +40,14 @@ export function shouldRetryFreshElectron(_freshDownload, code, output) {
 
 async function runOnce(electron, args) {
   let invalid = false; let output = '';
+  const only = args.find(arg => arg.startsWith('--only='))?.slice(7).split(',');
   const code = await runSmokeProcess(electron, args, {
     cwd: fileURLToPath(new URL('..', import.meta.url)),
     stdout: (text) => {
       output += text;
       try {
         const report = JSON.parse(text);
-        if (report.ok && (!validBehaviorReport(report) || !validUiReport(report) || !validSoundReport(report))) {
+        if (report.ok && (only ? !validFocusedReport(report, only) : !validBehaviorReport(report) || !validUiReport(report) || !validSoundReport(report))) {
           invalid = true;
           process.stdout.write(JSON.stringify({ ...report, ok: false, reason: '冒烟缺少界面/行为/音效、不透明像素占比无效或角色超出取景' }) + '\n');
           return;
@@ -49,7 +59,7 @@ async function runOnce(electron, args) {
   return { code: invalid ? 1 : code, output };
 }
 
-export async function smokeMain(executable, args = ['.', '--smoke']) {
+export async function smokeMain(executable, args = ['.', '--smoke', ...process.argv.slice(2)]) {
   try {
     const freshDownload = !executable && !existsSync(fileURLToPath(new URL('../node_modules/electron/dist', import.meta.url)));
     const electron = executable ?? (await import('electron')).default;

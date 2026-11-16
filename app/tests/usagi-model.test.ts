@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { Box3, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { VRMLoaderPlugin } from '@pixiv/three-vrm';
@@ -86,32 +86,40 @@ describe('真实 Usagi 资源的无界面验证', () => {
     expect(vertices).toBeGreaterThan(9000);
     expect(maximum).toBeLessThan(1e-6);
   });
-  it('跳绳握柄在真实小手外侧，新增道具进入取景并在测量后释放', async () => {
-    const vrm = await load();
-    const neutral = new Box3().setFromObject(vrm.scene, true);
-    const height = neutral.getSize(new Vector3()).y;
-    for (const side of ['leftHand', 'rightHand'] as const) {
-      const hand = vrm.humanoid.getRawBoneNode(side)!.getWorldPosition(new Vector3());
-      const gap = ROPE_SPAN * height - Math.abs(hand.x);
-      expect(gap).toBeGreaterThan(0); expect(gap).toBeLessThan(height * 0.04);
-      expect(Math.abs(ROPE_PIVOT_Y * height - hand.y)).toBeLessThan(height * 0.01);
-    }
-    const rig = new MotionRig(vrm);
-    const measured = measureMotionBounds(vrm, rig);
-    expect(vrm.scene.getObjectByName('props')).toBeUndefined();
-    const props = new PropRig(vrm.scene, height, neutral);
-    for (const name of ['jumpRope', 'blowBubbles', 'napPillow'] as const) {
-      for (let t = 0.025; t < 5; t += 0.075) {
-        props.apply(); rig.reset();
-        const pose = sampleMotion(name, t, { modelHeight: height }); rig.apply(pose); props.apply(pose.props);
-        vrm.update(0); vrm.scene.updateMatrixWorld(true);
-        const box = new Box3().setFromObject(vrm.scene, true);
-        // Dense samples supplement the extrema measured at load. A tiny epsilon
-        // only absorbs Float32 bone/vertex arithmetic at otherwise equal bounds.
-        expect(measured.motion.clone().expandByScalar(height * 0.001).containsBox(box)).toBe(true);
+  describe('道具的真实模型取景', () => {
+    let vrm: VRM, rig: MotionRig, neutral: Box3, height: number;
+    let measured: ReturnType<typeof measureMotionBounds>;
+    beforeAll(async () => {
+      vrm = await load();
+      neutral = new Box3().setFromObject(vrm.scene, true);
+      height = neutral.getSize(new Vector3()).y;
+      rig = new MotionRig(vrm);
+      // One immutable reference measurement, reused by the three dense sweeps.
+      measured = measureMotionBounds(vrm, rig);
+    });
+    it('跳绳握柄在真实小手外侧，取景测量后释放道具', () => {
+      for (const side of ['leftHand', 'rightHand'] as const) {
+        const hand = vrm.humanoid.getRawBoneNode(side)!.getWorldPosition(new Vector3());
+        const gap = ROPE_SPAN * height - Math.abs(hand.x);
+        expect(gap).toBeGreaterThan(0); expect(gap).toBeLessThan(height * 0.04);
+        expect(Math.abs(ROPE_PIVOT_Y * height - hand.y)).toBeLessThan(height * 0.01);
       }
-    }
-    props.dispose(); rig.reset();
+      expect(vrm.scene.getObjectByName('props')).toBeUndefined();
+    });
+    it.each(['jumpRope', 'blowBubbles', 'napPillow'] as const)('%s 道具进入取景', name => {
+      const props = new PropRig(vrm.scene, height, neutral);
+      try {
+        for (let t = 0.025; t < 5; t += 0.075) {
+          props.apply(); rig.reset();
+          const pose = sampleMotion(name, t, { modelHeight: height }); rig.apply(pose); props.apply(pose.props);
+          vrm.update(0); vrm.scene.updateMatrixWorld(true);
+          const box = new Box3().setFromObject(vrm.scene, true);
+          // Dense samples supplement the extrema measured at load. A tiny epsilon
+          // only absorbs Float32 bone/vertex arithmetic at otherwise equal bounds.
+          expect(measured.motion.clone().expandByScalar(height * 0.001).containsBox(box), `${name} at ${t.toFixed(3)}s`).toBe(true);
+        }
+      } finally { props.dispose(); rig.reset(); vrm.update(0); }
+    });
   });
   it.each([['stretch', 1.1], ['shout', 0.55]] as const)('%s 的两只小手向两侧斜上举、伸出身体轮廓，结束后回中性', async (name, age) => {
     const vrm = await load();

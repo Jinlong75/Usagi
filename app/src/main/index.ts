@@ -17,7 +17,7 @@ import { DeepSeekClient } from './chat/client';
 import { SessionStore } from './chat/sessionStore';
 import { SelfTalk } from './selfTalk';
 import { Weather, prefetchMorning } from './weather';
-import { Routine, isForegroundFullscreen } from './routine';
+import { Routine, inRange, isForegroundFullscreen } from './routine';
 import { menuState } from '../shared/ui';
 import { initialBounds, windowDimensions } from '../shared/window';
 import { beginGesture, isClick, updateGesture } from '../shared/gesture';
@@ -55,6 +55,12 @@ let dragSample = { point: { x: 0, y: 0 }, time: 0 };
 const runtime = { isPackaged: app.isPackaged, resourcesPath: process.resourcesPath };
 const sounds = SoundLibrary.fromRuntime(root, runtime);
 const smokeBehaviors: SmokeBehavior[] = ['idle', 'walk', 'happy', 'surprised', 'shout', 'stretch', 'drag', 'ear-shake', 'jumpRope', 'blowBubbles', 'napPillow'];
+// Focused screenshots share the production smoke renderer, without opening UI pages.
+const smokeOnly = smoke ? process.argv.find(arg => arg.startsWith('--only='))?.slice(7).split(',') : undefined;
+if (smokeOnly) {
+  if (!smokeOnly.length || smokeOnly.some(name => !['jumpRope', 'blowBubbles', 'napPillow'].includes(name))) throw new Error('无效的聚焦冒烟动作');
+  smokeBehaviors.splice(0, smokeBehaviors.length, ...smokeBehaviors.filter(name => smokeOnly.includes(name)));
+}
 const propOpaqueRatios: Record<string, number> = {};
 const propFraming: Record<string, boolean> = {};
 const behaviorRatios: Partial<Record<SmokeBehavior, number>> = {};
@@ -159,9 +165,16 @@ function updateConfig(value: unknown): void {
   const candidate = { ...next, position: config.position, size: config.size, modelPath: config.modelPath };
   const saved = save(candidate);
   if (!saved.ok) throw new Error(saved.reason);
+  const routineWasEnabled = config.routine.enabled;
   config = candidate;
   win?.setAlwaysOnTop(config.alwaysOnTop, 'floating');
   applyHit(); refreshMenu(); ui?.broadcast(); if (!quitting) { selfTalk?.restart(); routine?.start(); }
+  // Routine only emits changes to its cached state. Re-enabling needs a fresh
+  // clock sample even if that cache still says nap from before it was disabled.
+  if (!quitting && routine && !routineWasEnabled && config.routine.enabled) {
+    const now = new Date();
+    win?.webContents.send('routine:state', inRange(now, config.routine.sleep) ? 'sleep' : inRange(now, config.routine.nap) ? 'nap' : 'awake');
+  }
 }
 
 // 菜单里的开关直接写配置：写盘失败时恢复勾选状态并用气泡提示，不让异常冒到主进程
@@ -281,6 +294,12 @@ async function capture(result: RenderResult): Promise<void> {
     const next = smokeBehaviors[smokeIndex];
     if (next) win.webContents.send('pet:smoke-pose', next);
     else {
+      if (smokeOnly) {
+        completed = true;
+        exitSmoke(0, { ok: true, focused: true, model: modelPath, opaqueRatio: initialRatio, vrmVersion: result.vrmVersion,
+          expressions: result.expressions ?? [], behaviors: smokeBehaviors, behaviorOpaqueRatios: behaviorRatios, propOpaqueRatios, propFraming });
+        return;
+      }
       const { captureUi } = await import('../../scripts/smoke-ui');
       // Return to idle before composing the pet + bubble screenshot.
       win.webContents.send('pet:smoke-pose', 'idle');
