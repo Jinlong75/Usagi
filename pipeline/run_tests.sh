@@ -11,6 +11,7 @@ export BLENDER
 # --python-exit-code 覆盖测试入口本身的导入/语法错误；业务脚本另有进程失败保护。
 "$BLENDER" -b --factory-startup --python-exit-code 1 --python "$PIPELINE_DIR/tests/test_pipeline.py"
 "$BLENDER" -b --factory-startup --python-exit-code 1 --python "$PIPELINE_DIR/tests/test_prep_usagi.py"
+"$BLENDER" -b --factory-startup --python-exit-code 1 --python "$PIPELINE_DIR/tests/test_shape_consistency.py"
 # VRM 扩展依赖用户启动配置，rig 测试不使用 --factory-startup。
 "$BLENDER" -b --python-exit-code 1 --python "$PIPELINE_DIR/tests/test_rig_usagi.py"
 # 011: external temporary Pillow, then synthetic face and real three-vrm mixing.
@@ -35,3 +36,5 @@ export FACE_RUNTIME_VRM
 npm --prefix "$FACE_RUNTIME_TEMP" install --no-save --ignore-scripts --no-audit --no-fund --silent \
     '@pixiv/three-vrm@3.5.5' 'three@0.187.0'
 node "$PIPELINE_DIR/tests/test_face_runtime.mjs" "$FACE_RUNTIME_TEMP"
+# 022: fresh processes must reproduce all three real-model artifacts byte for byte.
+"$FACE_PYTHON" "$PIPELINE_DIR/tests/test_reproducibility.py"

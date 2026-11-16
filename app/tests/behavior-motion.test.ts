@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
 import { Bone, Box3, BoxGeometry, Float32BufferAttribute, Object3D, Skeleton, SkinnedMesh, Uint16BufferAttribute, Vector3 } from 'three';
 import type { VRM, VRMHumanBoneName } from '@pixiv/three-vrm';
-import { ARM_REST, MOTION_SECONDS, MotionRig, jumps, neutralPose, sampleMotion } from '../src/renderer/motion';
+import { ARM_FOREARM, ARM_RAISE, ARM_REST, MOTION_SECONDS, MotionRig, jumps, neutralPose, sampleMotion } from '../src/renderer/motion';
 import { EMOTIONS, setEmotion } from '../src/renderer/behaviors/expressions';
 import type { MotionName } from '../src/renderer/motion';
 import { DragSprings, SPRING_ACCELERATION_COEFFICIENT } from '../src/renderer/motion/springs';
@@ -186,7 +186,7 @@ describe('动作取景与冒烟顶部透明检查', () => {
   it('读取更新骨骼后的实际顶点而非缓存包围盒，采样完成恢复中性', () => {
     const scene = new Object3D();
     const normalized = new Object3D();
-    normalized.rotation.z = -1.1;
+    normalized.rotation.z = -ARM_REST; // Use the same neutral arm angle as the deployed model.
     const bone = new Bone();
     bone.position.y = 1;
     bone.rotation.copy(normalized.rotation);
@@ -260,7 +260,12 @@ it('按模型高度跳 10%，落地 XZ 1.08，短腿摇摆大于手臂，伸展�
   expect(stretch.hipsY).toBeCloseTo(0.025);
   expect(stretch.bones.chest![0]).toBeCloseTo(-0.1);
   expect(stretch.bones.leftShoulder).toBeUndefined();
-  expect(stretch.bones.leftUpperArm![2] - ARM_REST).toBeCloseTo(0.4);
+  expect(stretch.bones.leftUpperArm).toEqual([0, 0, ARM_RAISE.stretch]);
+  expect(stretch.bones.rightUpperArm).toEqual([0, 0, -ARM_RAISE.stretch]);
+  expect(stretch.bones.leftLowerArm).toEqual([0, 0, ARM_FOREARM]);
+  expect(stretch.bones.rightLowerArm).toEqual([0, 0, -ARM_FOREARM]);
+  expect(stretch.bones.leftUpperArm![2] - ARM_REST).toBeCloseTo(ARM_RAISE.stretch);
+  expect(sampleMotion('shout', 0.55).bones.leftUpperArm![2] - ARM_REST).toBeCloseTo(ARM_RAISE.shout);
 });
 
 it('像素比较只看指定区域，跟随脸部位移，透明度和颜色变化都能检出', () => {

@@ -1,0 +1,42 @@
+00:24:02 | INFO: Data are loaded, start creating Blender stuff
+00:24:02 | INFO: Blender create Mesh node tripo_7f0710d5_2d7f_4ae2_95ba_a3929a66c6cf
+00:24:03 | INFO: Blender create Mesh node BlenderVrmAddonImport421976870831754Temp_1_
+00:24:03 | INFO: glTF import finished in 0.68s
+INFO Draco is available, use library at <Blender.app>/Contents/Resources/5.2/scripts/addons_core/io_scene_gltf2/libbf_intern_draco_bridge.dylib
+INFO MeshOptimizer is available, use library at <Blender.app>/Contents/Resources/5.2/scripts/addons_core/io_scene_gltf2/libbf_intern_meshopt_bridge.dylib
+00:24:35 | INFO: Starting glTF 2.0 export
+00:24:35 | INFO: Starting glTF 2.0 export
+00:24:35 | INFO: Extracting primitive: FaceEyes
+00:24:35 | INFO: Extracting primitive: FaceEyes
+00:24:35 | INFO: Primitives created: 1
+00:24:35 | INFO: Primitives created: 1
+00:24:35 | INFO: Extracting primitive: FaceMouth
+00:24:35 | INFO: Extracting primitive: FaceMouth
+00:24:35 | INFO: Primitives created: 1
+00:24:35 | INFO: Primitives created: 1
+00:24:35 | INFO: Extracting primitive: tripo_7f0710d5_2d7f_4ae2_95ba_a3929a66c6cf
+00:24:35 | INFO: Extracting primitive: tripo_7f0710d5_2d7f_4ae2_95ba_a3929a66c6cf
+00:24:36 | INFO: Primitives created: 3
+00:24:36 | INFO: Primitives created: 3
+00:24:36 | INFO: Finished glTF 2.0 export in 0.9653491973876953 s
+00:24:36 | INFO: Finished glTF 2.0 export in 0.9653491973876953 s
+<project>/pipeline/blender/face_usagi.py:205: DeprecationWarning: 'World.use_nodes' is expected to be removed in Blender 6.0
+  scene.world.use_nodes = True
+00:40.134  render           | Saved: 'assets/model/preview_face/neutral.png'
+00:41.984  render           | Saved: 'assets/model/preview_face/blink.png'
+00:44.052  render           | Saved: 'assets/model/preview_face/blinkLeft.png'
+00:46.182  render           | Saved: 'assets/model/preview_face/blinkRight.png'
+00:48.297  render           | Saved: 'assets/model/preview_face/happy.png'
+00:50.188  render           | Saved: 'assets/model/preview_face/angry.png'
+00:52.137  render           | Saved: 'assets/model/preview_face/sad.png'
+00:54.529  render           | Saved: 'assets/model/preview_face/relaxed.png'
+00:56.868  render           | Saved: 'assets/model/preview_face/surprised.png'
+00:58.982  render           | Saved: 'assets/model/preview_face/aa.png'
+01:01.105  render           | Saved: 'assets/model/preview_face/ih.png'
+01:03.320  render           | Saved: 'assets/model/preview_face/ou.png'
+01:04.925  render           | Saved: 'assets/model/preview_face/ee.png'
+01:06.738  render           | Saved: 'assets/model/preview_face/oh.png'
+
+Blender 5.2.3 LTS (hash e13b728c6880 built 2026-10-22 01:31:22)
+
+Blender quit

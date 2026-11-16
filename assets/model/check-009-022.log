@@ -1,0 +1,4 @@
+23:09:59 | INFO: Data are loaded, start creating Blender stuff
+23:09:59 | INFO: Blender create Mesh node tripo_7f0710d5_2d7f_4ae2_95ba_a3929a66c6cf
+23:09:59 | INFO: glTF import finished in 0.43s
+009 Blender 检查通过：材质面数 {'Body': 32741, 'EarInner': 5651, 'Tail': 762}

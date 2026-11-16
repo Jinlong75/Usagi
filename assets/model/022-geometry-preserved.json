@@ -1,0 +1,23 @@
+[
+  {
+    "material": "Body",
+    "vertices": 19184,
+    "triangles": 32008,
+    "positions_equal_to_accepted": true,
+    "triangle_coordinate_multiset_equal_to_accepted": true
+  },
+  {
+    "material": "EarInner",
+    "vertices": 19184,
+    "triangles": 5641,
+    "positions_equal_to_accepted": true,
+    "triangle_coordinate_multiset_equal_to_accepted": true
+  },
+  {
+    "material": "Tail",
+    "vertices": 19184,
+    "triangles": 702,
+    "positions_equal_to_accepted": true,
+    "triangle_coordinate_multiset_equal_to_accepted": true
+  }
+]

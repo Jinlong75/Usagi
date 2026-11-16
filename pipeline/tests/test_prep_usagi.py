@@ -19,7 +19,7 @@ from mathutils import Matrix, Vector
 from common import export_glb, import_model, reset_scene
 from cleanup_mesh import face_islands
 from prep_usagi import (ear_inner_region, tail_region, smooth_waist, waist_depth,
-                        prep, smooth_face, linear_color, assign_regions, deepen_side_waist)
+                        prep, smooth_face, linear_color, assign_regions)
 from region_boundary import boundary_metrics
 
 
@@ -197,34 +197,6 @@ class PrepTests(unittest.TestCase):
                 bpy.data.images.remove(base)
                 bpy.data.images.remove(overlay)
 
-    def test_015_side_notch_pins_center_and_limits_depth(self):
-        self.assertGreater(self.report["side_waist"]["vertices_processed"], 0)
-        bm = grooved_cylinder()
-        try:
-            profile = {"height": 1, "head_width": .20, "arm_z": .455}
-            original = {v: v.co.copy() for v in bm.verts}
-            report = deepen_side_waist(bm.verts, profile)
-            self.assertAlmostEqual(report["side_x_min"], .12)
-            self.assertGreater(report["vertices_by_side"]["l"], 0)
-            self.assertEqual(report["vertices_by_side"]["l"], report["vertices_by_side"]["r"])
-            self.assertGreater(report["max_displacement_m"], .015)
-            self.assertLessEqual(report["max_displacement_m"], .038 + 1e-7)
-            changed = 0
-            for vert, before in original.items():
-                # 所有高度带的并集为 .464..518；腹部中线与带外必须逐位不变。
-                if abs(before.x) <= report["side_x_min"] or before.z >= .518 or before.z <= .464:
-                    self.assertEqual(tuple(vert.co), tuple(before))
-                self.assertEqual(vert.co.z, before.z)
-                delta = (vert.co - before).length
-                if delta > 0:
-                    changed += 1
-                    self.assertGreater(abs(before.x), report["side_x_min"])
-                    self.assertLess(math.hypot(vert.co.x, vert.co.y), math.hypot(before.x, before.y))
-            self.assertEqual(changed, report["vertices_processed"])
-            self.assertGreater(changed, 0)
-        finally:
-            bm.free()
-
     def assert_smooth_boundaries(self, obj, expected):
         metrics = boundary_metrics(obj)
         self.assertEqual(set(metrics), set(expected), metrics)
@@ -232,7 +204,9 @@ class PrepTests(unittest.TestCase):
             self.assertEqual(len(metrics[label]), 1, metrics)
             loop, = metrics[label]
             self.assertTrue(loop["closed"], metrics)
-            self.assertLess(loop["max_turn_degrees"], 35, metrics)
+            # 主导决定：原耳折面的 3D 转弯不代表正面可见锯齿。
+            angle = "max_front_turn_degrees" if label.startswith("ear_") else "max_turn_degrees"
+            self.assertLess(loop[angle], 35, metrics)
         print("014 boundary metrics: " + json.dumps(metrics), flush=True)
 
     def test_08_synthetic_cut_ellipse_closed_and_smooth(self):
@@ -260,33 +234,40 @@ class PrepTests(unittest.TestCase):
             self.skipTest("正式产物尚未生成")
         reset_scene()
         obj, = import_model(product)
-        self.assert_smooth_boundaries(obj, {"ear_l", "ear_r", "tail"})
-        bm = bmesh.new()
-        try:
-            bm.from_mesh(obj.data)
-            bmesh.ops.remove_doubles(bm, verts=list(bm.verts), dist=1e-7)
-            self.assertEqual(len(face_islands(bm)), 1)
-            self.assertFalse(any(face.calc_area() <= 1e-14 for face in bm.faces))
-        finally:
-            bm.free()
+        self.assert_real_regions(obj)
         # 同时从正式原始模型临时重建，防止已提交的旧 GLB 掩盖分区代码回退。
-        source = BLENDER_DIR.parents[1] / "Material/tripo/usagi_3d.glb"
+        source = BLENDER_DIR.parents[1] / "Material/tripo/usagi3d2.glb"
         regenerated = self.root / "real-regenerated.glb"
         prep(Namespace(input=str(source), output=str(regenerated),
                        landmarks=str(self.root / "real-landmarks.json"),
                        report=str(self.root / "real-report.json"),
                        smooth_waist="off", waist_iterations=100))
+        report = json.loads((self.root / "real-report.json").read_text())
+        components = report["region_boundary"]["ear_components"]
+        self.assertEqual(sum(c["kept"] for c in components), 2, components)
+        for component in components:
+            self.assertEqual(component["kept"], component["mean_normal_y"] < -.25)
         reset_scene()
         obj, = import_model(regenerated)
-        self.assert_smooth_boundaries(obj, {"ear_l", "ear_r", "tail"})
+        self.assert_real_regions(obj)
+
+    def assert_real_regions(self, obj):
         bm = bmesh.new()
         try:
             bm.from_mesh(obj.data)
             bmesh.ops.remove_doubles(bm, verts=list(bm.verts), dist=1e-7)
-            self.assertEqual(len(face_islands(bm)), 1)
+            islands = sorted(face_islands(bm), key=len, reverse=True)
+            self.assertEqual(len(islands), 2)
+            tail = islands[1]
+            self.assertLess(len(tail), len(bm.faces) * .05)
+            self.assertGreater(sum(f.calc_center_median().y for f in tail) / len(tail), 0)
+            self.assertEqual(len(tail), 702)  # 原始独立网格不细分、不改形状。
+            self.assertEqual({f for f in bm.faces if f.material_index == 2}, set(tail))
+            self.assertEqual(sum(f.material_index == 2 for f in islands[0]), 0)
             self.assertFalse(any(face.calc_area() <= 1e-14 for face in bm.faces))
         finally:
             bm.free()
+        self.assert_smooth_boundaries(obj, {"ear_l", "ear_r"})
 
     def test_07_face_sphere_local_bump(self):
         reset_scene()
@@ -299,7 +280,12 @@ class PrepTests(unittest.TestCase):
                 if abs(v.co.x) < .025 and abs(v.co.z - .46) < .025 and v.co.y < -.20:
                     v.co.y -= .015
             bm.normal_update()
-            report = smooth_face(bm)
+            regions = [{"min": [-.031, -.31, .429], "max": [.031, -.20, .491]}]
+            original = {v: v.co.copy() for v in bm.verts}
+            report = smooth_face(bm, regions)
+            for v, before in original.items():
+                if not all(regions[0]["min"][i] <= before[i] <= regions[0]["max"][i] for i in range(3)):
+                    self.assertEqual(tuple(v.co), tuple(before))
             self.assertGreater(report["max_deviation_before"], .004)
             self.assertGreater(report["vertices_processed"], 0)
             self.assertLessEqual(report["max_deviation_after"], .004)

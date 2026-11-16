@@ -1,0 +1,223 @@
+修复前首次 009/010/011 后 git status --short：
+ M assets/model/preview/ears_closeup_front.png
+ M assets/model/preview/preview_34.png
+ M assets/model/preview/preview_back.png
+ M assets/model/preview/preview_front.png
+ M assets/model/preview/preview_landmarks_front.png
+ M assets/model/preview/preview_landmarks_left.png
+ M assets/model/preview/preview_left.png
+ M assets/model/preview/preview_right.png
+ M assets/model/preview/tail_closeup_back.png
+ M assets/model/preview_face/aa.png
+ M assets/model/preview_face/angry.png
+ M assets/model/preview_face/blink.png
+ M assets/model/preview_face/blinkLeft.png
+ M assets/model/preview_face/blinkRight.png
+ M assets/model/preview_face/ee.png
+ M assets/model/preview_face/expression_sheet.png
+ M assets/model/preview_face/happy.png
+ M assets/model/preview_face/ih.png
+ M assets/model/preview_face/neutral.png
+ M assets/model/preview_face/oh.png
+ M assets/model/preview_face/ou.png
+ M assets/model/preview_face/relaxed.png
+ M assets/model/preview_face/sad.png
+ M assets/model/preview_face/surprised.png
+ M assets/model/preview_nosmooth/preview_34.png
+ M assets/model/preview_nosmooth/preview_back.png
+ M assets/model/preview_nosmooth/preview_front.png
+ M assets/model/preview_nosmooth/preview_left.png
+ M assets/model/preview_nosmooth/preview_right.png
+ M assets/model/preview_original/preview_34.png
+ M assets/model/preview_original/preview_back.png
+ M assets/model/preview_original/preview_front.png
+ M assets/model/preview_original/preview_left.png
+ M assets/model/preview_original/preview_right.png
+ M assets/model/preview_rig/arms_down_70_45.png
+ M assets/model/preview_rig/arms_down_70_front.png
+ M assets/model/preview_rig/arms_up_45.png
+ M assets/model/preview_rig/arms_up_front.png
+ M assets/model/preview_rig/ears_back_25_45.png
+ M assets/model/preview_rig/ears_back_25_front.png
+ M assets/model/preview_rig/head_left_20_front.png
+ M assets/model/preview_rig/head_left_30_45.png
+ M assets/model/preview_rig/head_left_30_front.png
+ M assets/model/preview_rig/neutral_t_45.png
+ M assets/model/preview_rig/neutral_t_front.png
+ M assets/model/preview_rig/one_leg_up_45.png
+ M assets/model/preview_rig/one_leg_up_front.png
+ M assets/model/usagi_prep.report.json
+ M assets/model/usagi_rig.blend
+ M assets/model/usagi_rig.blend1
+ M assets/model/usagi_shape.report.json
+?? assets/model/.022-repro/
+?? assets/model/022-repro-009.log
+?? assets/model/022-repro-010.log
+?? assets/model/022-repro-011.log
+
+最终重出并复制后、009/010/011 前：
+ M assets/model/preview/ears_closeup_front.png
+ M assets/model/preview/preview_34.png
+ M assets/model/preview/preview_back.png
+ M assets/model/preview/preview_front.png
+ M assets/model/preview/preview_landmarks_front.png
+ M assets/model/preview/preview_landmarks_left.png
+ M assets/model/preview/preview_left.png
+ M assets/model/preview/preview_right.png
+ M assets/model/preview/preview_sheet.png
+ M assets/model/preview/tail_closeup_back.png
+ M assets/model/preview_face/aa.png
+ M assets/model/preview_face/angry.png
+ M assets/model/preview_face/blink.png
+ M assets/model/preview_face/blinkLeft.png
+ M assets/model/preview_face/blinkRight.png
+ M assets/model/preview_face/ee.png
+ M assets/model/preview_face/expression_sheet.png
+ M assets/model/preview_face/happy.png
+ M assets/model/preview_face/ih.png
+ M assets/model/preview_face/neutral.png
+ M assets/model/preview_face/oh.png
+ M assets/model/preview_face/ou.png
+ M assets/model/preview_face/relaxed.png
+ M assets/model/preview_face/sad.png
+ M assets/model/preview_face/surprised.png
+ M assets/model/preview_nosmooth/preview_34.png
+ M assets/model/preview_nosmooth/preview_back.png
+ M assets/model/preview_nosmooth/preview_front.png
+ M assets/model/preview_nosmooth/preview_left.png
+ M assets/model/preview_nosmooth/preview_right.png
+ M assets/model/preview_nosmooth/preview_sheet.png
+ M assets/model/preview_original/preview_34.png
+ M assets/model/preview_original/preview_back.png
+ M assets/model/preview_original/preview_front.png
+ M assets/model/preview_original/preview_left.png
+ M assets/model/preview_original/preview_right.png
+ M assets/model/preview_rig/arms_down_70_45.png
+ M assets/model/preview_rig/arms_down_70_front.png
+ M assets/model/preview_rig/arms_up_45.png
+ M assets/model/preview_rig/arms_up_front.png
+ M assets/model/preview_rig/ears_back_25_45.png
+ M assets/model/preview_rig/ears_back_25_front.png
+ M assets/model/preview_rig/head_left_20_front.png
+ M assets/model/preview_rig/head_left_30_45.png
+ M assets/model/preview_rig/head_left_30_front.png
+ M assets/model/preview_rig/neutral_t_45.png
+ M assets/model/preview_rig/neutral_t_front.png
+ M assets/model/preview_rig/one_leg_up_45.png
+ M assets/model/preview_rig/one_leg_up_front.png
+ M assets/model/preview_rig/pose_sheet.png
+ M assets/model/usagi.vrm
+ M assets/model/usagi_base.glb
+ M assets/model/usagi_body.vrm
+ M assets/model/usagi_prep.report.json
+ M assets/model/usagi_rig.blend
+ M assets/model/usagi_rig.blend1
+ M assets/models/usagi.vrm
+ M pipeline/022-worker-report.md
+ M pipeline/README.md
+ M pipeline/blender/prep_usagi.py
+ M pipeline/run_tests.sh
+?? assets/model/.022-repro/
+?? assets/model/022-final-face.log
+?? assets/model/022-final-prep.log
+?? assets/model/022-final-rig.log
+?? assets/model/022-geometry-preserved.json
+?? assets/model/022-nondeterminism-after-components.json
+?? assets/model/022-nondeterminism-before.json
+?? assets/model/022-prep-reproducibility.json
+?? assets/model/022-repeat-face.log
+?? assets/model/022-repeat-prep.log
+?? assets/model/022-repeat-rig.log
+?? assets/model/022-repro-009.log
+?? assets/model/022-repro-010.log
+?? assets/model/022-repro-011.log
+?? assets/model/022-test-prep-final.log
+?? assets/model/022-test-reproducibility-after-components.log
+?? assets/model/022-test-reproducibility-final.log
+?? assets/model/022-test-reproducibility.log
+?? pipeline/tests/test_reproducibility.py
+
+最终 009/010/011 后：
+ M assets/model/preview/ears_closeup_front.png
+ M assets/model/preview/preview_34.png
+ M assets/model/preview/preview_back.png
+ M assets/model/preview/preview_front.png
+ M assets/model/preview/preview_landmarks_front.png
+ M assets/model/preview/preview_landmarks_left.png
+ M assets/model/preview/preview_left.png
+ M assets/model/preview/preview_right.png
+ M assets/model/preview/preview_sheet.png
+ M assets/model/preview/tail_closeup_back.png
+ M assets/model/preview_face/aa.png
+ M assets/model/preview_face/angry.png
+ M assets/model/preview_face/blink.png
+ M assets/model/preview_face/blinkLeft.png
+ M assets/model/preview_face/blinkRight.png
+ M assets/model/preview_face/ee.png
+ M assets/model/preview_face/expression_sheet.png
+ M assets/model/preview_face/happy.png
+ M assets/model/preview_face/ih.png
+ M assets/model/preview_face/neutral.png
+ M assets/model/preview_face/oh.png
+ M assets/model/preview_face/ou.png
+ M assets/model/preview_face/relaxed.png
+ M assets/model/preview_face/sad.png
+ M assets/model/preview_face/surprised.png
+ M assets/model/preview_nosmooth/preview_34.png
+ M assets/model/preview_nosmooth/preview_back.png
+ M assets/model/preview_nosmooth/preview_front.png
+ M assets/model/preview_nosmooth/preview_left.png
+ M assets/model/preview_nosmooth/preview_right.png
+ M assets/model/preview_nosmooth/preview_sheet.png
+ M assets/model/preview_original/preview_34.png
+ M assets/model/preview_original/preview_back.png
+ M assets/model/preview_original/preview_front.png
+ M assets/model/preview_original/preview_left.png
+ M assets/model/preview_original/preview_right.png
+ M assets/model/preview_rig/arms_down_70_45.png
+ M assets/model/preview_rig/arms_down_70_front.png
+ M assets/model/preview_rig/arms_up_45.png
+ M assets/model/preview_rig/arms_up_front.png
+ M assets/model/preview_rig/ears_back_25_45.png
+ M assets/model/preview_rig/ears_back_25_front.png
+ M assets/model/preview_rig/head_left_20_front.png
+ M assets/model/preview_rig/head_left_30_45.png
+ M assets/model/preview_rig/head_left_30_front.png
+ M assets/model/preview_rig/neutral_t_45.png
+ M assets/model/preview_rig/neutral_t_front.png
+ M assets/model/preview_rig/one_leg_up_45.png
+ M assets/model/preview_rig/one_leg_up_front.png
+ M assets/model/preview_rig/pose_sheet.png
+ M assets/model/usagi.vrm
+ M assets/model/usagi_base.glb
+ M assets/model/usagi_body.vrm
+ M assets/model/usagi_prep.report.json
+ M assets/model/usagi_rig.blend
+ M assets/model/usagi_rig.blend1
+ M assets/models/usagi.vrm
+ M pipeline/022-worker-report.md
+ M pipeline/README.md
+ M pipeline/blender/prep_usagi.py
+ M pipeline/run_tests.sh
+?? assets/model/.022-repro/
+?? assets/model/022-final-009.log
+?? assets/model/022-final-010.log
+?? assets/model/022-final-011.log
+?? assets/model/022-final-face.log
+?? assets/model/022-final-prep.log
+?? assets/model/022-final-rig.log
+?? assets/model/022-geometry-preserved.json
+?? assets/model/022-nondeterminism-after-components.json
+?? assets/model/022-nondeterminism-before.json
+?? assets/model/022-prep-reproducibility.json
+?? assets/model/022-repeat-face.log
+?? assets/model/022-repeat-prep.log
+?? assets/model/022-repeat-rig.log
+?? assets/model/022-repro-009.log
+?? assets/model/022-repro-010.log
+?? assets/model/022-repro-011.log
+?? assets/model/022-test-prep-final.log
+?? assets/model/022-test-reproducibility-after-components.log
+?? assets/model/022-test-reproducibility-final.log
+?? assets/model/022-test-reproducibility.log
+?? pipeline/tests/test_reproducibility.py

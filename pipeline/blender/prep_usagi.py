@@ -82,41 +82,75 @@ def fit_sphere(points, prior_center=None):
     return origin + offset, math.sqrt(radius_squared)
 
 
-def orient_front(bm):
+def feature_regions(bm, margin=.006):
+    """Actual detached front sculptures, with a 6 mm transition around each AABB.
+
+    Called after orientation, before deletion; shared by smoothing and the surface
+    regression check. Rear islands (including the new independent tail) stay intact.
+    """
+    islands = sorted(face_islands(bm), key=len, reverse=True)
+    main_center = average(v.co for v in {v for f in islands[0] for v in f.verts})
+    regions = []
+    for island in islands[1:]:
+        points = [v.co for v in {v for f in island for v in f.verts}]
+        if average(points).y >= main_center.y:
+            continue
+        regions.append({"min": [min(p[i] for p in points) - margin for i in range(3)],
+                        "max": [max(p[i] for p in points) + margin for i in range(3)],
+                        "vertices": len(points), "faces": len(island)})
+    return regions
+
+
+def in_feature_region(point, regions):
+    return any(all(box["min"][i] <= point[i] <= box["max"][i] for i in range(3))
+               for box in regions)
+
+
+def orient_front(bm, remove_features=True):
     islands = sorted(face_islands(bm), key=len, reverse=True)
     main = islands[0]
     main_center = average(v.co for v in {v for f in main for v in f.verts})
-    features = [island for island in islands[1:] if len(island) < len(main) * .05]
-    if not features:
-        raise ValueError("没有面数小于主块 5% 的五官块，不能可靠判断正面")
-    centers = [average(v.co for v in {v for f in island for v in f.verts}) for island in features]
-    direction = average(centers) - main_center
+    # New dense sculptures exceed the old 5% face-count limit. The median of
+    # secondary-island centers rejects the single rear tail without density bias.
+    centers = [average(v.co for v in {v for f in island for v in f.verts})
+               for island in islands[1:]]
+    if not centers:
+        raise ValueError("没有独立五官块，不能可靠判断正面")
+    direction = Vector(tuple(quantile([p[i] for p in centers], .5) for i in range(3))) - main_center
     direction.z = 0
     if direction.length < .01:
         raise ValueError("五官水平方向不明确")
     angle = -math.pi / 2 - math.atan2(direction.y, direction.x)
-    # 近似对称模型的采样误差不应产生肉眼可见的轻微倾斜。
     cardinal = round(angle / (math.pi / 2)) * (math.pi / 2)
     if abs(angle - cardinal) < math.radians(3):
         angle = cardinal
     rotation = Matrix.Rotation(angle, 3, "Z")
     for vert in bm.verts:
         vert.co = rotation @ vert.co
-    discarded = [face for island in islands[1:] for face in island]
-    bmesh.ops.delete(bm, geom=discarded, context="FACES")
-    remove_loose(bm)
+    regions = feature_regions(bm)
+    main_center = rotation @ main_center
+    features = [island for island in islands[1:]
+                if average(v.co for v in {v for f in island for v in f.verts}).y < main_center.y]
+    discarded = [f for island in features for f in island]
+    if remove_features:
+        bmesh.ops.delete(bm, geom=discarded, context="FACES")
+        remove_loose(bm)
     bm.normal_update()
     return {"rotation_degrees": math.degrees(angle), "front_before": list(direction.normalized()),
             "front_after": list((rotation @ direction).normalized()),
-            "orientation_feature_islands": len(features), "removed_feature_islands": len(islands) - 1,
-            "removed_feature_faces": len(discarded)}
+            "orientation_feature_islands": len(features), "removed_feature_islands": len(features) if remove_features else 0,
+            "removed_feature_faces": len(discarded) if remove_features else 0,
+            "feature_regions": regions, "feature_margin_m": .006,
+            "retained_rear_islands": len(islands) - 1 - len(features)}
 
 
-def smooth_face(bm, tolerance=.004, iterations=30):
+def smooth_face(bm, regions, tolerance=.004, iterations=30):
     """局部球面偏差检查；只沿正面深度平滑，避免横向投影翻折三角形。"""
     bm.verts.ensure_lookup_table()
-    candidates = [v for v in bm.verts if .28 <= v.co.z <= .68 and v.normal.y < -.35
-                  and v.co.y < -.05]
+    candidates = [v for v in bm.verts if in_feature_region(v.co, regions)]
+    if not candidates:
+        return {"vertices_processed": 0, "vertices_checked": 0, "max_deviation_before": 0,
+                "max_deviation_after": 0, "tolerance": tolerance, "iterations": 0}
     prior_center, _ = fit_sphere(v.co for v in candidates)
 
     def targets():
@@ -289,46 +323,6 @@ def smooth_waist(bm, center_z, half_width=.06, iterations=100, trunk_limit=None,
             "method": "radial Laplacian relaxation toward angular Dirichlet harmonic profiles; signed-volume compensation with sin^2 boundary taper; Z/azimuth/arms pinned; depth vs interpolated fitted boundary ellipses"}
 
 
-def deepen_side_waist(vertices, profile, depth=.038, half_width=.018, side_ratio=.60):
-    """头身交界只收两侧；中央、Z 和支撑带之外逐点保持原值。
-
-    在关键点测量之后调用，避免凹口改变 neck 的最窄截面及骨架静止姿态。
-    曲线从外侧向内略向下落，紧支撑余弦带避免在上下边界留下折角。
-    """
-    height, width = profile["height"], profile["head_width"]
-    threshold = side_ratio * width
-    full_side = .85 * width
-    changed, max_displacement, sides = 0, 0.0, {"l": 0, "r": 0}
-    for vertex in vertices:
-        p = vertex.co
-        if abs(p.x) <= threshold:
-            continue
-        side = min(1.0, (abs(p.x) - threshold) / (full_side - threshold))
-        center_z = profile["arm_z"] + height * (.027 + .018 * side)
-        band = abs(p.z - center_z) / (half_width * height)
-        if band >= 1:
-            continue
-        taper = side * side * (3 - 2 * side) * math.cos(band * math.pi / 2) ** 2
-        inset = depth * height * taper
-        radius = math.hypot(p.x, p.y)
-        original = p.copy()
-        factor = max(0, 1 - inset / radius)
-        p.x *= factor
-        p.y *= factor
-        displacement = (p - original).length
-        if displacement > 0:
-            changed += 1
-            sides["l" if original.x > 0 else "r"] += 1
-            max_displacement = max(max_displacement, displacement)
-    return {"depth_m": depth * height, "half_width_m": half_width * height,
-            "side_x_min": threshold, "side_x_full": full_side,
-            "center_z_inner": profile["arm_z"] + .027 * height,
-            "center_z_outer": profile["arm_z"] + .045 * height,
-            "vertices_processed": changed, "vertices_by_side": sides,
-            "max_displacement_m": max_displacement,
-            "method": "side-only radial inset; smoothstep X mask and compact cosine-squared Z band; Z pinned; landmarks measured before inset"}
-
-
 def ear_sections(points, profile, side):
     base_z = profile["head_top"]
     ear = [p for p in points if p.z > base_z and p.x * side > profile["head_width"] * .04]
@@ -352,7 +346,7 @@ def ear_sections(points, profile, side):
 
 
 def ear_inner_field(point, normal, sections):
-    """同一长椭圆的连续隐式量；保留 60%/.43/.51/.08..94 和前侧限制。"""
+    """只按椭圆/位置切线；法线在切割后的整个连通分量上筛选。"""
     z0, z1 = sections[0]["center"].z, sections[-1]["center"].z
     t = (point.z - z0) / max(z1 - z0, 1e-8)
     sample = max(0, min(1, t))
@@ -362,11 +356,11 @@ def ear_inner_field(point, normal, sections):
     center = a["center"].lerp(b["center"], alpha)
     width = a["half_width"] * (1 - alpha) + b["half_width"] * alpha
     ellipse = ((point.x - center.x) / (width * .60)) ** 2 + ((t - .51) / .43) ** 2 - 1
-    return max(ellipse, .08 - t, t - .94, (point.y - center.y) / width, normal.y + .25)
+    return max(ellipse, .08 - t, t - .94, (point.y - center.y) / width)
 
 
 def ear_inner_region(point, normal, sections):
-    return ear_inner_field(point, normal, sections) < 0
+    return ear_inner_field(point, normal, sections) < 0 and normal.y < -.25
 
 
 def tail_field(point, normal, profile):
@@ -423,10 +417,14 @@ def cut_isocontour(bm, field, material_index):
         values[vert] = 0.0
         for face in faces:
             intersections.setdefault(face, set()).add(vert)
+    # face_split(a, b) and face_split(b, a) retain opposite halves in the
+    # original face slot, changing later triangulation order and some normals.
+    # Newly split vertices need fresh indices before choosing the direction.
+    bm.verts.index_update()
     for face in original_faces:
         points = intersections.get(face, set())
         if len(points) == 2:
-            a, b = points
+            a, b = sorted(points, key=lambda vert: vert.index)
             if not any(b in edge.verts for edge in a.link_edges):
                 bmesh.utils.face_split(face, a, b)
     # 交点处非线性场沿弦会略微向内弯：用原三角面线性场的中心值，
@@ -439,32 +437,110 @@ def cut_isocontour(bm, field, material_index):
 
 
 def split_region_boundaries(obj, profile, ears):
+    # Ear smoothness is measured in the ellipse field's front X/Z plane;
+    # the original ear facets can bend the surface contour sharply in 3D.
     bm = bmesh.new()
     try:
         bm.from_mesh(obj.data)
         # Marching triangles has at most two intersections per face.
         bmesh.ops.triangulate(bm, faces=list(bm.faces))
+        original_surface = BVHTree.FromBMesh(bm)
         before = len(bm.faces)
-        # 尾根边界局部线性细分，不改原表面。
-        tail_edges = [e for e in bm.edges if all(
-            abs(tail_field(v.co, v.normal, profile)) < .025 * profile["height"]
-            for v in e.verts)]
-        bmesh.ops.subdivide_edges(bm, edges=tail_edges, cuts=3, use_grid_fill=True)
-        bmesh.ops.triangulate(bm, faces=list(bm.faces))
-        after_local = len(bm.faces)
+        islands = sorted(face_islands(bm), key=len, reverse=True)
+        # 主导 2026-11-16：独立尾巴整块着色，不在主体切尾巴等值线。
+        tail_faces = {f for island in islands[1:]
+                      if len(island) < before * .05
+                      and average(f.calc_center_median() for f in island).y > 0
+                      for f in island}
+        for face in bm.faces:
+            face.material_index = 0
         bm.normal_update()
         for sections in ears.values():
             cut_isocontour(bm, lambda p, n: ear_inner_field(p, n, sections), 1)
-        cut_isocontour(bm, lambda p, n: tail_field(p, n, profile), 2)
+        # 相邻的 EarInner 面构成一个分量，面积加权平均法线才决定朝向。
+        # Cut operations dirty face indices. Stable seeds and accumulation order
+        # keep diagnostic extras byte-identical through prep -> rig -> face;
+        # set.pop() used to randomly swap the two ears in the exported JSON.
+        bm.faces.index_update()
+        pending = {f for f in bm.faces if f.material_index == 1}
+        ear_components = []
+        while pending:
+            seed = min(pending, key=lambda face: face.index)
+            pending.remove(seed)
+            component, queue = {seed}, [seed]
+            while queue:
+                for edge in queue.pop().edges:
+                    for neighbor in edge.link_faces:
+                        if neighbor in pending:
+                            pending.remove(neighbor)
+                            component.add(neighbor)
+                            queue.append(neighbor)
+            component = sorted(component, key=lambda face: face.index)
+            area = sum(f.calc_area() for f in component)
+            normal_y = sum(f.normal.y * f.calc_area() for f in component) / max(area, 1e-14)
+            keep = normal_y < -.25
+            if not keep:
+                for face in component:
+                    face.material_index = 0
+            ear_components.append({"faces": len(component), "mean_normal_y": normal_y, "kept": keep})
+        if tail_faces:
+            for face in tail_faces:
+                face.material_index = 2
+        else:
+            # 历史合成夹具的尾巴和身体相连；保留其原有区域算法。
+            cut_isocontour(bm, lambda p, n: tail_field(p, n, profile), 2)
         bmesh.ops.dissolve_degenerate(bm, edges=list(bm.edges), dist=1e-8)
         remove_loose(bm)
         bmesh.ops.triangulate(bm, faces=list(bm.faces))
+        bmesh.ops.dissolve_degenerate(bm, edges=list(bm.edges), dist=1e-7)
+        # Degenerate-edge dissolution can recreate n-gons with collinear points.
+        # Triangulate here so glTF's later tessellation cannot emit zero-area faces.
+        bmesh.ops.triangulate(bm, faces=list(bm.faces))
+        degenerate = [f for f in bm.faces if f.calc_area() <= 1e-14]
+        if degenerate:
+            bmesh.ops.delete(bm, geom=degenerate, context="FACES_ONLY")
+            remove_loose(bm)
+        # 主导 2026-11-17：边界切向 Laplacian 平滑，每步投回原表面。
+        # 原面折线的正面投影可能折返；只调整耳内闭环，不碰其他顶点。
+        boundary_edges = [e for e in bm.edges if len(e.link_faces) == 2
+                          and sum(f.material_index == 1 for f in e.link_faces) == 1]
+        neighbors = {}
+        for edge in boundary_edges:
+            for vert in edge.verts:
+                neighbors.setdefault(vert, []).append(edge.other_vert(vert))
+        smoothing_passes = 0
+        for _ in range(12):
+            bad = set()
+            for vert, adjacent in neighbors.items():
+                if len(adjacent) != 2:
+                    continue
+                projected = []
+                for other in adjacent:
+                    previous = vert
+                    while (Vector((other.co.x - vert.co.x, other.co.z - vert.co.z))).length <= 1e-7:
+                        following = [v for v in neighbors[other] if v != previous]
+                        if not following or following[0] == vert:
+                            break
+                        previous, other = other, following[0]
+                    projected.append(Vector((other.co.x - vert.co.x, other.co.z - vert.co.z)))
+                if all(p.length > 1e-7 for p in projected) and (-projected[0]).angle(projected[1]) >= math.radians(35):
+                    bad.add(vert)
+            if not bad:
+                break
+            selected = bad | {n for v in bad for n in neighbors[v]}
+            updates = {v: original_surface.find_nearest(v.co.lerp(average(n.co for n in neighbors[v]), .25))[0]
+                       for v in selected if len(neighbors[v]) == 2}
+            for vert, point in updates.items():
+                vert.co = point
+            smoothing_passes += 1
         bm.normal_update()
-        report = {"faces_before_tail_subdivision": before, "faces_before_cut": after_local, "faces_after_cut": len(bm.faces),
-                  "tail_halfspace_blend_m": .002 * profile["height"],
+        report = {"faces_before_cut": before, "faces_after_cut": len(bm.faces),
+                  "independent_tail_faces": len(tail_faces), "ear_components": ear_components,
+                  "ear_tangential_smoothing_passes": smoothing_passes,
+                  "removed_zero_area_faces_after_triangulation": len(degenerate),
                   "connected_components": len(face_islands(bm)),
                   "zero_area_faces": sum(f.calc_area() <= 1e-14 for f in bm.faces),
-                  "method": "shared-edge exact implicit zero crossing, triangle face split; continuous interpolated normal and front/back halfspaces"}
+                  "method": "position-only ear isocontour on original triangles; component mean normal < -0.25; entire independent rear tail"}
         bm.to_mesh(obj.data)
         obj.data.update()
         return report
@@ -582,15 +658,15 @@ def prep(args):
     paths = [Path(value).resolve() for value in (args.input, args.output, args.landmarks, args.report)]
     if len(set(paths)) != len(paths):
         raise ValueError("输入、底模、关键点和报告必须使用不同路径")
-    # 朝向检测前保留五官；碎片在检测完成后统一按非主块删除。
+    # 朝向检测前保留五官；检测后只删除正面雕刻块，保留背面的独立尾巴。
     obj, cleanup = clean(SimpleNamespace(input=args.input, output=args.output, report=args.report,
-                                        merge_dist=.0001, min_island_ratio=0, target_height=1),
+                                        merge_dist=.000001, min_island_ratio=0, target_height=1),
                          write_output=False)
     bm = bmesh.new()
     try:
         bm.from_mesh(obj.data)
         orientation = orient_front(bm)
-        face_report = smooth_face(bm)
+        face_report = smooth_face(bm, orientation["feature_regions"])
         profile = shape_profile([v.co for v in bm.verts], bm)
         tail_verts = {v for v in bm.verts if tail_region(v.co, v.normal, profile)}
         waist = smooth_waist(bm, profile["arm_z"], iterations=args.waist_iterations,
@@ -600,7 +676,7 @@ def prep(args):
         subdivision_before = len(bm.faces)
         ear_faces_before = sum(all(v.co.z > profile["head_top"] for v in f.verts) for f in bm.faces)
         ear_edges = [e for e in bm.edges if all(v.co.z > profile["head_top"] for v in e.verts)]
-        bmesh.ops.subdivide_edges(bm, edges=ear_edges, cuts=3, use_grid_fill=True)
+        bmesh.ops.subdivide_edges(bm, edges=ear_edges, cuts=1, use_grid_fill=True)
         subdivision_after = len(bm.faces)
         ear_faces_after = sum(all(v.co.z > profile["head_top"] for v in f.verts) for f in bm.faces)
 
@@ -613,7 +689,7 @@ def prep(args):
             for suffix, side in (("l", 1), ("r", -1))}
     counts = assign_regions(obj, profile, ears)
     from region_boundary import boundary_metrics
-    boundary_report = dict(obj["usagi_boundary_cut"])
+    boundary_report = obj["usagi_boundary_cut"].to_dict()
     boundary_report.update(faces_before_subdivision=subdivision_before,
                            faces_after_subdivision=subdivision_after,
                            ear_faces_before_subdivision=ear_faces_before,
@@ -622,14 +698,12 @@ def prep(args):
                            ear_inner_max_face_normal_y=max(
                                f.normal.y for f in obj.data.polygons if f.material_index == 1))
     landmarks = measure_landmarks(obj, profile, ears)
-    side_waist = deepen_side_waist(obj.data.vertices, profile)
     obj.data.update()
     # 报告只写仓库相对路径/文件名，不将本机私有路径写进提交产物。
     cleanup.pop("input", None)
     cleanup.pop("output", None)
     report = {"input": Path(args.input).name, "output": Path(args.output).name,
               "cleanup": cleanup, **orientation, "face": face_report, "waist": waist,
-              "side_waist": side_waist,
               "region_boundary": boundary_report, "material_face_counts": counts, "colors_srgb": {k: "#" + v for k, v in COLORS.items()},
               "vertex_groups": REGION_BITS, "vertex_groups_storage": "_USAGI_REGION point attribute bitmask + usagi_vertex_groups extras; common.import_model restores Blender groups",
               "vertices": len(obj.data.vertices), "faces": len(obj.data.polygons),

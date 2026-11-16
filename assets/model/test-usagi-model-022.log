@@ -1,0 +1,66 @@
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> usagi-desktop-pet@0.1.0 test
+> vitest run --run tests/usagi-model.test.ts
+
+
+ RUN  v5.1.0 app
+
+{"usagiPhysics":{"shakeDegrees":39.87580522398438,"dragDegrees":7.201560027547096,"settledDegrees":0,"aspect":1.019075449975269,"mediumHeight":314}}
+ ❯ tests/usagi-model.test.ts (5 tests | 3 failed) 1446ms
+   ❯ 真实 Usagi 资源的无界面验证 (5)
+     × 静止上臂保持原始姿态，模型表面不受蒙皮变形 103ms
+     × stretch 的两只小手向两侧斜上举、伸出身体轮廓，结束后回中性 135ms
+     × shout 的两只小手向两侧斜上举、伸出身体轮廓，结束后回中性 89ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/usagi-model.test.ts > 真实 Usagi 资源的无界面验证 > 静止上臂保持原始姿态，模型表面不受蒙皮变形
+AssertionError: expected -0 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ -0
+
+ ❯ tests/usagi-model.test.ts:72:68
+     70|     const vrm = await load();
+     71|     for (const bone of ['leftUpperArm', 'rightUpperArm'] as const) {
+     72|       expect(vrm.humanoid.getNormalizedBoneNode(bone)!.rotation.z).toB…
+       |                                                                    ^
+     73|     }
+     74|     let maximum = 0, vertices = 0;
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  tests/usagi-model.test.ts > 真实 Usagi 资源的无界面验证 > stretch 的两只小手向两侧斜上举、伸出身体轮廓，结束后回中性
+AssertionError: expected 0.31625746306198926 to be greater than 0.32645876080910585
+ ❯ tests/usagi-model.test.ts:116:22
+    114|       // Raised clearly above rest and level with the neck (the head i…
+    115|       expect(hand.y - resting[i]!.y).toBeGreaterThan(height * 0.05);
+    116|       expect(hand.y).toBeGreaterThan(world('neck', true).y - height * …
+       |                      ^
+    117|       // Pokes out past the body/head outline at that height, so the f…
+    118|       expect(Math.abs(hand.x) - halfWidth(hand.y)).toBeGreaterThan(hei…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  tests/usagi-model.test.ts > 真实 Usagi 资源的无界面验证 > shout 的两只小手向两侧斜上举、伸出身体轮廓，结束后回中性
+AssertionError: expected 0.04693733633482261 to be greater than 0.049999994444789336
+ ❯ tests/usagi-model.test.ts:115:38
+    113|       const hand = world(bone, true);
+    114|       // Raised clearly above rest and level with the neck (the head i…
+    115|       expect(hand.y - resting[i]!.y).toBeGreaterThan(height * 0.05);
+       |                                      ^
+    116|       expect(hand.y).toBeGreaterThan(world('neck', true).y - height * …
+    117|       // Pokes out past the body/head outline at that height, so the f…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 2 passed (5)
+   Start at  23:15:06
+   Duration  2.12s (tests 81%, import 11%, transform 8%)
+

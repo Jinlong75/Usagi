@@ -1,0 +1,7 @@
+test_two_fresh_full_exports_are_byte_identical (__main__.ReproducibilityTests.test_two_fresh_full_exports_are_byte_identical) ... 022 reproducibility: {"usagi_base.glb": {"equal": true, "bytes": 769808, "first_sha256": "012adab94af18bb2d9897b99839af81b5ac0a86853fd3a436b8bc48795ffa144", "second_sha256": "012adab94af18bb2d9897b99839af81b5ac0a86853fd3a436b8bc48795ffa144", "json_equal": true, "binary_equal": true}, "usagi_body.vrm": {"equal": true, "bytes": 1117660, "first_sha256": "6421b5b783fb035e6522ea24815cc6d6cb32b50261ea43cf6c1a2f753d93987a", "second_sha256": "6421b5b783fb035e6522ea24815cc6d6cb32b50261ea43cf6c1a2f753d93987a", "json_equal": true, "binary_equal": true}, "usagi.vrm": {"equal": true, "bytes": 1467356, "first_sha256": "b427535e4b7363d29406bb2acbaac8bbc0d71a874316ef7f2b831466cfbda338", "second_sha256": "b427535e4b7363d29406bb2acbaac8bbc0d71a874316ef7f2b831466cfbda338", "json_equal": true, "binary_equal": true}}
+ok
+
+----------------------------------------------------------------------
+Ran 1 test in 142.316s
+
+OK
