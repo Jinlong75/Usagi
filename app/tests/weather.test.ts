@@ -82,6 +82,20 @@ describe('IP weather without network', () => {
     const c = setup(); expect(await Promise.all([c.weather.line(), c.weather.line()])).toEqual(['今天晴，12～21°C', '今天晴，12～21°C']);
     expect(c.fetcher).toHaveBeenCalledTimes(2);
   });
+  it.each(['[]', 'null', '42', '"broken"'])('rebuilds non-object cache %s and reuses the persisted object', async contents => {
+    const c = setup(); writeFileSync(c.path, contents);
+    expect(await c.weather.line()).toBe('今天晴，12～21°C');
+    expect(c.log).toHaveBeenCalled(); expect(c.fetcher).toHaveBeenCalledTimes(2);
+    const cache = JSON.parse(readFileSync(c.path, 'utf8'));
+    expect(Object.getPrototypeOf(cache)).toBe(Object.prototype);
+    expect(cache).toEqual({ location: { ...geo, at: c.options.now() }, forecast: {
+      code: 0, min: 12.4, max: 20.6, rain: 49, at: c.options.now(), latitude: geo.latitude, longitude: geo.longitude,
+    } });
+    c.fetcher.mockClear();
+    expect(await c.weather.line()).toBe('今天晴，12～21°C');
+    expect(await new Weather(c.options).line()).toBe('今天晴，12～21°C');
+    expect(c.fetcher).not.toHaveBeenCalled(); expect(c.weather.city()).toBe('Bangkok');
+  });
   it('stops before starting weather if disabled during location', async () => {
     const c = setup(); c.fetcher.mockImplementationOnce(async () => { c.disable(); return response(geo); });
     expect(await c.weather.line()).toBeNull(); expect(c.fetcher).toHaveBeenCalledTimes(1);

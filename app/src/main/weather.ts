@@ -22,7 +22,7 @@ function validForecast(value: Forecast | undefined): value is Forecast {
 function readCache(path: string): Cache {
   if (!existsSync(path)) return {};
   const cache: Cache = JSON.parse(readFileSync(path, 'utf8'));
-  if (!cache || typeof cache !== 'object' || (cache.location !== undefined && !validLocation(cache.location))
+  if (!cache || typeof cache !== 'object' || Array.isArray(cache) || (cache.location !== undefined && !validLocation(cache.location))
     || (cache.forecast !== undefined && !validForecast(cache.forecast))) throw new Error('缓存字段无效');
   return cache;
 }

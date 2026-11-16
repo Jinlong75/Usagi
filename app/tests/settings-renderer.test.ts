@@ -20,6 +20,7 @@ function field(id: string): Field {
 }
 let close = () => {};
 let bridge: WeatherSettingsBridge;
+let page: Field & { visibilityState: string; getElementById: typeof field };
 
 describe('设置页保存失败，无 GUI', () => {
   beforeEach(async () => {
@@ -32,7 +33,8 @@ describe('设置页保存失败，无 GUI', () => {
       onConfig: vi.fn(() => () => {}), onSaveClose: callback => { close = callback; return () => {}; }, closeReady: vi.fn(),
     };
     vi.stubGlobal('window', { settings: bridge });
-    vi.stubGlobal('document', { getElementById: field });
+    page = Object.assign(new Field(), { visibilityState: 'visible', getElementById: field });
+    vi.stubGlobal('document', page);
     await import('../src/settings/index');
     await vi.waitFor(() => expect(field('version').textContent).toBe('版本 0.1.0'));
     field('model').value = 'custom'; field('custom-model').value = 'my-model';
@@ -99,6 +101,24 @@ describe('设置页保存失败，无 GUI', () => {
       .toBe('设置保存失败：disk full。请检查磁盘空间和文件权限。'));
     expect(field('save-status').classes.has('error')).toBe(true);
     expect(field('key').value).toBe('edited-key'); expect(bridge.closeReady).not.toHaveBeenCalled();
+  });
+
+  it('同一页面再次显示时重新读取缓存城市，空缓存后来定位成功也会显示', async () => {
+    vi.resetModules(); vi.mocked(bridge.weatherCity).mockResolvedValue(null);
+    field('weather-city').hidden = true; field('weather-city').textContent = '';
+    await import('../src/settings/index');
+    await vi.waitFor(() => expect(bridge.weatherCity).toHaveBeenCalledTimes(2));
+    expect(field('weather-city').hidden).toBe(true);
+    field('lines').value = '保留我的台词';
+    const calls = vi.mocked(bridge.weatherCity).mock.calls.length;
+    page.visibilityState = 'hidden'; page.listeners.get('visibilitychange')?.();
+    expect(bridge.weatherCity).toHaveBeenCalledTimes(calls);
+    vi.mocked(bridge.weatherCity).mockResolvedValue('Chiang Mai');
+    page.visibilityState = 'visible'; page.listeners.get('visibilitychange')?.();
+    await vi.waitFor(() => expect(field('weather-city').textContent).toBe('当前位置：Chiang Mai'));
+    expect(field('weather-city').hidden).toBe(false);
+    expect(bridge.weatherCity).toHaveBeenCalledTimes(calls + 1);
+    expect(field('lines').value).toBe('保留我的台词');
   });
 
   it('占位安装包关于页明确标记开发版', async () => {

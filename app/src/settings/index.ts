@@ -111,6 +111,14 @@ void window.settings.load().then(snapshot => {
   field('version').textContent = `版本 ${snapshot.version}${placeholderBuild ? ' · 开发版（占位模型）' : ''}`; loaded = true;
 }).catch(() => { status.textContent = '设置加载失败，请检查文件权限。'; });
 
-void window.settings.weatherCity().then(city => {
-  if (city) { field('weather-city').textContent = `当前位置：${city}`; field('weather-city').hidden = false; }
-}).catch(() => {});
+function refreshWeatherCity(): void {
+  void window.settings.weatherCity().then(city => {
+    field('weather-city').textContent = city ? `当前位置：${city}` : '';
+    field('weather-city').hidden = !city;
+  }).catch(() => {});
+}
+// SettingsWindow hides and reuses this page; refresh the cache without replacing edits.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') refreshWeatherCity();
+});
+refreshWeatherCity();
