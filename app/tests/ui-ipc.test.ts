@@ -9,6 +9,7 @@ const host = vi.hoisted(() => ({
   keySave: vi.fn(async (_key: string) => ({ persisted: false, reason: '仅本次有效' })),
   flush: vi.fn(async () => {}), sessionFlush: vi.fn(async () => {}),
   quit: vi.fn(), confirm: vi.fn(async () => ({ response: 0 })), popup: vi.fn(),
+  fpsRecord: vi.fn(async (_value: unknown) => {}),
 }));
 vi.mock('electron', () => {
   class BrowserWindow {
@@ -50,6 +51,7 @@ vi.mock('../src/main/config', async importOriginal => {
   const original = await importOriginal<typeof import('../src/main/config')>();
   return { ...original, readConfig: () => structuredClone(original.DEFAULT_CONFIG), writeConfig: host.save };
 });
+vi.mock('../src/main/fps', () => ({ FpsLog: class { record = host.fpsRecord; } }));
 vi.mock('../src/main/ipc/keys', () => ({ AsyncKeyStore: class {
   load = async () => ({ apiKey: 'sk-123456789abcd', needsReentry: false }); save = host.keySave; flush = host.flush;
 } }));
@@ -110,6 +112,34 @@ describe('008 主进程接线：原生窗口替身，无 GUI', () => {
     expect(bubble.webContents.send).toHaveBeenCalledWith('bubble:text', expect.objectContaining({ text: '已开启鼠标穿透，在菜单栏图标里可以关掉哦' }));
     send('pet:context-menu', pet()); expect(host.popup).toHaveBeenCalledTimes(1);
     item('鼠标穿透').click({ checked: false }); expect(pet().setIgnoreMouseEvents).toHaveBeenLastCalledWith(false, { forward: true });
+  });
+  it('显示帧率菜单默认关闭，写盘广播；旧设置快照无法回退开关', async () => {
+    expect(item('显示帧率').checked).toBe(false);
+    const settings = await open('设置…');
+    const initial = await invoke('settings:load', settings);
+    item('显示帧率').click({ checked: true });
+    expect(item('显示帧率').checked).toBe(true);
+    expect(host.save).toHaveBeenLastCalledWith(expect.any(String), expect.objectContaining({ showFps: true }));
+    expect(pet().webContents.send).toHaveBeenCalledWith('config:changed', expect.objectContaining({ showFps: true }));
+    const saved = await invoke('settings:save', settings, initial.config);
+    expect(saved.config.showFps).toBe(true);
+    item('显示帧率').click({ checked: false });
+    expect(item('显示帧率').checked).toBe(false);
+  });
+  it('帧率日志只接受角色主框架在开关开启时提交的样本', async () => {
+    const sample = { fps: 60, maxFrameMs: 17 };
+    send('pet:fps', pet(), sample);
+    expect(host.fpsRecord).not.toHaveBeenCalled();
+    const settings = await open('设置…');
+    item('显示帧率').click({ checked: true });
+    send('pet:fps', settings, sample);
+    host.sends.get('pet:fps')!({ sender: pet().webContents, senderFrame: {} }, sample);
+    expect(host.fpsRecord).not.toHaveBeenCalled();
+    send('pet:fps', pet(), sample);
+    expect(host.fpsRecord).toHaveBeenCalledExactlyOnceWith(sample);
+    item('显示帧率').click({ checked: false });
+    send('pet:fps', pet(), sample);
+    expect(host.fpsRecord).toHaveBeenCalledTimes(1);
   });
   it('配置写盘抛 EACCES 时 IPC 返回失败，内存和界面状态保持原值，可重试', async () => {
     const settings = await open('设置…');
