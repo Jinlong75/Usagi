@@ -4,8 +4,8 @@ set -eu
 PIPELINE_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 PROJECT_DIR=$(dirname -- "$PIPELINE_DIR")
 case "${1:-}" in
-    face|vrm) printf '%s：尚未实现\n' "$1"; exit 0 ;;
-    prep|rig) ;;
+    vrm) printf '%s：尚未实现\n' "$1"; exit 0 ;;
+    prep|rig|face) ;;
     *) printf '用法：sh pipeline/build_usagi.sh prep|rig|face|vrm\n' >&2; exit 2 ;;
 esac
 BLENDER=${BLENDER:-/Users/mac/Applications/Blender.app/Contents/MacOS/Blender}
@@ -16,6 +16,18 @@ fi
 cd "$PROJECT_DIR"
 MODEL_DIR=assets/model
 mkdir -p "$MODEL_DIR"
+if [ "$1" = face ]; then
+    test -f "$MODEL_DIR/usagi_body.vrm" || { printf '请先运行 rig 阶段\n' >&2; exit 2; }
+    . "$PIPELINE_DIR/face/python_env.sh"
+    "$FACE_PYTHON" "$PIPELINE_DIR/face/draw_atlas.py" --out "$MODEL_DIR/face"
+    "$BLENDER" -b --python-exit-code 1 --python "$PIPELINE_DIR/blender/face_usagi.py" -- \
+        --in "$MODEL_DIR/usagi_body.vrm" --landmarks "$MODEL_DIR/usagi_landmarks.json" \
+        --atlas-dir "$MODEL_DIR/face" --out "$MODEL_DIR/usagi.vrm" \
+        --report "$MODEL_DIR/usagi_face.report.json" --preview-dir "$MODEL_DIR/preview_face"
+    "$FACE_PYTHON" "$PIPELINE_DIR/face/draw_atlas.py" \
+        --sheet-source "$MODEL_DIR/preview_face" --out "$MODEL_DIR/preview_face/expression_sheet.png"
+    exit 0
+fi
 if [ "$1" = rig ]; then
     # VRM 扩展需要用户启动配置，不能使用 --factory-startup。
     "$BLENDER" -b --python-exit-code 1 --python "$PIPELINE_DIR/blender/rig_usagi.py" -- \
