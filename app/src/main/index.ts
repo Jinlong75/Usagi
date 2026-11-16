@@ -23,7 +23,7 @@ import { initialBounds, windowDimensions } from '../shared/window';
 import { beginGesture, isClick, updateGesture } from '../shared/gesture';
 import { topRowsTransparent, regionDifference } from '../shared/hit';
 import type { Gesture } from '../shared/gesture';
-import type { Config, Point, RenderResult, Size, MoveRequest, SmokeBehavior, SoundUse, Rect, FoodActivity } from '../shared/types';
+import type { Config, Point, RenderResult, Size, MoveRequest, SmokeBehavior, SoundUse, Rect, FoodActivity, FeedRequest } from '../shared/types';
 
 const smoke = process.argv.includes('--smoke');
 configureWindowsRendering(app.commandLine);
@@ -35,15 +35,16 @@ let ui: UiController;
 let selfTalk: SelfTalk;
 let routine: Routine | undefined;
 let lastMealQuestionAt = -Infinity;
-let pendingFood: { activity: FoodActivity; delicious: boolean } | undefined;
-const foodActivities: FoodActivity[] = ['eatRiceball', 'eatWatermelon', 'iceCream'];
+let nextFeedId = 0;
+let pendingFood: FeedRequest & { delicious: boolean } | undefined;
 function mealTime(now = new Date()): boolean {
   return config.routine.enabled && !config.routine.quiet && (['morning', 'lunch', 'dinner'] as const).some(key => inRange(now, config.routine[key]));
 }
 function feed(activity: FoodActivity): void {
   if (!win?.isVisible() || gesture) return;
-  pendingFood = { activity, delicious: mealTime() && Date.now() - lastMealQuestionAt <= 120_000 };
-  win.webContents.send('pet:activity', activity);
+  const request: FeedRequest = { activity, feedId: ++nextFeedId };
+  pendingFood = { ...request, delicious: mealTime() && Date.now() - lastMealQuestionAt <= 120_000 };
+  win.webContents.send('pet:activity', request);
 }
 let stopWeatherPrefetch: (() => void) | undefined;
 let sessionStore: SessionStore | undefined;
@@ -417,8 +418,10 @@ async function start(): Promise<void> {
   const trusted = (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) =>
     event.sender === win?.webContents && event.senderFrame === win?.webContents.mainFrame;
   ipcMain.handle('pet:config', event => { if (!trusted(event)) throw new Error('未授权的配置请求'); return config; });
-  ipcMain.on('pet:activity-done', (event, activity: unknown) => {
-    if (!trusted(event) || smoke || !foodActivities.includes(activity as FoodActivity) || !pendingFood || pendingFood.activity !== activity) return;
+  ipcMain.on('pet:activity-done', (event, value: unknown) => {
+    if (!trusted(event) || smoke || !value || typeof value !== 'object' || !pendingFood) return;
+    const request = value as Partial<FeedRequest>;
+    if (request.feedId !== pendingFood.feedId || request.activity !== pendingFood.activity) return;
     const delicious = pendingFood.delicious; pendingFood = undefined;
     if (delicious && win?.isVisible() && mealTime()) void ui.bubble.showBubble('呀哈！（好吃！）', 3200);
   });

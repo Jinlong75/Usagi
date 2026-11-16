@@ -127,18 +127,30 @@ describe('真实渲染入口接线，无 Electron/DOM/WebGL 宿主', () => {
 
   it('喂食播放时关闭眨眼和聊天表情叠加，吃完才发送完成 IPC，道具被释放', () => {
     for (const [activity, prop, duration] of [['eatRiceball', 'riceball', 6000], ['eatWatermelon', 'watermelon', 5000], ['iceCream', 'iceCream', 5500]] as const) {
-      host.callbacks.get('activity')!(activity); draw(700);
+      const request = { activity, feedId: duration };
+      host.callbacks.get('activity')!(request); draw(700);
       const food = host.model.scene.getObjectByName(`prop:${prop}`);
       expect(food).toBeDefined();
       host.model.expressionManager.setValue.mockClear();
       host.callbacks.get('expression')!('angry'); draw();
       expect(host.model.expressionManager.setValue.mock.calls.filter(([name]: string[]) => name === 'blink')).toEqual([['blink', 0], ['blink', 0]]);
       expect(host.model.expressionManager.setValue).not.toHaveBeenCalledWith('angry', 1);
-      expect(bridge.activityDone).not.toHaveBeenCalledWith(activity);
+      expect(bridge.activityDone).not.toHaveBeenCalledWith(request);
       draw(duration - 720);
-      expect(bridge.activityDone).toHaveBeenCalledWith(activity);
+      expect(bridge.activityDone).toHaveBeenCalledWith(request);
       expect(food.parent).toBeNull();
     }
+  });
+
+  it('同种喂食重启动作时保留第二轮 feedId，只为实际播完的一轮回执一次', () => {
+    const first = { activity: 'eatRiceball', feedId: 71 };
+    const second = { activity: 'eatRiceball', feedId: 72 };
+    host.callbacks.get('activity')!(first); draw(1000);
+    host.callbacks.get('activity')!(second); draw(5000);
+    expect(bridge.activityDone).not.toHaveBeenCalled();
+    draw(1000);
+    expect(bridge.activityDone).toHaveBeenCalledExactlyOnceWith(second);
+    draw(20); expect(bridge.activityDone).toHaveBeenCalledTimes(1);
   });
 
   it('真实随机偷吃到原生 press/release/click：道具立即消失、身体冻结 400ms，之后惊讶点击', async () => {

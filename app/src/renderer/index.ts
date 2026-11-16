@@ -50,7 +50,7 @@ let smokePose: SmokeBehavior | undefined;
 let smokePoseFrames = 0;
 let smokeAge = 0;
 let smokeDragImpulse = false;
-// TODO(lead): 冒烟段落统一写 aa，但冰淇淋动作明确要求 ih；截图保留第三次舔的 ih。
+// 饭团、西瓜和偷吃截取 aa 咬食；冰淇淋截取第三次舔的 ih（小张口带舌）。
 const smokeAges = { idle: 0.875, walk: 0.7, happy: 0.175, surprised: 0.45, shout: 0.55, stretch: 1.1, drag: 0.32, 'ear-shake': 0.3, jumpRope: 2.575, blowBubbles: 1.65, napPillow: 2, eatRiceball: 0.72, eatWatermelon: 0.72, iceCream: 2.3, sneakSnack: 1.6 };
 let chatExpression: { name: PetExpression; until: number } | undefined;
 let volume = 0.7;
@@ -208,7 +208,7 @@ function flushCommands(): void {
   for (const command of machine.drain()) {
     if (command.type === 'cancel') window.pet.cancelMove();
     else if (command.type === 'move') window.pet.moveTo(command.request);
-    else if (command.type === 'activityDone') window.pet.activityDone(command.activity);
+    else if (command.type === 'activityDone') window.pet.activityDone({ activity: command.activity, feedId: command.feedId });
     else if (!smoke && (!dragging || command.use === 'drag')) void audio.play(command.use);
   }
 }

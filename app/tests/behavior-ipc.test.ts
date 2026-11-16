@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fileURLToPath } from 'node:url';
 import { BehaviorMachine } from '../src/renderer/behavior/machine';
-import type { MoveRequest, MoveResult, Point, Rect } from '../src/shared/types';
+import type { FeedRequest, MoveRequest, MoveResult, Point, Rect } from '../src/shared/types';
 
 // Exercise the real main-process handlers with a native-window double, without Electron/GUI.
 const host = vi.hoisted(() => ({
@@ -85,6 +85,9 @@ vi.mock('../src/main/routine', async importOriginal => {
 function send(channel: string, value?: unknown): void {
   host.handlers.get(channel)!({ sender: host.contents, senderFrame: host.frame }, value);
 }
+function latestFeed(): FeedRequest {
+  return host.send.mock.calls.filter(([channel]) => channel === 'pet:activity').at(-1)![1];
+}
 const request: MoveRequest = { x: 520, y: 90, durationMs: 2000 };
 
 async function boot(): Promise<void> {
@@ -114,6 +117,8 @@ describe('可见性与移动 IPC（原生窗口替身，无 GUI）', () => {
     const [channel, listener] = host.rendererOn.mock.calls.at(-1)!;
     expect(channel).toBe('pet:activity');
     listener({ sender: 'fixture' }, 'jumpRope'); expect(callback).toHaveBeenCalledExactlyOnceWith('jumpRope');
+    const request: FeedRequest = { activity: 'eatRiceball', feedId: 42 };
+    listener({ sender: 'fixture' }, request); expect(callback).toHaveBeenLastCalledWith(request);
     unsubscribe(); expect(host.rendererOff).toHaveBeenLastCalledWith(channel, listener);
   });
 
@@ -130,11 +135,12 @@ describe('可见性与移动 IPC（原生窗口替身，无 GUI）', () => {
     const menu = host.menu[index];
     expect(menu.submenu.map((item: any) => item.label)).toEqual(['饭团', '西瓜', '冰淇淋']);
     for (const [i, activity] of ['eatRiceball', 'eatWatermelon', 'iceCream'].entries()) {
-      menu.submenu[i].click(); expect(host.send).toHaveBeenLastCalledWith('pet:activity', activity);
+      menu.submenu[i].click(); expect(host.send).toHaveBeenLastCalledWith('pet:activity', { activity, feedId: i + 1 });
     }
     await import('../src/preload/index');
-    host.bridge!.activityDone('eatRiceball');
-    expect(host.rendererSend).toHaveBeenLastCalledWith('pet:activity-done', 'eatRiceball');
+    const request: FeedRequest = { activity: 'eatRiceball', feedId: 42 };
+    host.bridge!.activityDone(request);
+    expect(host.rendererSend).toHaveBeenLastCalledWith('pet:activity-done', request);
   });
 
   it.each(['07:30', '12:00', '18:30'])('%s 问话出现后两分钟内喂食，实际吃完才冒好吃 3.2 秒；重复/非可信回执不生效', async time => {
@@ -151,12 +157,39 @@ describe('可见性与移动 IPC（原生窗口替身，无 GUI）', () => {
       // Each menu selection qualifies against its own recent question.
       if (i > 0) await host.routineOptions!.show('吃饭了吗？', 10000, true);
       show.mockClear(); menu.submenu[i].click(); expect(show).not.toHaveBeenCalled();
-      host.handlers.get('pet:activity-done')!({ sender: {}, senderFrame: host.frame }, activity);
-      send('pet:activity-done', 'jumpRope'); expect(show).not.toHaveBeenCalled();
-      vi.advanceTimersByTime(6000); show.mockClear(); send('pet:activity-done', activity);
+      const request = latestFeed();
+      expect(request.activity).toBe(activity);
+      host.handlers.get('pet:activity-done')!({ sender: {}, senderFrame: host.frame }, request);
+      send('pet:activity-done', { ...request, activity: 'jumpRope' });
+      for (const invalid of [null, activity, {}, { activity }, { feedId: request.feedId }]) send('pet:activity-done', invalid);
+      expect(show).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(6000); show.mockClear(); send('pet:activity-done', request);
       expect(show).toHaveBeenCalledExactlyOnceWith('呀哈！（好吃！）', 3200);
-      send('pet:activity-done', activity); expect(show).toHaveBeenCalledTimes(1);
+      send('pet:activity-done', request); expect(show).toHaveBeenCalledTimes(1);
     }
+    question.mockRestore(); show.mockRestore();
+  });
+
+  it('连续两次选择饭团：迟到的第一轮回执不清除第二轮、不提前冒泡，第二轮完成只冒一次', async () => {
+    const { UiController } = await import('../src/main/ipc/ui');
+    const { BubbleWindow } = await import('../src/main/windows/bubble');
+    const question = vi.spyOn(UiController.prototype, 'showRoutine').mockResolvedValue();
+    const show = vi.spyOn(BubbleWindow.prototype, 'showBubble').mockResolvedValue();
+    vi.setSystemTime(new Date('2026-11-17T12:00:00'));
+    await host.routineOptions!.show('吃饭了吗？', 10000, true);
+    const riceball = host.menu.find(item => item.label === '喂食').submenu[0];
+    riceball.click(); const first = latestFeed();
+    vi.advanceTimersByTime(1000);
+    riceball.click(); const second = latestFeed();
+    expect(first.activity).toBe('eatRiceball'); expect(second.activity).toBe('eatRiceball');
+    expect(second.feedId).toBe(first.feedId + 1);
+    vi.advanceTimersByTime(5000);
+    send('pet:activity-done', first); expect(show).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1000);
+    send('pet:activity-done', second);
+    expect(show).toHaveBeenCalledExactlyOnceWith('呀哈！（好吃！）', 3200);
+    send('pet:activity-done', first); send('pet:activity-done', second);
+    expect(show).toHaveBeenCalledTimes(1);
     question.mockRestore(); show.mockRestore();
   });
 
@@ -171,9 +204,13 @@ describe('可见性与移动 IPC（原生窗口替身，无 GUI）', () => {
     if (reason === 'outside-meal') vi.setSystemTime(new Date('2026-11-17T16:00:00'));
     if (reason === 'hidden') host.visible = false;
     if (reason === 'dragging') { send('pet:hit', true); send('pet:drag-start'); }
-    show.mockClear();
+    show.mockClear(); host.send.mockClear();
     host.menu.find(item => item.label === '喂食').submenu[0].click();
-    send('pet:activity-done', 'eatRiceball'); expect(show).not.toHaveBeenCalled();
+    if (reason === 'hidden' || reason === 'dragging') {
+      expect(host.send).not.toHaveBeenCalledWith('pet:activity', expect.anything());
+      send('pet:activity-done', { activity: 'eatRiceball', feedId: 1 });
+    } else send('pet:activity-done', latestFeed());
+    expect(show).not.toHaveBeenCalled();
     question.mockRestore(); show.mockRestore();
   });
 
@@ -185,7 +222,8 @@ describe('可见性与移动 IPC（原生窗口替身，无 GUI）', () => {
     vi.setSystemTime(new Date('2026-11-17T12:59:59'));
     await host.routineOptions!.show('吃饭了吗？', 10000, true);
     host.menu.find(item => item.label === '喂食').submenu[0].click();
-    vi.advanceTimersByTime(6000); send('pet:activity-done', 'eatRiceball');
+    const request = latestFeed();
+    vi.advanceTimersByTime(6000); send('pet:activity-done', request);
     expect(show).not.toHaveBeenCalled();
     question.mockRestore(); show.mockRestore();
   });

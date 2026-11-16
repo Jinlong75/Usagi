@@ -24,14 +24,16 @@ export interface ModelData { bytes: Uint8Array; path: string; smoke: boolean }
 export interface RenderResult { ok: boolean; reason?: string; vrmVersion?: string; expressions?: string[]; behavior?: SmokeBehavior; face?: Rect; earDegrees?: number; propOpaqueRatios?: Record<string, number>; propsInFrame?: boolean }
 export type FoodActivity = 'eatRiceball' | 'eatWatermelon' | 'iceCream';
 export type Activity = 'jumpRope' | 'blowBubbles' | FoodActivity;
+export interface FeedRequest { activity: FoodActivity; feedId: number }
+export type ActivityRequest = Exclude<Activity, FoodActivity> | FeedRequest;
 export type RoutineState = 'nap' | 'sleep' | 'awake';
 export interface PetBridge {
   readonly platform: string;
   reportFps(sample: FpsSample): void;
   contextMenu(): void;
   getConfig(): Promise<Config>;
-  activityDone(activity: FoodActivity): void;
-  onActivity(callback: (activity: Activity) => void): () => void;
+  activityDone(request: FeedRequest): void;
+  onActivity(callback: (request: ActivityRequest) => void): () => void;
   onRoutine(callback: (state: RoutineState) => void): () => void;
   onConfig(callback: (config: Config) => void): () => void;
   onExpression(callback: (expression: PetExpression) => void): () => void;

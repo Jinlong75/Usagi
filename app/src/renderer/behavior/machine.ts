@@ -1,4 +1,4 @@
-import type { MoveRequest, MoveResult, WindowInfo, Activity, FoodActivity, RoutineState } from '../../shared/types';
+import type { MoveRequest, MoveResult, WindowInfo, Activity, ActivityRequest, FoodActivity, RoutineState } from '../../shared/types';
 
 export type State = 'idle' | 'turn' | 'act' | 'move' | 'click' | 'drag' | 'nap' | 'caught';
 export type Reaction = 'happy' | 'surprised' | 'shout';
@@ -16,9 +16,10 @@ export const DURATIONS = { idle: 3500, turn: 450, jump: 1200, stretch: 2200, sha
 export const SPEED = 90;
 export const TURN_ANGLE = 50 * Math.PI / 180;
 export type Command = { type: 'move'; request: MoveRequest } | { type: 'cancel' } |
-  { type: 'activityDone'; activity: FoodActivity } |
+  { type: 'activityDone'; activity: FoodActivity; feedId: number } |
   { type: 'sound'; use: 'click_happy' | 'click_surprise' | 'click_shout' | 'drag' };
 export interface Snapshot {
+  feedId?: number;
   snackAge?: number;
   state: State; startedAt: number; durationMs: number; action?: Action; reaction?: Reaction;
   direction: -1 | 1; fromAngle: number; toAngle: number;
@@ -83,13 +84,15 @@ export class BehaviorMachine {
     } else if (this.visible && !this.pressed && this.snapshot.state !== 'drag' && this.now() >= Math.max(this.awakeUntil, this.resumeNapAt)) this.startNap();
   }
   private stretchAwake(): void { this.cancel(); this.wakeStretch = false; this.enter('act', DURATIONS.stretch, { action: 'stretch' }); }
-  activity(action: Activity): void {
+  activity(request: ActivityRequest): void {
     if (!this.visible || this.snapshot.state === 'drag' || this.pressed) return;
+    const action = typeof request === 'string' ? request : request.activity;
     this.cancel();
     // 休息时手动玩耍与点击一致：保持清醒 60 秒后再按作息回到打盹。
     if (this.routineState !== 'awake') this.awakeUntil = this.now() + 60_000;
     this.pressedSnackAge = undefined;
-    this.lastAction = action; this.enter('act', DURATIONS[action], { action });
+    this.lastAction = action; this.enter('act', DURATIONS[action], { action,
+      feedId: typeof request === 'string' ? undefined : request.feedId });
   }
   constructor(private random = Math.random, private now = () => performance.now(), private pool: readonly Action[] = ACTIONS) {
     this.snapshot = { state: 'idle', startedAt: now(), durationMs: DURATIONS.idle, direction: 1, fromAngle: 0, toAngle: 0 };
@@ -181,7 +184,7 @@ export class BehaviorMachine {
     }
     if (this.now() - state.startedAt < state.durationMs) return state;
     if (state.state === 'act' && ['eatRiceball', 'eatWatermelon', 'iceCream'].includes(state.action!)) {
-      this.commands.push({ type: 'activityDone', activity: state.action as FoodActivity });
+      if (state.feedId !== undefined) this.commands.push({ type: 'activityDone', activity: state.action as FoodActivity, feedId: state.feedId });
       if (state.action === 'eatRiceball') this.commands.push({ type: 'sound', use: 'click_happy' });
     }
     if (state.state === 'act' && state.action === 'jumpRope') this.commands.push({ type: 'sound', use: 'click_shout' });

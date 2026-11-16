@@ -215,17 +215,18 @@ describe('道具活动与作息', () => {
 describe('进食结束与偷吃点击', () => {
   it.each(['eatRiceball', 'eatWatermelon', 'iceCream'] as const)('%s 菜单打断 act/move、正常完成才通知一次，拖动不接管', action => {
     const f = fixture([0.9]); f.advance(3500); f.advance(450);
-    f.machine.activity(action); f.machine.drain();
+    const request = { activity: action, feedId: 42 };
+    f.machine.activity(request); f.machine.drain();
     expect(f.advance(DURATIONS[action] - 1).action).toBe(action);
     expect(f.machine.drain()).toEqual([]);
     f.advance(1);
     const commands = f.machine.drain();
-    expect(commands.filter(command => command.type === 'activityDone')).toEqual([{ type: 'activityDone', activity: action }]);
+    expect(commands.filter(command => command.type === 'activityDone')).toEqual([{ type: 'activityDone', ...request }]);
     expect(commands.filter(command => command.type === 'sound')).toEqual(action === 'eatRiceball' ? [{ type: 'sound', use: 'click_happy' }] : []);
     f.advance(1); expect(f.machine.drain()).toEqual([]);
-    f.machine.activity(action); f.machine.click(); f.machine.drain(); f.advance(DURATIONS[action]);
+    f.machine.activity(request); f.machine.click(); f.machine.drain(); f.advance(DURATIONS[action]);
     expect(f.machine.drain().some(command => command.type === 'activityDone')).toBe(false);
-    f.machine.drag(true); f.machine.drain(); f.machine.activity(action);
+    f.machine.drag(true); f.machine.drain(); f.machine.activity(request);
     expect(f.machine.snapshot.state).toBe('drag'); expect(f.machine.drain()).toEqual([]);
   });
   it.each([false, true])('偷吃点击：先冻结原姿态 400ms，再接惊讶点击和声音（原生 press 序列=%s）', press => {

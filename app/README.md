@@ -225,8 +225,8 @@ R2-1 聚焦自测（从 `app/` 目录运行）：`npm exec -- vitest run tests/p
 
 偷吃在原生 press 时保存动作年龄，显示同一时刻的身体姿态、surprised 和隐藏饼干；release 后的 click 正式进入 400ms caught 状态。此间身体不继续咀嚼或呼吸，两耳弹簧刚度暂加 5，结束精确恢复；到时再进入普通 surprised 点击反应并播 click_surprise。拖动会清掉偷吃标记，隐藏/reload 恢复弹簧并释放道具。
 
-主进程在三餐问话气泡成功显示后记时；两分钟内菜单喂食才标记“好吃”。渲染器实际播完发送 pet:activity-done，经窗口/主 frame 验证、匹配当前菜单食物且仍在三餐时段后，主进程调用 ui.bubble.showBubble('呀哈！（好吃！）', 3200)。中断不发完成、重复/非可信回执被忽略；隐藏、免打扰和停用作息时也不冒泡。
+主进程在三餐问话气泡成功显示后记时；两分钟内菜单喂食才标记“好吃”。每次喂食分配递增 feedId，随 pet:activity 传入动作状态；渲染器实际播完发送带同一 feedId 的 pet:activity-done。经窗口/主 frame 验证、食物及 feedId 匹配当前请求且仍在三餐时段后，主进程才清除请求并调用 ui.bubble.showBubble('呀哈！（好吃！）', 3200)。连续选择同一种食物时，旧 feedId 回执不清除新请求；中断不发完成、重复/非可信回执被忽略；隐藏、免打扰和停用作息时也不冒泡。
 
-四个动作的路径端点与姿态极值加入取景，包含米粒、滴落和小跳。新增 smoke-eatRiceball.png、smoke-eatWatermelon.png、smoke-iceCream.png、smoke-sneakSnack.png，位于 AR_GATE_ARTIFACT_DIR，默认 app/smoke-out/；取样年龄 0.72、0.72、2.3、1.6 秒，前三个咬食动作使用 aa，冰淇淋按动作定义保留 ih 舔口型。报告要求 riceball、watermelon、iceCream、cookie 各自可见像素占比 > 0 且完整入画，沿用冻结合成帧逐类隐藏重绘的方法。全量冒烟扩为十五种行为，保留原有界面、音效和顶部透明断言。
+四个动作的路径端点与姿态极值加入取景，包含米粒、滴落和小跳。新增 smoke-eatRiceball.png、smoke-eatWatermelon.png、smoke-iceCream.png、smoke-sneakSnack.png，位于 AR_GATE_ARTIFACT_DIR，默认 app/smoke-out/；取样年龄 0.72、0.72、2.3、1.6 秒，饭团、西瓜和偷吃使用 aa 咬食口型；冰淇淋保留第三次舔的 ih（小张口带舌）。报告要求 riceball、watermelon、iceCream、cookie 各自可见像素占比 > 0 且完整入画，沿用冻结合成帧逐类隐藏重绘的方法。全量冒烟扩为十五种行为，保留原有界面、音效和顶部透明断言。
 
 聚焦复查：先运行 ar gui check Electron --headless，通过后 npm --prefix app run build，再 node app/scripts/smoke.mjs --only=eatRiceball,eatWatermelon,iceCream,sneakSnack。只生成初始模型与四个指定动作，不打开其他界面。执行者自测使用 typecheck 和相关无 GUI 测试；完整 test/smoke 交门禁。
