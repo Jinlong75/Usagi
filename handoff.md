@@ -4,7 +4,7 @@
 
 ## 一句话
 
-全量验收已通过；正式 mac dmg 与 Windows exe 都已出（app/release/），已交用户试用；等用户反馈手感，以及在 Windows 电脑上验证安装与 Mate Engine 导入。
+**项目暂停**（2026-11-16 20:4x，用户经 AgentRouter-dev 主导转达：其他项目收尾后暂停、全力开发 AgentRouter）。暂停时状态：全量验收通过，正式 dmg/exe 已出并交用户试用，无在跑/排队任务。恢复时先问用户试用反馈；`.agent-router/project.json` 的 taskSlots（min 3、weight 8）是否调低待用户确认。
 
 ## 开工必做
 
