@@ -37,12 +37,12 @@
 （软件生成，`ar lead handoff --write` 更新；只改"主导判断"一列；处理完的失败任务删掉那一行）
 
 公共目录：~/.config/agent-router
-任务表生成于：2026-11-16T15:48:30Z
+任务表生成于：2026-11-16T15:53:39Z
 
 | 记录名 | 状态 | 启动方式 | 接回命令 | 主导判断 |
 |---|---|---|---|---|
-| 016-Windows流畅度与焦点后无法点击 | 运行中 | 托管 | `ar wait 016-Windows流畅度与焦点后无法点击` |  |
-| 022-身体形状还原Tripo原始模型 | 运行中 | 托管 | `ar wait 022-身体形状还原Tripo原始模型` |  |
+| 022-身体形状还原Tripo原始模型-2 | 运行中 | 托管 | `ar wait 022-身体形状还原Tripo原始模型-2` |  |
+| 020-作息时段与问候 | 运行中 | 托管 | `ar wait 020-作息时段与问候` |  |
 | 001-Tripo建模操作指南 | 已停止 | — | `ar status 001-Tripo建模操作指南` |  |
 | 005-Usagi叫声切片 | 失败 | — | `ar status 005-Usagi叫声切片` |  |
 | 017-五官形态保持不变 | 已停止 | — | `ar status 017-五官形态保持不变` |  |
@@ -51,15 +51,14 @@
 ## 下一步
 
 1. **已由主导直接修好并提交**：②Windows 图标——`app/electron-builder.yml` 打开 `signAndEditExecutable`（electron-builder 26 在 mac 上无需 wine 就能改 exe 资源，核对 win-unpacked/Usagi.exe 含 icon.ico 全部 7 个尺寸，3b036a2）；①的"手上方凸起"——手臂静止下垂 1.1→0.35（`ARM_REST`，app/src/renderer/motion/index.ts；伸懒腰/喊叫相对它计算，绝对抬角 0.4/0.3 不变；5907386）；冒烟 `UnknownVizError` 改为不论是否刚下载都重跑一次（高负载下非首启也会出，21:10 复现）。
-2. **015-头身交界线**（托管，Codex）：两侧加深腰线凹口让 MToon 描边画出头身分界线（肚子正面不加），整条流水线重出并拷到 assets/models。`ar wait 015-头身交界线`。验收看门禁冒烟 smoke-idle/walk/happy 两侧有线、无鼓包，对照参考图正面；看汇报建议的 ARM_REST。完成条件：accept。
-3. **016-Windows流畅度与焦点后无法点击**（托管）：像素比上限、关 CalculateNativeWinOcclusion、定时器按时间自校正、看向平滑、命中改由光标轮询驱动、blur 后重设穿透、加"显示帧率"诊断与 fps.log、指南加复测清单。mac 无法验证效果，验收看单测与代码，效果交用户 Windows 复测。完成条件：accept。
+2. 016 已合入（审查 R1-1 主导补测试替身）；015 已合入但被用户否定，由 022 撤回：无需操作，完成条件：022 合入。
 4. ~~017~~ 已作废（用户纠正，见上）：无需操作，完成条件：表情改由 018 后的新说明承接。
 5. **018 已合入**（docs/research/usagi-表情动作/，看 face/overview.png 与 REPORT.md）。主导结论：眉毛永远高弧不变；眼只有 带高光圆眼 / 短横线眨眼(F09) / 闭眼弧(F08) 三种；嘴是 ω 闭口(F01) → 小开ω带舌(F03/F19/F21) → 大开竖长ω带舌(F05/F06)，外加鼓腮咀嚼(F11~F13)；腮红 3~4 斜线。删掉怒眉/八字眉/椭圆嘴。映射：happy/yaha→小开ω、shout/ura→大开ω、surprised/哈→小开ω圆眼、angry/sad→不用；口型 aa/oh→大开ω，ih/ee/ou→小开ω；新增 chew、sleep。等 022 合入后写 023 重画图集（pipeline/face/draw_atlas.py，照 F01/F05/F09/F12/F19 描线）。完成条件：023 提交并派发。
-5d. **022-身体形状还原Tripo原始模型**（托管，`ar wait 022-身体形状还原Tripo原始模型`）：用户"身子旁边有凸起……tripo 原始模型的形状就是最标准的形状"。撤 015 凹口、smooth_face 不碰腰线、新增与原始模型形状一致性检查(≤0.5mm)、ARM_REST=0。验收并排看 assets/model/preview_original/ 与 preview/。完成条件：accept。
+5d. **022-身体形状还原Tripo原始模型-2**（托管，`ar wait 022-身体形状还原Tripo原始模型-2`；用户放了更细致的 usagi3d2.glb，D12，说明已改为以它为输入和标准）：用户"身子旁边有凸起……tripo 原始模型的形状就是最标准的形状"。撤 015 凹口、smooth_face 不碰腰线、新增与原始模型形状一致性检查(≤0.5mm)、ARM_REST=0。验收并排看 assets/model/preview_original/ 与 preview/。完成条件：accept。
 5a. **019 已合入（6ccd264）**：docs/research/参考桌宠动作清单.md 末节 20 个候选。主导初选第一批：吃饭团、跳绳、啃西瓜、舔冰淇淋、偷吃被发现、吹泡泡、抱枕打盹（接 020 的 nap 状态）；右键菜单加"喂食/玩耍"。等 018 出五官结论后写说明：先一份"道具框架 + 跳绳"（不依赖新脸），再一份吃东西系列（要张嘴/咀嚼脸）。完成条件：两份说明提交并派发。
-5b. **020 作息问候 → 021 早安天气**（已提交，depends 016 / 020，`ar next --dispatch` 到时自动可派）：D9。睡觉/打瞌睡动作与闭眼等五官重画后另写；全屏检测留给 D10。完成条件：accept。
+5b. **020-作息时段与问候 在跑**（托管，`ar wait 020-作息时段与问候`）→ 021 早安天气 depends 020：D9。睡觉/打瞌睡动作与闭眼等五官重画后另写；全屏检测留给 D10。完成条件：accept。
 5c. **D10 吸附窗口顶端**：016 合入后写说明（koffi EnumWindows/CGWindowList、坐姿、跟随、跳下、闲逛偶尔自己跳上去可关）；全屏检测（020 的 `isForegroundFullscreen` TODO(D10)）一起做。完成条件：说明提交并派发。
-6. 全部合入后：`ar verify --detach` 全量验收 → `npm --prefix app run dist`（mac+win 都在本机打，Rosetta 已装）→ 主导核对 exe 图标与装包冒烟 → 交用户 Windows 复测（帧率数字、焦点后点击、模型线、图标、表情）→ 通知 agentrouter-dev 主导 Usagi 做完。完成条件：用户复测反馈。
+6. 全部合入后：`ar verify --detach` 全量验收 → `npm --prefix app run dist`（mac+win 都在本机打，Rosetta 已装）→ 主导核对 exe 图标与装包冒烟 → 交用户 Windows 复测（帧率数字、焦点后点击、模型线、图标、表情）→ 用户复测反馈处理完、没有在跑和排队的任务后，SendMessage 给 agentrouter-dev 主导"Usagi 已完成"（用户要求：之后由它通知 Waypoint 主导恢复开发；地址变了就 ListAgents 找）。完成条件：用户复测反馈。
 7. Windows 待用户验证（旧清单仍有效）：安装/自动启动/托盘、卸载保留数据、Mate Engine 导入 `assets/model/usagi.vrm`。
 
 ## 授权与边界
