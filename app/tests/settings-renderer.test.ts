@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_CONFIG } from '../src/main/config';
-import type { SettingsBridge } from '../src/shared/ui';
+import type { WeatherSettingsBridge } from '../src/shared/types';
 
 // Only the DOM fields used by settings are needed; no Electron or GUI is started.
 class Field {
@@ -19,12 +19,13 @@ function field(id: string): Field {
   return fields.get(id)!;
 }
 let close = () => {};
-let bridge: SettingsBridge;
+let bridge: WeatherSettingsBridge;
 
 describe('设置页保存失败，无 GUI', () => {
   beforeEach(async () => {
     vi.resetModules(); fields.clear();
     bridge = {
+      weatherCity: vi.fn(async () => 'Bangkok'),
       load: vi.fn(async () => ({ config: structuredClone(DEFAULT_CONFIG), maskedKey: 'sk-****abcd', needsReentry: false, version: '0.1.0' })),
       save: vi.fn(async () => ({ ok: false as const, reason: 'EACCES: permission denied' })),
       revealKey: vi.fn(async () => ''), test: vi.fn(async () => ({ ok: true as const, models: [] })),
@@ -75,6 +76,20 @@ describe('设置页保存失败，无 GUI', () => {
     await vi.waitFor(() => expect(bridge.save).toHaveBeenCalled());
     expect(vi.mocked(bridge.save).mock.calls[0]![0].routine).toEqual({ ...DEFAULT_CONFIG.routine,
       enabled: false, quiet: true, morning: ['07:30', '10:00'], bedtime: '23:00' });
+  });
+
+  it('显示缓存城市，保存关闭天气，不用城市查询触发定位', async () => {
+    expect(field('routine-weather').checked).toBe(true);
+    expect(field('weather-city').textContent).toBe('当前位置：Bangkok');
+    expect(field('weather-city').hidden).toBe(false);
+    field('routine-weather').checked = false;
+    await field('save').onclick!();
+    await vi.waitFor(() => expect(bridge.save).toHaveBeenCalled());
+    expect(vi.mocked(bridge.save).mock.calls[0]![0].routine.weather).toBe(false);
+    vi.resetModules(); vi.mocked(bridge.weatherCity).mockResolvedValue(null); field('weather-city').hidden = true;
+    await import('../src/settings/index');
+    await vi.waitFor(() => expect(bridge.weatherCity).toHaveBeenCalledTimes(2));
+    expect(field('weather-city').hidden).toBe(true);
   });
 
   it('IPC 抛错也显示具体原因并保留窗口', async () => {

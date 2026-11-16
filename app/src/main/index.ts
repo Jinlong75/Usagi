@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Menu, nativeImage, screen, Tray, safeStorage, powerMonitor } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, nativeImage, screen, Tray, safeStorage, powerMonitor, net } from 'electron';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -16,6 +16,7 @@ import { ChatService } from './chat/service';
 import { DeepSeekClient } from './chat/client';
 import { SessionStore } from './chat/sessionStore';
 import { SelfTalk } from './selfTalk';
+import { Weather, prefetchMorning } from './weather';
 import { Routine, isForegroundFullscreen } from './routine';
 import { menuState } from '../shared/ui';
 import { initialBounds, windowDimensions } from '../shared/window';
@@ -33,6 +34,7 @@ let config: Config = structuredClone(DEFAULT_CONFIG);
 let ui: UiController;
 let selfTalk: SelfTalk;
 let routine: Routine | undefined;
+let stopWeatherPrefetch: (() => void) | undefined;
 let sessionStore: SessionStore | undefined;
 let keyStore: AsyncKeyStore | undefined;
 let quitting = false;
@@ -330,7 +332,9 @@ async function start(): Promise<void> {
     return { store: sessionStore, keys: keyStore, service: new ChatService({ client: new DeepSeekClient(),
       store: sessionStore, keyStore, getSettings: () => config.chat }) };
   })();
-  ui = new UiController({ pet: win, root, smoke, config: () => config, update: updateConfig, ...dependencies });
+  const weather = new Weather({ path: join(app.getPath('userData'), 'weather-cache.json'),
+    fetch: (input, init) => net.fetch(input instanceof URL ? input.toString() : input, init), now: Date.now, enabled: () => config.routine.weather });
+  ui = new UiController({ weatherCity: () => weather.city(), pet: win, root, smoke, config: () => config, update: updateConfig, ...dependencies });
   const blocked = () => !win?.isVisible() || !!gesture?.dragged || ui.blocked || ui.bubble.occupied || isForegroundFullscreen();
   const sound = () => win?.webContents.send('pet:play-sound', 'idle_talk');
   if (!smoke) {
@@ -340,9 +344,10 @@ async function start(): Promise<void> {
         now: () => new Date(), idleSeconds: () => powerMonitor.getSystemIdleTime(), blocked,
         show: (text, duration, question) => ui.showRoutine(text, duration, question), sound,
         state: state => win?.webContents.send('routine:state', state),
-        weatherLine: async () => null, // 021 injects weather here.
+        weatherLine: () => weather.line().then(line => line ? line + '。' : null),
         onError: error => console.error('作息调度失败', error),
       });
+      stopWeatherPrefetch = prefetchMorning(weather, () => config.routine);
       powerMonitor.on('suspend', () => routine?.markAway());
       powerMonitor.on('lock-screen', () => routine?.markAway());
     } catch (error) {
@@ -495,7 +500,7 @@ app.on('before-quit', event => {
   if (!smoke && !quitFlushed) {
     event.preventDefault();
     if (quitting) return;
-    quitting = true; selfTalk?.stop(); routine?.stop();
+    quitting = true; stopWeatherPrefetch?.(); selfTalk?.stop(); routine?.stop();
     ui?.stopChat();
     // Session persistence starts independently of renderer responsiveness. Settings
     // and the following key flush each get 1.5s; total quit wait is at most 3s.
@@ -510,7 +515,7 @@ app.on('before-quit', event => {
     });
     return;
   }
-  selfTalk?.stop(); routine?.stop();
+  stopWeatherPrefetch?.(); selfTalk?.stop(); routine?.stop();
   clearTimeout(watchdog);
   stopCursor?.();
   motion?.cancel();

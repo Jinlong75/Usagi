@@ -16,6 +16,7 @@ export interface ChatPort {
 }
 export interface UiOptions {
   pet: BrowserWindow; root: string; smoke: boolean;
+  weatherCity?: () => string | null;
   config(): Config; update(config: unknown): void;
   keys: { load(): Promise<KeyResult>; save(key: string): Promise<SaveKeyResult> };
   store: { load(): Promise<Session>; clear(): Promise<void> };
@@ -56,6 +57,7 @@ export class UiController {
       await options.store.clear(); this.text = ''; return true;
     });
     ipcMain.on('chat:settings', event => { if (trusted(event, this.chat.window)) void this.settings.open(); });
+    handle('settings:weather-city', () => this.settings.window, () => options.weatherCity?.() ?? null);
     handle('settings:load', () => this.settings.window, async () => {
       const key = await options.keys.load();
       return { config: options.config(), maskedKey: key.apiKey ? maskKey(key.apiKey) : '', needsReentry: key.needsReentry, version: app.getVersion() };
