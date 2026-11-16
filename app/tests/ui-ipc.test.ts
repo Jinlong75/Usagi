@@ -33,7 +33,8 @@ vi.mock('electron', () => {
     loadFile = vi.fn(async () => {}); loadURL = vi.fn(async () => {});
   }
   return { BrowserWindow,
-    app: { whenReady: () => ({ then: (start: () => Promise<void>) => { host.start = start; return { catch: vi.fn() }; } }),
+    app: { commandLine: { getSwitchValue: vi.fn(() => ''), appendSwitch: vi.fn() },
+      whenReady: () => ({ then: (start: () => Promise<void>) => { host.start = start; return { catch: vi.fn() }; } }),
       on: (name: string, fn: (...args: any[]) => any) => host.appEvents.set(name, fn),
       getPath: () => '/unused-ui-fixture', getVersion: () => '0.1.0', dock: { hide: vi.fn() }, quit: host.quit },
     ipcMain: { handle: (name: string, fn: (...args: any[]) => any) => host.invokes.set(name, fn),
