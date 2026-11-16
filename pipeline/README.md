@@ -178,9 +178,13 @@ sh pipeline/build_usagi.sh face
 
 `relaxed` 的嘴明确沿用 neutral；它仍显式绑定两张贴片。blinkLeft 指角色左眼（Blender +X / 正面图片右侧）。眼睛高光、两侧长眉弧、ω 嘴、粉色椭圆与三条斜短线依据 `Material/tripo/usagi_3d_ref.png` 和 `Material/tripo/refs/face.png` 的正脸手工用椭圆和 Bezier 曲线画出，线色 `#2B1A12`。表情沿用这些特征，使用独立格子，不混合格内图案。
 
-定位直接使用任务给出的原雕刻块范围，按 009 的 `(x,y,z) → (y,-x,z)`（绕 Z -90°）转换。眼睛中心为 X ±0.1045、Z 0.458；眉线为左右 X ±(0.074…0.216)、Z 0.513…0.640；嘴 X -0.055…0.050、Z 0.303…0.404（米）。用 landmark `face_normal` 的正交平面投影，横向为世界 +X 在该平面的投影，向上为 normal×right；腮红按参考放在 X ±0.194、Z 0.398。两张贴片从身体前向表面复制原多边形，保留曲面与三角划分；只取完全落在投影框内的面，五官外至少 15% 的透明保护区吸收边界三角面差异。眼贴片额外覆盖参考图的双颊。所有点沿原顶点世界法线外移 0.0015 米，刚性 100% Head。原网格 UV 在 [0,1]，材质 `KHR_texture_transform.scale=[.25,.25]`、默认 offset=[0,0]，所以只显示 neutral。报告记录原雕刻/旋转/投影边界、平面轴、贴片来源顶点、顶点数、UV 范围和全部绑定，方便核对。
+定位直接使用任务给出的原雕刻块范围，按 009 的 `(x,y,z) → (y,-x,z)`（绕 Z -90°）转换。眼睛中心为 X ±0.1045、Z 0.458；眉线为左右 X ±(0.074…0.216)、Z 0.513…0.640；嘴 X -0.055…0.050、Z 0.303…0.404（米）。用 landmark `face_normal` 的正交平面投影，横向为世界 +X 在该平面的投影，向上为 normal×right；腮红沿用原贴片中心的脸平面 X ±0.194、向上投影 0.347 米。两张贴片从身体前向表面复制原多边形，保留曲面与三角划分；只取完全落在投影框内的面，五官外至少 15% 的透明保护区吸收边界三角面差异。眼贴片额外覆盖参考图的双颊。所有点沿原顶点世界法线外移 0.0015 米，刚性 100% Head。原网格 UV 在 [0,1]，材质 `KHR_texture_transform.scale=[.25,.25]`、默认 offset=[0,0]，所以只显示 neutral。报告记录原雕刻/旋转/投影边界、平面轴、贴片来源顶点、顶点数、UV 范围和全部绑定，方便核对。
 
-材质选择 **MASK、cutoff=0.5**，不描边，renderQueueOffsetNumber=1。MASK 保持细线清楚并减少眼/嘴两个面层的透明排序问题；外移负责深度分离。baseColorFactor RGB 与 shadeColorFactor 都为零，颜色由同一图集的 emissiveTexture、emissiveFactor=[1,1,1]、emissiveStrength=1 给出，避免明暗改变五官颜色。baseColorTexture 仍提供 alpha，并与 emissiveTexture 使用相同的 UV 变换。
+修订后的线宽以脸平面米制计算：眉线、闭眼弧线、ω 嘴、sad/ee 嘴及开口轮廓统一为 **0.0142 米**，约头宽 0.66 米的 2.15%。非正方形投影框用椭圆像素笔刷抵消 UV 拉伸，保证模型上线宽均匀；眉线中心曲线与长度、睁眼椭圆与白色高光维持原值。neutral 嘴的含线宽外框为 X `[-0.055, 0.050]`、向上投影 `[0.24984, 0.35532]`，中心 `[-0.0025, 0.30258]` 米，对齐原雕刻投影范围。为放大的腮红保留 8% 透明边距，眼贴片向下扩至投影 0.266 米，并补偿眼睛像素高度以保持原米制尺寸。嘴贴片的透明投影框扩为 X `[-0.0925, 0.0875]`、向上 `[0.209, 0.396]`，容纳同步放大的口型。腮红宽 0.116 米（头宽约 17.6%）、高 0.07733 米，比例 1.5:1；左右含色外框分别为 X `[-0.252,-0.136]` / `[0.136,0.252]`、向上 `[0.30833,0.38567]` 米；三道斜线为黑色并同步加粗。atlas_preview 按投影框实际宽高展示，避免将宽眼贴图的正方形 UV 格误看成实际形状。
+
+VRM 插件的 `Vrm1Importer.setup_vrm1_humanoid_bones()` 会给无子骨 Foot 选择世界 `(0,-1,0)` 的目标轴，改变 Blender rest bone 的轴向；导出会将这次轴转换写成约 90° 的局部旋转与新的逆绑定矩阵。face 在导入后读取输入 GLB 节点层级/TRS，转换到 Blender Z-up，恢复所有输入骨骼的世界 rest frame，保留骨子对象（碰撞球）的世界矩阵，并显式选择 `restPositionPose` 导出。修复发生在 Blender 场景，**不改输入 VRM，也不事后修改导出的 GLB**。测试独立解析输入/输出 JSON 与二进制 MAT4，按节点名检查所有原节点的 translation/rotation/scale、所有 skin 的每个关节逆绑定矩阵，容差均为 `1e-4`；同时覆盖合成模型和正式产物。
+
+材质选择 **MASK、cutoff=0.5**，不描边，renderQueueOffsetNumber=0（MToon 1.0 的 OPAQUE/MASK 要求为零，导出器也可省略这个默认字段）。MASK 保持细线清楚并减少眼/嘴两个面层的透明排序问题；外移负责深度分离。baseColorFactor RGB 与 shadeColorFactor 都为零，颜色由同一图集的 emissiveTexture、emissiveFactor=[1,1,1]、emissiveStrength=1 给出，避免明暗改变五官颜色。baseColorTexture 仍提供 alpha，并与 emissiveTexture 使用相同的 UV 变换。
 
 所有 14 个 VRM 1.0 preset 表情为 `isBinary=true`，只用 textureTransformBinds，scale 始终 [.25,.25]，offset 指定目标格。五个情绪同时绑定眼/嘴，并配置 overrideBlink=block、overrideMouth=block、overrideLookAt=none；三个 blink 只绑定眼，五个口型只绑定嘴，neutral 显式绑定两张材质的默认格。
 
@@ -190,7 +194,7 @@ three-vrm **3.5.5** 源码确认支持 VRM 1.0 textureTransformBinds，MToon 的
 
 `sh pipeline/run_tests.sh` 保留全部原测试，并追加：
 
-- Pillow 像素测试：尺寸、命名格/空格、每格 >0.5% 且 <50% 非透明覆盖、8% 全透明边距、各命名格内容不同。
+- Pillow 像素测试：尺寸、命名格/空格、每格 >0.5% 且 <50% 非透明覆盖、8% 全透明边距、各命名格内容不同，以及 neutral 嘴米制外框、腮红尺寸/比例/中心。
 - 在 010 同一合成角色上实际运行 rig→face，检查曲面复制/外移、全 Head、UV、材质/14 个表达式/格坐标，身体每个三角面的位置与逐点蒙皮、元信息、人形与弹簧保留，以及 VRM 插件重新导入后的绑定与权重。身体比较允许导出器在接缝拆点，位置/权重/碰撞体使用 1e-6 数值容差；插件附加的四个空 look preset 只允许没有任何绑定。
 - 临时 npm 目录仅安装 `@pixiv/three-vrm@3.5.5` 与 app 同版 `three@0.187.0`（不改 app/package 或锁文件），读取合成 VRM 的真实 JSON 绑定，调用实际 MToonMaterial、VRMExpressionManager 和纹理绑定类，验证 happy 阻止 blink/aa、二值阈值、base/emissive 同步、关闭表情重置。这些测试依赖用于覆盖目标运行时的叠加行为，不加入桌宠产品依赖。npm 首次需要网络，退出清理临时目录。
 

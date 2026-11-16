@@ -8,7 +8,7 @@ from PIL import Image
 sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]/'face'))
 from draw_atlas import generate
-from layout import CELL, MARGIN, EYES, MOUTHS
+from layout import CELL, MARGIN, EYES, MOUTHS, FRAMES
 
 
 class AtlasTests(unittest.TestCase):
@@ -44,6 +44,28 @@ class AtlasTests(unittest.TestCase):
                      for i in range(len(names))]
             self.assertEqual(len(set(tiles)), len(names))
         self.assertEqual(Image.open(self.root/'atlas_preview.png').size, (2048, 1152))
+
+    def test_neutral_physical_bounds_and_cheek_proportions(self):
+        mouth = Image.open(self.root/'mouth_atlas.png').crop((0, 0, CELL, CELL))
+        box = mouth.getchannel('A').point(lambda a: 255 if a >= 128 else 0).getbbox()
+        xmin, xmax, vmin, vmax = FRAMES['FaceMouth']
+        bounds = (xmin+box[0]/CELL*(xmax-xmin), xmin+box[2]/CELL*(xmax-xmin),
+                  vmax-box[3]/CELL*(vmax-vmin), vmax-box[1]/CELL*(vmax-vmin))
+        for actual, expected in zip(bounds, (-.055, .050, .24984, .35532)):
+            self.assertAlmostEqual(actual, expected, delta=.001)
+        eyes = Image.open(self.root/'eyes_atlas.png').crop((0, 0, CELL, CELL))
+        xmin, xmax, vmin, vmax = FRAMES['FaceEyes']
+        # Identify pink independently of ink strokes, including both cheeks.
+        for left, right, centre in ((0, CELL//2, -.194), (CELL//2, CELL, .194)):
+            pixels = [(x, y) for y in range(CELL) for x in range(left, right)
+                      if (lambda c: c[3] >= 128 and c[0] > 220 and 130 < c[1] < 210 and c[2] > 150)(eyes.getpixel((x, y)))]
+            lowx, highx = min(x for x, y in pixels), max(x for x, y in pixels)+1
+            lowy, highy = min(y for x, y in pixels), max(y for x, y in pixels)+1
+            width, height = (highx-lowx)/CELL*(xmax-xmin), (highy-lowy)/CELL*(vmax-vmin)
+            self.assertAlmostEqual(width, .116, delta=.002)
+            self.assertAlmostEqual(width/height, 1.5, delta=.06)
+            self.assertAlmostEqual(xmin+(lowx+highx)/2/CELL*(xmax-xmin), centre, delta=.001)
+            self.assertAlmostEqual(vmax-(lowy+highy)/2/CELL*(vmax-vmin), .347, delta=.001)
 
 
 if __name__ == '__main__':

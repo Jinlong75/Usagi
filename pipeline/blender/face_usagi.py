@@ -2,6 +2,7 @@
 import argparse
 import itertools
 import json
+import struct
 import sys
 from pathlib import Path
 
@@ -9,10 +10,62 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]/'face'))
 import bpy
-from mathutils import Vector
+from mathutils import Matrix, Quaternion, Vector
 from common import reset_scene, run, script_args
 from rig_usagi import enable_vrm, validate
-from layout import EYES, MOUTHS, EXPRESSIONS, EMOTIONS, SCULPTURE, targets, offset, FRAMES
+from layout import (EYES, MOUTHS, EXPRESSIONS, EMOTIONS, SCULPTURE, targets,
+                    offset, FRAMES, LINE_M, MOUTH_BOUNDS, CHEEK_CENTERS, CHEEK_SIZE)
+
+
+def preserve_source_rest_pose(arm, input_path):
+    """Undo importer bone-axis heuristics in the Blender scene, before export.
+
+    VRM import's setup_vrm1_humanoid_bones points childless Foot bones forward.
+    Those display axes become real rest axes on re-export. Reconstruct the
+    original glTF node frames instead; never patch the exported GLB.
+    """
+    data = Path(input_path).read_bytes()
+    document = json.loads(data[20:20+struct.unpack_from('<I', data, 12)[0]])
+    nodes = document['nodes']
+    parents = {child: i for i, node in enumerate(nodes) for child in node.get('children', [])}
+    worlds = {}
+    def world(index):
+        if index not in worlds:
+            node = nodes[index]
+            if 'matrix' in node:
+                local = Matrix([node['matrix'][i:i+4] for i in range(0, 16, 4)]).transposed()
+            else:
+                x, y, z, w = node.get('rotation', (0, 0, 0, 1))
+                local = Matrix.LocRotScale(Vector(node.get('translation', (0, 0, 0))),
+                                           Quaternion((w, x, y, z)), Vector(node.get('scale', (1, 1, 1))))
+            worlds[index] = world(parents[index]) @ local if index in parents else local
+        return worlds[index]
+    # glTF +Y up -> Blender +Z up. The glTF exporter appends its bone-axis
+    # basis conversion itself, so bone frames need only this left conversion.
+    to_blender = Matrix(((1, 0, 0, 0), (0, 0, -1, 0), (0, 1, 0, 0), (0, 0, 0, 1)))
+    source = {node['name']: arm.matrix_world.inverted() @ to_blender @ world(i)
+              for i, node in enumerate(nodes) if node.get('name') in arm.data.bones}
+    if set(source) != set(arm.data.bones.keys()):
+        raise ValueError('Source node names must cover every imported bone')
+    # Collider empties are bone children; preserve their world frames while
+    # restoring bone bases so spring/collider data retains its original meaning.
+    children = [(obj, obj.matrix_world.copy()) for obj in bpy.context.scene.objects
+                if obj.parent == arm and obj.parent_type == 'BONE']
+    bpy.context.view_layer.objects.active = arm
+    bpy.ops.object.mode_set(mode='EDIT')
+    for bone in arm.data.edit_bones:
+        bone.use_connect = False
+    for bone in arm.data.edit_bones:
+        bone.matrix = source[bone.name]
+    bpy.ops.object.mode_set(mode='OBJECT')
+    arm.animation_data_clear()
+    for bone in arm.pose.bones:
+        bone.matrix_basis = Matrix.Identity(4)
+    arm.data.vrm_addon_extension.vrm1.humanoid.pose = 'restPositionPose'
+    bpy.context.view_layer.update()
+    for obj, matrix in children:
+        obj.matrix_world = matrix
+    bpy.context.view_layer.update()
 
 
 def plane(lm):
@@ -104,7 +157,7 @@ def material(name, image_path):
     toon.shade_color_factor = (0, 0, 0)
     toon.outline_width_mode = 'none'
     toon.outline_width_factor = 0
-    toon.render_queue_offset_number = 1
+    toon.render_queue_offset_number = 0
     set_transform(mat, (0, 0))
     return mat
 
@@ -191,6 +244,7 @@ def face(input_path, landmarks, atlas_dir, output, report_path, preview_dir=None
     if len(arms) != 1:
         raise ValueError('Expected one rig armature')
     arm = arms[0]
+    preserve_source_rest_pose(arm, input_path)
     body = max((o for o in bpy.context.scene.objects if o.type == 'MESH'), key=lambda o: len(o.data.vertices))
     lm = json.loads(Path(landmarks).read_text())
     materials = {name: material(name, Path(atlas_dir)/file) for name, file in
@@ -220,6 +274,13 @@ def face(input_path, landmarks, atlas_dir, output, report_path, preview_dir=None
                   atlas=dict(eyes=list(EYES), mouth=list(MOUTHS), grid=[4, 4], cell=512, margin=41),
                   plane=dict(right=list(right), up=list(up), normal=list(normal)),
                   sculpture=sculpture, alpha_mode='MASK', alpha_cutoff=.5,
+                  render_queue_offset=0,
+                  artwork=dict(line_width_m=LINE_M, neutral_mouth_bounds=MOUTH_BOUNDS,
+                               cheek_bounds=[[x-CHEEK_SIZE[0]/2, x+CHEEK_SIZE[0]/2,
+                                              v-CHEEK_SIZE[1]/2, v+CHEEK_SIZE[1]/2]
+                                             for x, v in CHEEK_CENTERS],
+                               coordinates='metres: right/up axes of landmark face plane'),
+                  rest_pose='Source node world frames restored in Blender before export; restPositionPose; no exported GLB edits.',
                   blend_policy='Binary weights; emotions block blink/mouth; application must select one emotion, one blink and one viseme at a time. Offsets add relative to neutral.',
                   body_unchanged=True)
     Path(report_path).write_text(json.dumps(report, ensure_ascii=False, indent=2)+'\n')

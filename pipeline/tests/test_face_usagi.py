@@ -26,6 +26,28 @@ def glb_json(path):
     return json.loads(data[20:20+struct.unpack_from('<I', data, 12)[0]])
 
 
+def glb_rest_state(path):
+    """Read node TRS and every skin's binary matrices, without Blender import."""
+    data = Path(path).read_bytes()
+    json_length = struct.unpack_from('<I', data, 12)[0]
+    doc = json.loads(data[20:20+json_length])
+    binary = memoryview(data)[28+json_length:]
+    nodes = {n['name']: {key: n.get(key, default) for key, default in
+                         (('translation', [0, 0, 0]), ('rotation', [0, 0, 0, 1]), ('scale', [1, 1, 1]))}
+             for n in doc['nodes']}
+    skins = []
+    for skin in doc['skins']:
+        a = doc['accessors'][skin['inverseBindMatrices']]
+        assert a['type'] == 'MAT4' and a['componentType'] == 5126
+        view = doc['bufferViews'][a['bufferView']]
+        start = view.get('byteOffset', 0)+a.get('byteOffset', 0)
+        stride = view.get('byteStride', 64)
+        assert a['count'] == len(skin['joints'])
+        skins.append({doc['nodes'][joint]['name']: struct.unpack_from('<16f', binary, start+i*stride)
+                      for i, joint in enumerate(skin['joints'])})
+    return nodes, skins
+
+
 def body_triangles(path):
     """Compare actual triangles/skin, independent of exporter's seam splitting."""
     data = Path(path).read_bytes()
@@ -135,7 +157,7 @@ class FaceTests(unittest.TestCase):
             self.assertEqual(mat['extensions']['KHR_materials_emissive_strength']['emissiveStrength'], 1)
             mt = mat['extensions']['VRMC_materials_mtoon']
             self.assertEqual(mt['outlineWidthMode'], 'none')
-            self.assertEqual(mt['renderQueueOffsetNumber'], 1)
+            self.assertEqual(mt.get('renderQueueOffsetNumber', 0), 0)
             for texture in (mat['pbrMetallicRoughness']['baseColorTexture'], mat['emissiveTexture']):
                 tr = texture['extensions']['KHR_texture_transform']
                 self.assertEqual(tr['scale'], [.25, .25])
@@ -182,6 +204,32 @@ class FaceTests(unittest.TestCase):
                     self.assertEqual(wa.keys(), wb.keys())
                     for bone in wa:
                         self.assertAlmostEqual(wa[bone], wb[bone], delta=1e-6)
+
+    def assert_rest_unchanged(self, before, after):
+        old_nodes, old_skins = glb_rest_state(before)
+        new_nodes, new_skins = glb_rest_state(after)
+        self.assertTrue(old_nodes.keys() <= new_nodes.keys())
+        for name, transforms in old_nodes.items():
+            for key, values in transforms.items():
+                with self.subTest(node=name, transform=key):
+                    self.assertEqual(len(values), len(new_nodes[name][key]))
+                    for a, b in zip(values, new_nodes[name][key]):
+                        self.assertAlmostEqual(a, b, delta=1e-4)
+        self.assertEqual(len(old_skins), len(new_skins))
+        for old in old_skins:
+            candidates = [s for s in new_skins if s.keys() == old.keys()]
+            self.assertEqual(len(candidates), 1)
+            for joint, matrix in old.items():
+                with self.subTest(inverse_bind=joint):
+                    for a, b in zip(matrix, candidates[0][joint]):
+                        self.assertAlmostEqual(a, b, delta=1e-4)
+
+    def test_04_preserve_all_node_trs_and_inverse_bind_matrices(self):
+        self.assert_rest_unchanged(self.root/'body.vrm', self.root/'face.vrm')
+
+    def test_05_production_rest_pose(self):
+        model = Path(__file__).resolve().parents[2]/'assets'/'model'
+        self.assert_rest_unchanged(model/'usagi_body.vrm', model/'usagi.vrm')
 
     def test_99_round_trip(self):
         reset_scene()

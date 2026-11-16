@@ -8,8 +8,13 @@ MOUTHS = ('neutral', 'aa', 'ih', 'ou', 'ee', 'oh', 'happy', 'angry', 'sad', 'sur
 EXPRESSIONS = ('neutral', 'blink', 'blinkLeft', 'blinkRight', 'happy', 'angry', 'sad',
                'relaxed', 'surprised', 'aa', 'ih', 'ou', 'ee', 'oh')
 EMOTIONS = ('happy', 'angry', 'sad', 'relaxed', 'surprised')
-FRAMES = {'FaceEyes': (-.3224, .3224, .283, .658),
-          'FaceMouth': (-.07325, .06825, .228, .367)}
+FRAMES = {'FaceEyes': (-.3224, .3224, .266, .658),
+          'FaceMouth': (-.0925, .0875, .209, .396)}
+# Physical dimensions on the landmark face plane (metres). Head width ~0.66m.
+LINE_M = .0142  # 2.15% of head width; uniform in projected physical space.
+MOUTH_BOUNDS = (-.055, .050, .24984, .35532)
+CHEEK_CENTERS = ((-.194, .347), (.194, .347))
+CHEEK_SIZE = (.116, .116/1.5)
 CELL = 512
 MARGIN = 41  # ceil(512 * .08)
 SCULPTURE = {

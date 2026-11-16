@@ -4,7 +4,8 @@ import sys
 sys.dont_write_bytecode = True
 from pathlib import Path
 from PIL import Image, ImageChops, ImageDraw, ImageFont
-from layout import EYES, MOUTHS, CELL, MARGIN, FRAMES
+from layout import (EYES, MOUTHS, CELL, MARGIN, FRAMES, LINE_M,
+                    MOUTH_BOUNDS, CHEEK_CENTERS, CHEEK_SIZE)
 
 INK = '#2B1A12'
 PINK = '#F5AEBB'
@@ -29,6 +30,16 @@ class Pen:
 
     def line(self, points, width=5, color=INK):
         points = [(x*SCALE, y*SCALE) for x, y in points]
+        if isinstance(width, tuple):
+            # An elliptical pixel brush is circular in the projected metre
+            # plane, despite different horizontal/vertical atlas scales.
+            rx, ry = (w*SCALE/2 for w in width)
+            for a, b in zip(points, points[1:]):
+                steps = max(1, round(max(abs(b[k]-a[k]) for k in (0, 1))))
+                for i in range(steps+1):
+                    x, y = (a[k]+(b[k]-a[k])*i/steps for k in (0, 1))
+                    self.d.ellipse((x-rx, y-ry, x+rx, y+ry), fill=color)
+            return
         self.d.line(points, fill=color, width=round(width*SCALE), joint='curve')
         r = width*SCALE/2
         for x, y in (points[0], points[-1]):
@@ -45,6 +56,8 @@ def eyes(name):
     canvas = Image.new('RGBA', (CELL*SCALE, CELL*SCALE))
     p = Pen(canvas)
     xmin, xmax, vmin, vmax = EYE_FRAME
+    stroke = (LINE_M/(xmax-xmin)*CELL, LINE_M/(vmax-vmin)*CELL)
+    eye_y = .375/(vmax-vmin)  # Preserve approved eyes when expanding the guard band.
     def pos(x, z, depth=-.265):
         u, v = projected(x, z, depth)
         return ((u-xmin)/(xmax-xmin)*CELL, (vmax-v)/(vmax-vmin)*CELL)
@@ -55,69 +68,90 @@ def eyes(name):
         brow_inner = pos(sign*.078, .632, -.19)
         if name == 'angry':
             p.curve([pos(sign*.207, .559), pos(sign*.16, .555),
-                     pos(sign*.11, .520), pos(sign*.069, .505)], 5.5)
+                     pos(sign*.11, .520), pos(sign*.069, .505)], stroke)
         elif name == 'sad':
             p.curve([pos(sign*.211, .532), pos(sign*.17, .531),
-                     pos(sign*.11, .596), pos(sign*.076, .608)], 5)
+                     pos(sign*.11, .596), pos(sign*.076, .608)], stroke)
         else:
             lift = .012 if name == 'surprised' else 0
             p.curve([(brow_outer[0], brow_outer[1]-lift*CELL/(vmax-vmin)),
                      pos(sign*.195, .600+lift, -.19), pos(sign*.129, .649+lift, -.19),
-                     (brow_inner[0], brow_inner[1]-lift*CELL/(vmax-vmin))], 5)
+                     (brow_inner[0], brow_inner[1]-lift*CELL/(vmax-vmin))], stroke)
         closed = name == 'blink' or name == 'blink'+side
         if closed:
-            p.curve([(cx-22, cy-3), (cx-10, cy+12), (cx+10, cy+12), (cx+22, cy-3)], 5)
+            p.curve([(cx-22, cy-3*eye_y), (cx-10, cy+12*eye_y),
+                     (cx+10, cy+12*eye_y), (cx+22, cy-3*eye_y)], stroke)
         elif name == 'happy':
-            p.curve([(cx-23, cy+10), (cx-10, cy-19), (cx+10, cy-19), (cx+23, cy+10)], 5)
+            p.curve([(cx-23, cy+10*eye_y), (cx-10, cy-19*eye_y),
+                     (cx+10, cy-19*eye_y), (cx+23, cy+10*eye_y)], stroke)
         elif name == 'relaxed':
-            p.ellipse((cx-21, cy-3, cx+21, cy+21), INK)
-            p.line([(cx-24, cy-3), (cx+24, cy-3)], 5)
-            p.ellipse((cx-6, cy+2, cx+1, cy+8), '#FFFFFF')
+            p.ellipse((cx-21, cy-3*eye_y, cx+21, cy+21*eye_y), INK)
+            p.line([(cx-24, cy-3*eye_y), (cx+24, cy-3*eye_y)], stroke)
+            p.ellipse((cx-6, cy+2*eye_y, cx+1, cy+8*eye_y), '#FFFFFF')
         else:
             rx, ry = (28, 51)
             if name == 'surprised':
                 rx, ry = 34, 60
             elif name == 'angry':
                 rx, ry = 21, 36
+            ry *= eye_y
             p.ellipse((cx-rx, cy-ry, cx+rx, cy+ry), INK)
             p.ellipse((cx-rx*.45, cy-ry*.67, cx+rx*.22, cy-ry*.12), '#FFFFFF')
             p.curve([(cx-8, cy+ry*.57), (cx-3, cy+ry*.75),
-                     (cx+5, cy+ry*.75), (cx+10, cy+ry*.48)], 2.5, '#FFFFFF')
+                     (cx+5, cy+ry*.75), (cx+10, cy+ry*.48)], (2.5, 2.5*eye_y), '#FFFFFF')
             if name == 'sad':
-                p.ellipse((cx+sign*20-7, cy+24, cx+sign*20+7, cy+42), '#A8DDEB')
-        bx, by = pos(sign*.194, .398)
-        p.ellipse((bx-34, by-23, bx+34, by+23), PINK)
-        for shift in (-15, 0, 15):
-            p.line([(bx+shift+4, by-10), (bx+shift-4, by+10)], 4)
+                p.ellipse((cx+sign*20-7, cy+24*eye_y, cx+sign*20+7, cy+42*eye_y), '#A8DDEB')
+        bx, bv = CHEEK_CENTERS[0 if sign < 0 else 1]
+        def cheek_pos(x, v):
+            return ((x-xmin)/(xmax-xmin)*CELL, (vmax-v)/(vmax-vmin)*CELL)
+        w, h = CHEEK_SIZE
+        p.ellipse((*cheek_pos(bx-w/2, bv+h/2), *cheek_pos(bx+w/2, bv-h/2)), PINK)
+        for shift in (-.030, 0, .030):
+            p.line([cheek_pos(bx+shift+.007, bv+.012),
+                    cheek_pos(bx+shift-.007, bv-.012)], stroke, '#000000')
     return canvas.resize((CELL, CELL), Image.Resampling.LANCZOS)
 
 
 def mouth(name):
     canvas = Image.new('RGBA', (CELL*SCALE, CELL*SCALE))
     p = Pen(canvas)
+    xmin, xmax, vmin, vmax = FRAMES['FaceMouth']
+    stroke = (LINE_M/(xmax-xmin)*CELL, LINE_M/(vmax-vmin)*CELL)
     if name == 'neutral':
-        p.curve([(104, 220), (103, 312), (231, 304), (252, 214)], 16)
-        p.curve([(252, 214), (247, 301), (385, 312), (405, 220)], 16)
-        p.curve([(252, 273), (292, 314), (290, 354), (241, 360)], 13)
-        p.ellipse((239, 199, 265, 228), INK)
+        left, right, bottom, top = MOUTH_BOUNDS
+        r = LINE_M/2
+        # Curve endpoints and round caps exactly span the source sculpture's
+        # projected bounds; centre = (-.0025, .30258), not the tile centre.
+        def pos(u, v):
+            x = left+r+u*(right-left-2*r)
+            z = top-r-v*(top-bottom-2*r)
+            return ((x-xmin)/(xmax-xmin)*CELL, (vmax-z)/(vmax-vmin)*CELL)
+        p.curve([pos(0, .22), pos(0, .66), pos(.46, .66), pos(.5, 0)], stroke)
+        p.curve([pos(.5, 0), pos(.54, .66), pos(1, .66), pos(1, .22)], stroke)
+        p.curve([pos(.5, .48), pos(.68, .67), pos(.68, 1), pos(.46, 1)], stroke)
     elif name == 'sad':
-        p.curve([(122, 300), (197, 227), (307, 227), (388, 300)], 16)
+        p.curve([(122, 300), (197, 227), (307, 227), (388, 300)], stroke)
     elif name == 'ee':
-        p.curve([(100, 223), (173, 300), (339, 300), (412, 223)], 17)
+        p.curve([(100, 223), (173, 300), (339, 300), (412, 223)], stroke)
     else:
         boxes = {'aa': (137, 100, 375, 422), 'angry': (112, 67, 400, 445),
                  'happy': (104, 136, 408, 414), 'ih': (98, 207, 414, 323),
                  'ou': (202, 156, 310, 362), 'oh': (161, 125, 351, 399),
                  'surprised': (200, 194, 312, 322)}
         box = boxes[name]
-        p.ellipse(box, '#642A32', INK, 14)
+        # Ellipses use a filled outer/inner pair for the same metre thickness
+        # as line art (Pillow's outline width is isotropic only in pixels).
+        p.ellipse(box, INK)
+        x0, y0, x1, y1 = box
+        sx, sy = stroke
+        p.ellipse((x0+sx, y0+sy, x1-sx, y1-sy), '#642A32')
         if name in ('aa', 'angry', 'happy'):
             x0, y0, x1, y1 = box
             # A tongue wholly inside the outlined cavity.
             tongue = Image.new('RGBA', canvas.size)
             Pen(tongue).ellipse((x0+34, y1-97, x1-34, y1-19), '#F58B9B')
             interior = Image.new('RGBA', canvas.size)
-            Pen(interior).ellipse((x0+14, y0+14, x1-14, y1-14), '#FFFFFF')
+            Pen(interior).ellipse((x0+sx, y0+sy, x1-sx, y1-sy), '#FFFFFF')
             tongue.putalpha(ImageChops.multiply(tongue.getchannel('A'), interior.getchannel('A')))
             canvas.alpha_composite(tongue)
         if name == 'ih':
@@ -141,8 +175,13 @@ def generate(output):
             atlas.paste(tile, (col*CELL, row*CELL))
             x, y = (atlas_index*4+col)*256, row*288
             pd.rectangle((x+3, y+3, x+252, y+253), fill='#FFF1C1')
-            preview.paste(tile.resize((256, 256), Image.Resampling.LANCZOS), (x, y),
-                          tile.resize((256, 256), Image.Resampling.LANCZOS))
+            # Show physical proportions: the eyes' broad projection frame is
+            # squeezed into a square UV cell, but the face unsqueezes it.
+            frame = FRAMES['FaceEyes' if atlas_index == 0 else 'FaceMouth']
+            width, height = frame[1]-frame[0], frame[3]-frame[2]
+            factor = 250/max(width, height)
+            thumbnail = tile.resize((round(width*factor), round(height*factor)), Image.Resampling.LANCZOS)
+            preview.paste(thumbnail, (x+(256-thumbnail.width)//2, y+(256-thumbnail.height)//2), thumbnail)
             pd.text((x+12, y+261), name, font=font, fill=INK)
         atlas.save(output/filename)
     preview.save(output/'atlas_preview.png')
