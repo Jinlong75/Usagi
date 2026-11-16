@@ -3,15 +3,12 @@ id: 004
 title: 截取参考帧并以原图为底图生成 Usagi T-pose 四视图（供 Tripo 多视图图生 3D）
 type: chore
 worker: codex
-worktree: true
 effort: high
 allowed_paths:
   - Material/tripo/**
   - tools/views/**
 verify:
-  - test -f Material/tripo/views/front.png && test -f Material/tripo/views/back.png && test -f Material/tripo/views/left.png && test -f Material/tripo/views/right.png
-  - test -f Material/tripo/views/sheet.png && test -f Material/tripo/refs/README.md && test -f Material/tripo/views/README.md
-  - for f in front back left right; do sips -g pixelWidth -g pixelHeight Material/tripo/views/$f.png | grep -q "pixelWidth: 1024" && sips -g pixelHeight Material/tripo/views/$f.png | grep -q "pixelHeight: 1024" || exit 1; done
+  - sh docs/specs/checks/004-check.sh
 expect_commit: true
 verify_timeout_min: 5
 ---
