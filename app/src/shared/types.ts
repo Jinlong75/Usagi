@@ -36,4 +36,4 @@ export type MoveResult = { ok: true; distance: number } | { ok: false; reason: s
 export interface WindowInfo { bounds: Rect; workArea: Rect }
 export interface DragSample { active: boolean; velocity: Point; timestamp: number }
 export type SoundUse = 'click_happy' | 'click_surprise' | 'click_shout' | 'drag';
-export type SmokeBehavior = 'idle' | 'walk' | 'happy' | 'surprised' | 'shout' | 'drag';
+export type SmokeBehavior = 'idle' | 'walk' | 'happy' | 'surprised' | 'shout' | 'stretch' | 'drag';

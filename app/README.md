@@ -34,13 +34,13 @@ npm --prefix app test
 npm --prefix app run smoke
 ```
 
-`smoke` 构建后用 `--smoke` 启动隐藏窗口，设置 `offscreen: true`，不创建托盘、不读写应用配置、不轮询鼠标，始终加载仓库里的占位模型。模型加载并渲染 60 帧后，依次播放待机、原地步态、开心、惊讶、喊叫、拖动姿态（走路不实际移动窗口）。每段在代表时刻定格，开心在跳跃最高点（175ms）截图，通过 `capturePage({stayHidden:true})` 获取带 alpha 的 PNG，检查非零 alpha 的占比在 2%～95%，并检查 VRM 版本为 1。开心和喊叫截图最上方两行 alpha 必须全为 0，模型触顶会打印 `ok:false`。60 秒超时或加载、截图失败均打印 `ok:false` JSON 并退出 1。
+`smoke` 构建后用 `--smoke` 启动隐藏窗口，设置 `offscreen: true`，不创建托盘、不读写应用配置、不轮询鼠标，始终加载仓库里的占位模型。模型加载并渲染 60 帧后，依次播放待机、原地步态、开心、惊讶、喊叫、伸懒腰、拖动姿态（走路不实际移动窗口）。每段在代表时刻定格，开心在跳跃最高点（175ms）截图，通过 `capturePage({stayHidden:true})` 获取带 alpha 的 PNG，检查非零 alpha 的占比在 2%～95%，并检查 VRM 版本为 1。开心最高点、喊叫和伸懒腰截图最上方两行 alpha 必须全为 0，模型触顶会打印 `ok:false`。60 秒超时或加载、截图失败均打印 `ok:false` JSON 并退出 1。
 
-输出为 `AR_GATE_ARTIFACT_DIR/smoke.png` 以及 `smoke-idle.png`、`smoke-walk.png`、`smoke-happy.png`、`smoke-surprised.png`、`smoke-shout.png`、`smoke-drag.png`；未指定目录时写到 `app/smoke-out/`。标准输出 JSON 包含实际模型路径、`opaqueRatio`、`vrmVersion`、`expressions`、`behaviors: ["idle","walk","happy","surprised","shout","drag"]` 与 `behaviorOpaqueRatios`（每种行为的不透明像素占比），以及 `behaviorTopTransparent: {happy:true, shout:true}`。七张图均检查 2%～95%，启动脚本还检查六种行为、六个占比和顶部透明检查齐全。单张拖动截图不能判断头发晃动幅度，仍需主导走查。首次运行时 Electron npm 包可能按其官方机制下载当前平台二进制；无需额外安装命令。
+输出为 `AR_GATE_ARTIFACT_DIR/smoke.png` 以及 `smoke-idle.png`、`smoke-walk.png`、`smoke-happy.png`、`smoke-surprised.png`、`smoke-shout.png`、`smoke-stretch.png`、`smoke-drag.png`；未指定目录时写到 `app/smoke-out/`。标准输出 JSON 包含实际模型路径、`opaqueRatio`、`vrmVersion`、`expressions`、`behaviors: ["idle","walk","happy","surprised","shout","stretch","drag"]` 与 `behaviorOpaqueRatios`（每种行为的不透明像素占比），以及 `behaviorTopTransparent: {happy:true, shout:true, stretch:true}`。八张图均检查 2%～95%，启动脚本还检查七种行为、七个占比和三种顶部透明检查齐全。单张拖动截图不能判断头发晃动幅度，仍需主导走查。首次运行时 Electron npm 包可能按其官方机制下载当前平台二进制；无需额外安装命令。
 
 主进程写完结果 JSON 后才退出，启动脚本会等待子进程输出管道关闭再判定结果。静默提前退出、缺少结果字段、非零退出、信号终止、启动失败和超时都会输出带原因的 `ok:false` JSON 并返回 1；即使 Electron 返回 0，也必须收到完整、有效的成功结果。相关回归测试只启动 Node fixture，不启动 Electron 或桌面窗口。
 
-单元测试涵盖配置默认合并/损坏备份/读写、DPR 1/2 下像素坐标与 alpha 阈值、点击/拖动边界、大小与多屏位置恢复、模型路径优先级，以及眨眼、呼吸、鼠标朝向、行为掷骰与滞回、全部动作复位、窗口移动取消、弹簧力恢复、音效筛选/单通道、省电和六行为冒烟报告。
+单元测试涵盖配置默认合并/损坏备份/读写、DPR 1/2 下像素坐标与 alpha 阈值、点击/拖动边界、大小与多屏位置恢复、模型路径优先级，以及眨眼、呼吸、鼠标朝向、行为掷骰与滞回、全部动作复位、窗口移动取消、弹簧力恢复、音效筛选/单通道、省电和七行为冒烟报告。
 
 ## 操作与配置
 
@@ -88,6 +88,6 @@ macOS 隐藏 Dock 图标并调用 `setVisibleOnAllWorkspaces(true)`；Windows �
 
 主进程从仓库根 `assets/sounds/usagi/manifest.json` 按 uses 筛选非空 file 且 quality 为 clean/bgm 的片段，拒绝越界路径（包括符号链接），只通过受信 IPC 发送字节。Web Audio 音量 0.7，新声打断旧声，异步读盘/解码结果也受同一代号控制；确认点击后才播点击声，拖动开始以 30% 概率播 drag 声。缺 manifest/某类声音则静默跳过，相同原因只记一次日志；当前 manifest 未分配 drag 素材，实际拖动不会出声。
 
-托盘隐藏/显示时主进程显式发送 `pet:visibility {visible}`，隐藏立即取消 requestAnimationFrame、暂停状态机计时与掷骰，显示先回 idle 并重新计时再恢复渲染；不依赖 `backgroundThrottling:false` 下仍可能为 visible 的 `document.visibilityState`。连续 8 秒无动作/移动/点击/拖动时限制 30fps，被动呼吸、眨眼、看鼠标不重置闲置时间，活动立即恢复满帧。取景固定使用加载时的中性姿态包围盒，上方至少留模型高度 18%，左右各留模型宽度 8%，脚底距画面底部 5%，缩放时不会被当前动作重新撑大。
+托盘隐藏/显示时主进程显式发送 `pet:visibility {visible}`，隐藏立即取消 requestAnimationFrame、暂停状态机计时与掷骰，显示先回 idle 并重新计时再恢复渲染；不依赖 `backgroundThrottling:false` 下仍可能为 visible 的 `document.visibilityState`。连续 8 秒无动作/移动/点击/拖动时限制 30fps，被动呼吸、眨眼、看鼠标不重置闲置时间，活动立即恢复满帧。模型加载后、首次绘制前，依次采样喊叫、开心跳跃最高点、伸懒腰、甩头两侧、转圈每 45°、走路最高点（正面与左右转向）以及左右最大拖动倾斜。每个姿态先更新 VRM 和骨骼世界矩阵，再用 `Box3.setFromObject(scene, true)` 读取包含蒙皮变形的顶点范围并求并集，四边各加并集尺寸 4% 边距。中性脚底保持距画面底部 5%；动作向下超出时按需整体上移角色。采样后恢复中性姿态和弹簧状态，用户看不到采样过程。窗口缩放复用该范围，避免随当前动作改变取景。
 
 TODO(lead): 打包后的音效路径。TODO(lead): Windows 实测走动流畅度（Windows 高频 setPosition 可能掉帧）。TODO(lead): mac 实际拖动复核弹簧受力系数和耳朵/头发晃动幅度。

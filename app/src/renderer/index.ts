@@ -11,7 +11,7 @@ import { BehaviorMachine, TURN_ANGLE } from './behavior/machine';
 import { PetAudio } from './behavior/audio';
 import { MotionRig, sampleMotion } from './motion';
 import { DragSprings } from './motion/springs';
-import { frameSize } from './motion/framing';
+import { frameBounds, measureMotionBounds } from './motion/framing';
 import { renderInterval } from './behavior/power';
 
 declare global { interface Window { pet: PetBridge } }
@@ -33,12 +33,13 @@ let lastActivity = performance.now();
 let animationFrame = 0;
 let petVisible = true;
 let neutralBounds: Box3 | null = null;
+let motionBounds: Box3 | null = null;
 let smokePose: SmokeBehavior | undefined;
 let smokePoseFrames = 0;
 let smokePoseStartedAt = performance.now();
 let smokeAge = 0;
 let smokeDragImpulse = false;
-const smokeAges = { idle: 0.875, walk: 0.7, happy: 0.175, surprised: 0.45, shout: 0.55, drag: 0.5 };
+const smokeAges = { idle: 0.875, walk: 0.7, happy: 0.175, surprised: 0.45, shout: 0.55, stretch: 1.1, drag: 0.5 };
 let gaze = { x: 0, y: 0 };
 const audio = new PetAudio((use) => window.pet.loadSound(use));
 let elapsed = 0;
@@ -66,20 +67,15 @@ function showError(error: unknown): void {
 }
 
 function frameModel(): void {
-  if (!vrm || !neutralBounds) return;
-  const box = neutralBounds;
-  const size = box.getSize(new Vector3());
-  const center = box.getCenter(new Vector3());
+  if (!vrm || !neutralBounds || !motionBounds) return;
   const aspect = window.innerWidth / window.innerHeight;
-  const { height } = frameSize(size.x, size.y, aspect);
-  // The bottom 5% stays below the soles, even when width determines the framing.
-  const bottom = box.min.y - height * 0.05;
+  const { height, bottom, centerX, centerZ, front } = frameBounds(neutralBounds, [motionBounds], aspect);
   camera.left = -height * aspect / 2;
   camera.right = height * aspect / 2;
   camera.top = height / 2;
   camera.bottom = -height / 2;
-  camera.position.set(center.x, bottom + height / 2, box.max.z + 5);
-  camera.lookAt(center.x, bottom + height / 2, center.z);
+  camera.position.set(centerX, bottom + height / 2, front + 5);
+  camera.lookAt(centerX, bottom + height / 2, centerZ);
   camera.updateProjectionMatrix();
 }
 
@@ -127,7 +123,10 @@ async function loadModel(): Promise<void> {
     springs = new DragSprings(vrm);
     machine = new BehaviorMachine();
     if (!smoke && !petVisible) { machine.visibility(false); flushCommands(); }
-    neutralBounds = new Box3().setFromObject(vrm.scene);
+    // Synchronous sampling finishes and restores neutral before any frame is drawn.
+    const measured = measureMotionBounds(vrm, rig);
+    neutralBounds = measured.neutral;
+    motionBounds = measured.motion;
     dragging = false;
     frameModel();
     elapsed = 0;

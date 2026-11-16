@@ -1,12 +1,12 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
-import { Object3D, Vector3 } from 'three';
+import { Bone, Box3, BoxGeometry, Float32BufferAttribute, Object3D, Skeleton, SkinnedMesh, Uint16BufferAttribute, Vector3 } from 'three';
 import type { VRM, VRMHumanBoneName } from '@pixiv/three-vrm';
 import { MOTION_SECONDS, MotionRig, jumps, neutralPose, sampleMotion } from '../src/renderer/motion';
 import type { MotionName } from '../src/renderer/motion';
 import { DragSprings, SPRING_ACCELERATION_COEFFICIENT } from '../src/renderer/motion/springs';
 import { renderInterval } from '../src/renderer/behavior/power';
 import { prepareMove, WindowMotion } from '../src/main/motion';
-import { frameSize } from '../src/renderer/motion/framing';
+import { frameBounds, framingPoses, measureMotionBounds } from '../src/renderer/motion/framing';
 import { topRowsTransparent } from '../src/shared/hit';
 
 function model() {
@@ -136,13 +136,82 @@ describe('原生窗口移动（假时钟，不启动 Electron）', () => {
 });
 
 describe('动作取景与冒烟顶部透明检查', () => {
-  it.each([320 / 420, 440 / 578, 0.4, 2])('纵横比 %s：模型顶部至少留高度 18%%、左右各 8%%，脚底在下方 5%%', (aspect) => {
-    const size = frameSize(0.8, 1.6, aspect);
-    const bottom = -size.height * 0.05;
-    expect(bottom / size.height).toBeCloseTo(-0.05);
-    expect(bottom + size.height - 1.6).toBeGreaterThanOrEqual(1.6 * 0.18 - 1e-10);
-    expect((size.width - 0.8) / 2).toBeGreaterThanOrEqual(0.8 * 0.08 - 1e-10);
+  const box = (min: number[], max: number[]) => new Box3(new Vector3(...min), new Vector3(...max));
+  const neutral = box([-0.4, 0.2, -0.2], [0.4, 1.8, 0.2]);
+  const poses = [box([-0.3, 0.2, -0.4], [0.6, 2.5, 0.4]), // shout's machinery
+    box([-0.4, 0.28, -0.2], [0.4, 1.88, 0.2]), // happy apex
+    box([-0.7, 0.2, -0.3], [0.6, 2.3, 0.3]), // stretch
+    box([-0.9, 0.2, -0.7], [1.1, 1.8, 0.7])]; // spin / drag width
+  it.each([240 / 315, 320 / 420, 440 / 578, 0.4, 2])('纵横比 %s：覆盖全部动作并集及四边 4%%，中性脚底在下方 5%%', (aspect) => {
+    const originals = [neutral, ...poses].map((pose) => pose.clone());
+    const frame = frameBounds(neutral, poses, aspect);
+    const union = poses.reduce((bounds, pose) => bounds.union(pose), neutral.clone());
+    const size = union.getSize(new Vector3());
+    const viewport = box([frame.left, frame.bottom, union.min.z], [frame.right, frame.top, union.max.z]);
+    for (const pose of [neutral, ...poses]) expect(viewport.containsBox(pose)).toBe(true);
+    expect(frame.top - union.max.y).toBeGreaterThanOrEqual(size.y * 0.04 - 1e-10);
+    expect(union.min.y - frame.bottom).toBeGreaterThanOrEqual(size.y * 0.04 - 1e-10);
+    expect(union.min.x - frame.left).toBeGreaterThanOrEqual(size.x * 0.04 - 1e-10);
+    expect(frame.right - union.max.x).toBeGreaterThanOrEqual(size.x * 0.04 - 1e-10);
+    expect((neutral.min.y - frame.bottom) / frame.height).toBeCloseTo(0.05);
+    expect(frame.width / frame.height).toBeCloseTo(aspect);
+    expect(frame.centerX).toBeCloseTo(0.1); // Center the asymmetric motion range.
+    expect([neutral, ...poses]).toEqual(originals);
     expect(jumps(0.175).y).toBeCloseTo(0.08); // happy smoke samples the apex, not a landing.
+  });
+  it('姿态向脚底以下延伸时，只按需要上移角色且保留顶部和底部边距', () => {
+    const low = box([-0.4, -0.5, -0.2], [0.4, 1.8, 0.2]);
+    const frame = frameBounds(neutral, [low], 320 / 420);
+    const margin = (low.max.y - low.min.y) * 0.04;
+    expect(frame.bottom).toBeCloseTo(low.min.y - margin);
+    expect(frame.top).toBeGreaterThanOrEqual(low.max.y + margin - 1e-10);
+    expect((neutral.min.y - frame.bottom) / frame.height).toBeGreaterThan(0.05);
+  });
+  it('采样覆盖喊叫、跳跃最高点、伸懒腰、甩头两侧、每 45° 转圈、走路最高点和双向拖动', () => {
+    const poses = framingPoses();
+    for (const pose of [sampleMotion('shout', 0.55), sampleMotion('happy', 0.175), sampleMotion('stretch', 1.1),
+      sampleMotion('shake', 0.3), sampleMotion('shake', 0.42)]) expect(poses).toContainEqual(pose);
+    for (let angle = 0; angle < 360; angle += 45) {
+      expect(poses.some((pose) => pose.rotation[1] === angle * Math.PI / 180)).toBe(true);
+    }
+    for (const direction of [-1, 1] as const) {
+      expect(poses).toContainEqual(sampleMotion('walk', 0.7, { distance: direction * 22.5 }));
+      expect(poses).toContainEqual(sampleMotion('drag', 0.5, { velocityX: direction * 700 }));
+    }
+  });
+  it('读取更新骨骼后的实际顶点而非缓存包围盒，采样完成恢复中性', () => {
+    const scene = new Object3D();
+    const normalized = new Object3D();
+    normalized.rotation.z = -1.1;
+    const bone = new Bone();
+    bone.position.y = 1;
+    bone.rotation.copy(normalized.rotation);
+    const geometry = new BoxGeometry(2, 0.2, 0.2).translate(1, 1, 0);
+    const count = geometry.getAttribute('position').count;
+    geometry.setAttribute('skinIndex', new Uint16BufferAttribute(new Array(count * 4).fill(0), 4));
+    geometry.setAttribute('skinWeight', new Float32BufferAttribute(Array.from({ length: count * 4 }, (_, i) => i % 4 === 0 ? 1 : 0), 4));
+    const mesh = new SkinnedMesh(geometry);
+    scene.add(mesh, bone);
+    mesh.bind(new Skeleton([bone]));
+    mesh.computeBoundingBox(); // A stale neutral box must not hide raised vertices.
+    const reset = vi.fn();
+    const update = vi.fn(() => bone.quaternion.copy(normalized.quaternion));
+    const vrm = { scene, humanoid: { getNormalizedBoneNode: (name: string) => name === 'leftUpperArm' ? normalized : null },
+      update, springBoneManager: { reset } } as unknown as VRM;
+    const rig = new MotionRig(vrm);
+    const rotation = normalized.quaternion.clone();
+    const result = measureMotionBounds(vrm, rig);
+    expect(result.motion.max.y).toBeGreaterThan(result.neutral.max.y + 0.5);
+    expect(result.motion.containsBox(result.neutral)).toBe(true);
+    expect(normalized.quaternion.angleTo(rotation)).toBeLessThan(1e-7);
+    expect(bone.quaternion.angleTo(rotation)).toBeLessThan(1e-7);
+    expect(scene.position.toArray()).toEqual([0, 0, 0]);
+    expect(scene.scale.toArray()).toEqual([1, 1, 1]);
+    expect(scene.rotation.toArray().slice(0, 3)).toEqual([0, 0, 0]);
+    expect(new Box3().setFromObject(scene, true)).toEqual(result.neutral);
+    expect(reset).toHaveBeenCalledTimes(1);
+    expect(update).toHaveBeenCalledTimes(framingPoses().length + 2);
+    geometry.dispose();
   });
   it('只检查最上方两行的 alpha，第二行最后一个像素也不能漏掉', () => {
     const bitmap = new Uint8Array(4 * 4 * 4);

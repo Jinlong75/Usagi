@@ -28,7 +28,7 @@ let motion: WindowMotion | undefined;
 let lastDragEndedAt = -Infinity;
 let dragSample = { point: { x: 0, y: 0 }, time: 0 };
 const sounds = new SoundLibrary(resolve(root, 'assets/sounds/usagi'));
-const smokeBehaviors: SmokeBehavior[] = ['idle', 'walk', 'happy', 'surprised', 'shout', 'drag'];
+const smokeBehaviors: SmokeBehavior[] = ['idle', 'walk', 'happy', 'surprised', 'shout', 'stretch', 'drag'];
 const behaviorRatios: Partial<Record<SmokeBehavior, number>> = {};
 const behaviorTopTransparent: Partial<Record<SmokeBehavior, boolean>> = {};
 let smokeIndex = -1;
@@ -168,7 +168,7 @@ async function capture(result: RenderResult): Promise<void> {
     const directory = process.env.AR_GATE_ARTIFACT_DIR || resolve(root, 'app/smoke-out');
     await mkdir(directory, { recursive: true });
     await writeFile(join(directory, expected ? `smoke-${expected}.png` : 'smoke.png'), image.toPNG());
-    if (expected === 'happy' || expected === 'shout') {
+    if (expected === 'happy' || expected === 'shout' || expected === 'stretch') {
       behaviorTopTransparent[expected] = topRowsTransparent(bitmap, image.getSize(1).width);
       if (!behaviorTopTransparent[expected]) return fail(`角色超出取景：${expected} 最上方两行 alpha 非零`);
     }
