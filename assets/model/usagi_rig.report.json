@@ -1,0 +1,729 @@
+{
+  "plugin_module": "bl_ext.blender_org.vrm",
+  "vrm_version": "1.0",
+  "automatic_weights": {
+    "attempted": true,
+    "operator_finished": true,
+    "accepted": false,
+    "quality": {
+      "per_bone_vertex_count": {
+        "Hips": 721,
+        "Spine": 587,
+        "Chest": 13,
+        "Neck": 0,
+        "Head": 3343,
+        "EarL_1": 3124,
+        "EarL_2": 3003,
+        "EarL_3": 3461,
+        "EarL_4": 4189,
+        "EarL_Tip": 0,
+        "EarR_1": 3120,
+        "EarR_2": 3004,
+        "EarR_3": 3476,
+        "EarR_4": 4175,
+        "EarR_Tip": 0,
+        "LeftShoulder": 1248,
+        "LeftUpperArm": 485,
+        "LeftLowerArm": 295,
+        "LeftHand": 105,
+        "RightShoulder": 1247,
+        "RightUpperArm": 491,
+        "RightLowerArm": 286,
+        "RightHand": 105,
+        "LeftUpperLeg": 724,
+        "LeftLowerLeg": 428,
+        "LeftFoot": 205,
+        "RightUpperLeg": 720,
+        "RightLowerLeg": 431,
+        "RightFoot": 200,
+        "Tail": 1052,
+        "TailTip": 0
+      },
+      "max_influences": 8,
+      "unnormalized_vertices": 15777,
+      "zero_weight_vertices": 0,
+      "constraint_failures": {
+        "ear_region": 661,
+        "ear_tip": 0,
+        "tail_region": 703,
+        "limb_isolation": 712,
+        "face_region": 89
+      },
+      "constraint_samples": {
+        "ear_region": 12880,
+        "ear_tip": 4022,
+        "tail_region": 349,
+        "limb_isolation": 1173,
+        "face_region": 89
+      },
+      "region_counts": {
+        "arm_l": 248,
+        "arm_r": 247,
+        "ear_l": 6433,
+        "ear_r": 6447,
+        "face": 89,
+        "leg_l": 339,
+        "leg_r": 339,
+        "tail": 349,
+        "trunk": 1605
+      },
+      "valid": false
+    }
+  },
+  "weight_method": "geometry",
+  "weights": {
+    "per_bone_vertex_count": {
+      "Hips": 774,
+      "Spine": 372,
+      "Chest": 547,
+      "Neck": 0,
+      "Head": 2508,
+      "EarL_1": 1600,
+      "EarL_2": 2048,
+      "EarL_3": 2367,
+      "EarL_4": 3759,
+      "EarL_Tip": 0,
+      "EarR_1": 1606,
+      "EarR_2": 2044,
+      "EarR_3": 2376,
+      "EarR_4": 3772,
+      "EarR_Tip": 0,
+      "LeftShoulder": 0,
+      "LeftUpperArm": 156,
+      "LeftLowerArm": 129,
+      "LeftHand": 92,
+      "RightShoulder": 0,
+      "RightUpperArm": 155,
+      "RightLowerArm": 128,
+      "RightHand": 92,
+      "LeftUpperLeg": 205,
+      "LeftLowerLeg": 150,
+      "LeftFoot": 134,
+      "RightUpperLeg": 205,
+      "RightLowerLeg": 150,
+      "RightFoot": 134,
+      "Tail": 349,
+      "TailTip": 0
+    },
+    "max_influences": 3,
+    "unnormalized_vertices": 0,
+    "zero_weight_vertices": 0,
+    "constraint_failures": {
+      "ear_region": 0,
+      "ear_tip": 0,
+      "tail_region": 0,
+      "limb_isolation": 0,
+      "face_region": 0
+    },
+    "constraint_samples": {
+      "ear_region": 12880,
+      "ear_tip": 4022,
+      "tail_region": 349,
+      "limb_isolation": 1173,
+      "face_region": 89
+    },
+    "region_counts": {
+      "arm_l": 248,
+      "arm_r": 247,
+      "ear_l": 6433,
+      "ear_r": 6447,
+      "face": 89,
+      "leg_l": 339,
+      "leg_r": 339,
+      "tail": 349,
+      "trunk": 1605
+    },
+    "valid": true
+  },
+  "humanoid_mapping": {
+    "hips": "Hips",
+    "spine": "Spine",
+    "chest": "Chest",
+    "neck": "Neck",
+    "head": "Head",
+    "left_upper_arm": "LeftUpperArm",
+    "left_lower_arm": "LeftLowerArm",
+    "left_hand": "LeftHand",
+    "left_upper_leg": "LeftUpperLeg",
+    "left_lower_leg": "LeftLowerLeg",
+    "left_foot": "LeftFoot",
+    "right_upper_arm": "RightUpperArm",
+    "right_lower_arm": "RightLowerArm",
+    "right_hand": "RightHand",
+    "right_upper_leg": "RightUpperLeg",
+    "right_lower_leg": "RightLowerLeg",
+    "right_foot": "RightFoot"
+  },
+  "bones": [
+    {
+      "name": "Hips",
+      "length": 0.035561151802539825,
+      "parent": null,
+      "head": [
+        0.0,
+        0.0,
+        0.11999999731779099
+      ],
+      "tail": [
+        0.0,
+        0.0,
+        0.1555611491203308
+      ]
+    },
+    {
+      "name": "Spine",
+      "length": 0.10668349266052246,
+      "parent": "Hips",
+      "head": [
+        0.0,
+        0.0,
+        0.1555611491203308
+      ],
+      "tail": [
+        0.0,
+        0.0,
+        0.26224464178085327
+      ]
+    },
+    {
+      "name": "Chest",
+      "length": 0.03999999165534973,
+      "parent": "Spine",
+      "head": [
+        0.0,
+        0.0,
+        0.26224464178085327
+      ],
+      "tail": [
+        0.0,
+        0.0,
+        0.302244633436203
+      ]
+    },
+    {
+      "name": "Neck",
+      "length": 0.03999999165534973,
+      "parent": "Chest",
+      "head": [
+        0.0,
+        0.0,
+        0.302244633436203
+      ],
+      "tail": [
+        0.0,
+        0.0,
+        0.34224462509155273
+      ]
+    },
+    {
+      "name": "Head",
+      "length": 0.3709942698478699,
+      "parent": "Neck",
+      "head": [
+        0.0,
+        0.0,
+        0.34224462509155273
+      ],
+      "tail": [
+        0.0,
+        0.0,
+        0.7132388949394226
+      ]
+    },
+    {
+      "name": "EarL_1",
+      "length": 0.07176367193460464,
+      "parent": "Head",
+      "head": [
+        0.062408410012722015,
+        -0.004030290991067886,
+        0.7132388949394226
+      ],
+      "tail": [
+        0.065461665391922,
+        -0.002931121736764908,
+        0.7849291563034058
+      ]
+    },
+    {
+      "name": "EarL_2",
+      "length": 0.07171479612588882,
+      "parent": "EarL_1",
+      "head": [
+        0.065461665391922,
+        -0.002931121736764908,
+        0.7849291563034058
+      ],
+      "tail": [
+        0.06607231497764587,
+        -0.004702005535364151,
+        0.8566194772720337
+      ]
+    },
+    {
+      "name": "EarL_3",
+      "length": 0.0717252567410469,
+      "parent": "EarL_2",
+      "head": [
+        0.06607231497764587,
+        -0.004702005535364151,
+        0.8566194772720337
+      ],
+      "tail": [
+        0.06540060043334961,
+        -0.00683928094804287,
+        0.9283097386360168
+      ]
+    },
+    {
+      "name": "EarL_4",
+      "length": 0.07175317406654358,
+      "parent": "EarL_3",
+      "head": [
+        0.06540060043334961,
+        -0.00683928094804287,
+        0.9283097386360168
+      ],
+      "tail": [
+        0.06405717879533768,
+        -0.009526139125227928,
+        1.0
+      ]
+    },
+    {
+      "name": "EarL_Tip",
+      "length": 0.011999995447695255,
+      "parent": "EarL_4",
+      "head": [
+        0.06405717879533768,
+        -0.009526139125227928,
+        1.0
+      ],
+      "tail": [
+        0.06383250653743744,
+        -0.009975489228963852,
+        1.0119894742965698
+      ]
+    },
+    {
+      "name": "EarR_1",
+      "length": 0.07176782190799713,
+      "parent": "Head",
+      "head": [
+        -0.06265265494585037,
+        -0.004274547100067139,
+        0.7132388949394226
+      ],
+      "tail": [
+        -0.06570589542388916,
+        -0.0029311180114746094,
+        0.7849291563034058
+      ]
+    },
+    {
+      "name": "EarR_2",
+      "length": 0.07170882821083069,
+      "parent": "EarR_1",
+      "head": [
+        -0.06570589542388916,
+        -0.0029311180114746094,
+        0.7849291563034058
+      ],
+      "tail": [
+        -0.06607228517532349,
+        -0.0045188069343566895,
+        0.8566194772720337
+      ]
+    },
+    {
+      "name": "EarR_3",
+      "length": 0.07173366099596024,
+      "parent": "EarR_2",
+      "head": [
+        -0.06607228517532349,
+        -0.0045188069343566895,
+        0.8566194772720337
+      ],
+      "tail": [
+        -0.06515631079673767,
+        -0.006839273497462273,
+        0.9283097386360168
+      ]
+    },
+    {
+      "name": "EarR_4",
+      "length": 0.07175683230161667,
+      "parent": "EarR_3",
+      "head": [
+        -0.06515631079673767,
+        -0.006839273497462273,
+        0.9283097386360168
+      ],
+      "tail": [
+        -0.06362967938184738,
+        -0.009526131674647331,
+        1.0
+      ]
+    },
+    {
+      "name": "EarR_Tip",
+      "length": 0.012000013142824173,
+      "parent": "EarR_4",
+      "head": [
+        -0.06362967938184738,
+        -0.009526131674647331,
+        1.0
+      ],
+      "tail": [
+        -0.06337437778711319,
+        -0.00997545849531889,
+        1.011988878250122
+      ]
+    },
+    {
+      "name": "LeftShoulder",
+      "length": 0.2593320310115814,
+      "parent": "Chest",
+      "head": [
+        0.0,
+        0.0,
+        0.302244633436203
+      ],
+      "tail": [
+        0.25622862577438354,
+        0.0,
+        0.26224464178085327
+      ]
+    },
+    {
+      "name": "LeftUpperArm",
+      "length": 0.0358688049018383,
+      "parent": "LeftShoulder",
+      "head": [
+        0.25622862577438354,
+        0.0,
+        0.26224464178085327
+      ],
+      "tail": [
+        0.2917928695678711,
+        0.004592079669237137,
+        0.2630624771118164
+      ]
+    },
+    {
+      "name": "LeftLowerArm",
+      "length": 0.0358688049018383,
+      "parent": "LeftUpperArm",
+      "head": [
+        0.2917928695678711,
+        0.004592079669237137,
+        0.2630624771118164
+      ],
+      "tail": [
+        0.32735711336135864,
+        0.009184160269796848,
+        0.26388028264045715
+      ]
+    },
+    {
+      "name": "LeftHand",
+      "length": 0.01793440245091915,
+      "parent": "LeftLowerArm",
+      "head": [
+        0.32735711336135864,
+        0.009184160269796848,
+        0.26388028264045715
+      ],
+      "tail": [
+        0.3451392352581024,
+        0.011480200104415417,
+        0.2642892003059387
+      ]
+    },
+    {
+      "name": "RightShoulder",
+      "length": 0.2593320310115814,
+      "parent": "Chest",
+      "head": [
+        0.0,
+        0.0,
+        0.302244633436203
+      ],
+      "tail": [
+        -0.25622862577438354,
+        0.0,
+        0.26224464178085327
+      ]
+    },
+    {
+      "name": "RightUpperArm",
+      "length": 0.0358688086271286,
+      "parent": "RightShoulder",
+      "head": [
+        -0.25622862577438354,
+        0.0,
+        0.26224464178085327
+      ],
+      "tail": [
+        -0.2917928695678711,
+        0.004592091776430607,
+        0.2630624771118164
+      ]
+    },
+    {
+      "name": "RightLowerArm",
+      "length": 0.0358688049018383,
+      "parent": "RightUpperArm",
+      "head": [
+        -0.2917928695678711,
+        0.004592091776430607,
+        0.2630624771118164
+      ],
+      "tail": [
+        -0.32735711336135864,
+        0.009184184484183788,
+        0.26388028264045715
+      ]
+    },
+    {
+      "name": "RightHand",
+      "length": 0.01793440245091915,
+      "parent": "RightLowerArm",
+      "head": [
+        -0.32735711336135864,
+        0.009184184484183788,
+        0.26388028264045715
+      ],
+      "tail": [
+        -0.3451392352581024,
+        0.011480229906737804,
+        0.2642892003059387
+      ]
+    },
+    {
+      "name": "LeftUpperLeg",
+      "length": 0.019968919456005096,
+      "parent": "Hips",
+      "head": [
+        0.05544697493314743,
+        0.0,
+        0.07500000298023224
+      ],
+      "tail": [
+        0.05544697493314743,
+        -0.006686615291982889,
+        0.056183867156505585
+      ]
+    },
+    {
+      "name": "LeftLowerLeg",
+      "length": 0.019968917593359947,
+      "parent": "LeftUpperLeg",
+      "head": [
+        0.05544697493314743,
+        -0.006686615291982889,
+        0.056183867156505585
+      ],
+      "tail": [
+        0.05544697493314743,
+        -0.013373230583965778,
+        0.03736773133277893
+      ]
+    },
+    {
+      "name": "LeftFoot",
+      "length": 0.014771522954106331,
+      "parent": "LeftLowerLeg",
+      "head": [
+        0.05544697493314743,
+        -0.013373230583965778,
+        0.03736773133277893
+      ],
+      "tail": [
+        0.05544697493314743,
+        -0.018319493159651756,
+        0.023448949679732323
+      ]
+    },
+    {
+      "name": "RightUpperLeg",
+      "length": 0.019968919456005096,
+      "parent": "Hips",
+      "head": [
+        -0.05544701963663101,
+        0.0,
+        0.07500000298023224
+      ],
+      "tail": [
+        -0.05544701963663101,
+        -0.006686613894999027,
+        0.056183867156505585
+      ]
+    },
+    {
+      "name": "RightLowerLeg",
+      "length": 0.019968919456005096,
+      "parent": "RightUpperLeg",
+      "head": [
+        -0.05544701963663101,
+        -0.006686613894999027,
+        0.056183867156505585
+      ],
+      "tail": [
+        -0.05544701963663101,
+        -0.013373227789998055,
+        0.03736773133277893
+      ]
+    },
+    {
+      "name": "RightFoot",
+      "length": 0.014771525748074055,
+      "parent": "RightLowerLeg",
+      "head": [
+        -0.05544701963663101,
+        -0.013373227789998055,
+        0.03736773133277893
+      ],
+      "tail": [
+        -0.05544701963663101,
+        -0.018319489434361458,
+        0.023448949679732323
+      ]
+    },
+    {
+      "name": "Tail",
+      "length": 0.07999998331069946,
+      "parent": "Hips",
+      "head": [
+        0.00010965413093799725,
+        0.18620869517326355,
+        0.20445413887500763
+      ],
+      "tail": [
+        0.00010965413093799725,
+        0.266208678483963,
+        0.20445413887500763
+      ]
+    },
+    {
+      "name": "TailTip",
+      "length": 0.01199999451637268,
+      "parent": "Tail",
+      "head": [
+        0.00010965413093799725,
+        0.266208678483963,
+        0.20445413887500763
+      ],
+      "tail": [
+        0.00010965413093799725,
+        0.2782086730003357,
+        0.20445413887500763
+      ]
+    }
+  ],
+  "colliders": [
+    {
+      "bone": "Head",
+      "center": [
+        0.0,
+        0.0,
+        0.4504966139793396
+      ],
+      "radius": 0.26669926167895247,
+      "offset": [
+        0.0,
+        0.10825210809707642,
+        0.0
+      ]
+    },
+    {
+      "bone": "Chest",
+      "center": [
+        0.0,
+        0.0,
+        0.19112232327461243
+      ],
+      "radius": 0.17,
+      "offset": [
+        0.0,
+        -0.07112225890159607,
+        0.0
+      ]
+    }
+  ],
+  "springs": [
+    {
+      "name": "LeftEar",
+      "joints": [
+        "EarL_1",
+        "EarL_2",
+        "EarL_3",
+        "EarL_4",
+        "EarL_Tip"
+      ],
+      "stiffness": 1.6,
+      "gravity_power": 0.15,
+      "gravity_dir": [
+        0,
+        0,
+        -1
+      ],
+      "drag_force": 0.45,
+      "hit_radius": 0.012,
+      "collider_groups": [
+        "HeadCollision",
+        "ChestCollision"
+      ]
+    },
+    {
+      "name": "RightEar",
+      "joints": [
+        "EarR_1",
+        "EarR_2",
+        "EarR_3",
+        "EarR_4",
+        "EarR_Tip"
+      ],
+      "stiffness": 1.6,
+      "gravity_power": 0.15,
+      "gravity_dir": [
+        0,
+        0,
+        -1
+      ],
+      "drag_force": 0.45,
+      "hit_radius": 0.012,
+      "collider_groups": [
+        "HeadCollision",
+        "ChestCollision"
+      ]
+    },
+    {
+      "name": "Tail",
+      "joints": [
+        "Tail",
+        "TailTip"
+      ],
+      "stiffness": 2.5,
+      "gravity_power": 0.15,
+      "gravity_dir": [
+        0,
+        0,
+        -1
+      ],
+      "drag_force": 0.6,
+      "hit_radius": 0.012,
+      "collider_groups": [
+        "ChestCollision"
+      ]
+    }
+  ],
+  "plugin_validation": [],
+  "transition_widths": {
+    "neck": 0.12,
+    "face_protection": 0.12,
+    "arm_root": 0.048,
+    "leg_root": 0.05
+  },
+  "coordinate_system": "Blender Z-up, front -Y; spring gravity exports as VRM (0,-1,0)"
+}
