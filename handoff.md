@@ -37,14 +37,13 @@
 （软件生成，`ar lead handoff --write` 更新；只改"主导判断"一列；处理完的失败任务删掉那一行）
 
 公共目录：~/.config/agent-router
-任务表生成于：2026-11-16T14:56:28Z
+任务表生成于：2026-11-16T15:16:08Z
 
 | 记录名 | 状态 | 启动方式 | 接回命令 | 主导判断 |
 |---|---|---|---|---|
 | 015-头身交界线 | 运行中 | 托管 | `ar wait 015-头身交界线` |  |
-| 016-Windows流畅度与焦点后无法点击 | 运行中 | 托管 | `ar wait 016-Windows流畅度与焦点后无法点击` |  |
-| 018-表情动作参考整理-2 | 排队中 | 托管 | `ar wait 018-表情动作参考整理-2` |  |
-| 019-参考桌宠动作与道具互动清单 | 排队中 | 托管 | `ar wait 019-参考桌宠动作与道具互动清单` |  |
+| 016-Windows流畅度与焦点后无法点击 | 排队中 | 托管 | `ar wait 016-Windows流畅度与焦点后无法点击` |  |
+| 018-表情动作参考整理-2 | 运行中 | 托管 | `ar wait 018-表情动作参考整理-2` |  |
 | 001-Tripo建模操作指南 | 已停止 | — | `ar status 001-Tripo建模操作指南` |  |
 | 005-Usagi叫声切片 | 失败 | — | `ar status 005-Usagi叫声切片` |  |
 | 017-五官形态保持不变 | 已停止 | — | `ar status 017-五官形态保持不变` |  |
@@ -57,7 +56,7 @@
 3. **016-Windows流畅度与焦点后无法点击**（托管）：像素比上限、关 CalculateNativeWinOcclusion、定时器按时间自校正、看向平滑、命中改由光标轮询驱动、blur 后重设穿透、加"显示帧率"诊断与 fps.log、指南加复测清单。mac 无法验证效果，验收看单测与代码，效果交用户 Windows 复测。完成条件：accept。
 4. ~~017~~ 已作废（用户纠正，见上）：无需操作，完成条件：表情改由 018 后的新说明承接。
 5. **018-表情动作参考整理-2**（托管，改写后重派 262f284）：抽帧拼图、叫声↔表情对照（voice/<id>.png）、五官特写（face/）在 docs/research/usagi-表情动作/。主导读 README 和拼图，据此：①重画五官图集（主导定稿形态，每种叫声 label 配哪张脸）；②写"动作重做"与"叫声配表情"说明。完成条件：accept 并写出下一批说明。
-5a. **019-参考桌宠动作与道具互动清单**（托管）：读 docs/research/参考桌宠动作清单.md，按 D11 选 15～25 个动作（用户点名吃东西、跳绳），和 018 结论一起写动作/道具/叫声配表情说明。`ar wait 019-参考桌宠动作与道具互动清单`。完成条件：accept 并写出下一批说明。
+5a. **019 已合入（6ccd264）**：docs/research/参考桌宠动作清单.md 末节 20 个候选。主导初选第一批：吃饭团、跳绳、啃西瓜、舔冰淇淋、偷吃被发现、吹泡泡、抱枕打盹（接 020 的 nap 状态）；右键菜单加"喂食/玩耍"。等 018 出五官结论后写说明：先一份"道具框架 + 跳绳"（不依赖新脸），再一份吃东西系列（要张嘴/咀嚼脸）。完成条件：两份说明提交并派发。
 5b. **020 作息问候 → 021 早安天气**（已提交，depends 016 / 020，`ar next --dispatch` 到时自动可派）：D9。睡觉/打瞌睡动作与闭眼等五官重画后另写；全屏检测留给 D10。完成条件：accept。
 5c. **D10 吸附窗口顶端**：016 合入后写说明（koffi EnumWindows/CGWindowList、坐姿、跟随、跳下、闲逛偶尔自己跳上去可关）；全屏检测（020 的 `isForegroundFullscreen` TODO(D10)）一起做。完成条件：说明提交并派发。
 6. 全部合入后：`ar verify --detach` 全量验收 → `npm --prefix app run dist`（mac+win 都在本机打，Rosetta 已装）→ 主导核对 exe 图标与装包冒烟 → 交用户 Windows 复测（帧率数字、焦点后点击、模型线、图标、表情）→ 通知 agentrouter-dev 主导 Usagi 做完。完成条件：用户复测反馈。
@@ -81,6 +80,7 @@
 - 带 `--rebase` 的 retry 只重跑门禁、不让执行者动手；要执行者改东西用普通 retry --note。
 - 审查常抓真问题（丢数据、弹簧末端、取景），逐条 confirm；小修主导可在 worktree 改后 `retry --regate`。
 - DeepSeek 当前模型 ID：deepseek-flash（默认）、deepseek-v4-pro；deepseek-v4-flash 是旧名。
+- `--ack external:` 后面必须是 `ar status <记录名>` 里"外部改动摘要"那一串哈希（external:<64位>），写文字说明不认。
 - `accept --ack` 只认一个：外部改动摘要和"已知问题"确认要写进同一个字符串（`--ack "external:<摘要> 已知问题：…"`），写两个 `--ack` 只有最后一个生效。
 - 反向实验（缺陷 226，AgentRouter-dev 在修）：说明有 `gate_artifacts` 时，汇报 `## 反向实验` 里的可执行 JSON 只要命令不是 `node --test …`/`node <脚本>` 就被预检拒、整个门禁不跑（即使逐字等于验收命令）。修好前：本项目 Python/Blender 测试的反向实验让执行者写纯文字、不写 ```json exec 块，主导手动核对；或暂时去掉 gate_artifacts。
 - GitHub：远程 `origin` = https://github.com/Jinlong75/Usagi.git（**私有**，含版权素材，不能改公开）。2026-11-16 用户要求同步，已合并建仓 README 提交后用 `ar push <项目路径> --by lead` 推送（14b05f0）；project.json `push.allowLead: true`。之后的提交需要时同样用 ar push，推送前先问用户。安装包（app/release/）不进 git。
