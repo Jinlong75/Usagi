@@ -1,0 +1,47 @@
+{
+  "usagi_base.glb": {
+    "first_sha256": "0a3e5296af38ae6bba287c29db75c6bd41f57c4639eec92be70b0d2e76d6f63a",
+    "second_sha256": "9978042fe969220cdb76e4c20517bc7367c648aacfc90b6a5c1ed22cfd1a832f",
+    "cmp_exit": 1,
+    "binary_equal": true,
+    "first_ear_component_order": [
+      2675,
+      2713
+    ],
+    "second_ear_component_order": [
+      2713,
+      2675
+    ],
+    "json_equal_after_only_sorting_ear_components": true
+  },
+  "usagi_body.vrm": {
+    "first_sha256": "c40fd1ca310ba844e743081932e2e8417579f5a057ad85509c9de82bfcfff741",
+    "second_sha256": "c6060d984097c8391ccaf6711cd161f4e6cefae8051d132645c8da510e97984f",
+    "cmp_exit": 1,
+    "binary_equal": true,
+    "first_ear_component_order": [
+      2675,
+      2713
+    ],
+    "second_ear_component_order": [
+      2713,
+      2675
+    ],
+    "json_equal_after_only_sorting_ear_components": true
+  },
+  "usagi.vrm": {
+    "first_sha256": "c63bb267b3e65fa3f1e7e04d02221e65ac5c6c4ae0f6e795ba4d146f3bc9b149",
+    "second_sha256": "07c37e9f249c47eb6a076a6c8805fd0cf916be09e30383c966e4a8f54b9a38d6",
+    "cmp_exit": 1,
+    "binary_equal": true,
+    "first_ear_component_order": [
+      2675,
+      2713
+    ],
+    "second_ear_component_order": [
+      2713,
+      2675
+    ],
+    "json_equal_after_only_sorting_ear_components": true
+  }
+}

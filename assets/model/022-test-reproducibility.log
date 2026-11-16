@@ -1,0 +1,41 @@
+test_two_fresh_full_exports_are_byte_identical (__main__.ReproducibilityTests.test_two_fresh_full_exports_are_byte_identical) ... ERROR
+
+======================================================================
+ERROR: test_two_fresh_full_exports_are_byte_identical (__main__.ReproducibilityTests.test_two_fresh_full_exports_are_byte_identical)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<PROJECT>/pipeline/tests/test_reproducibility.py", line 61, in test_two_fresh_full_exports_are_byte_identical
+    self.export(self.root / name)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "<PROJECT>/pipeline/tests/test_reproducibility.py", line 53, in export
+    self.command(directory.name + '-' + stage, [BLENDER, '-b', *options,
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        '--python-exit-code', '1', '--python', str(PIPELINE / 'blender' / (stage + '_usagi.py')),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        '--', *args])
+        ^^^^^^^^^^^^^
+  File "<PROJECT>/pipeline/tests/test_reproducibility.py", line 34, in command
+    result = subprocess.run(args, cwd=PROJECT, stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT, timeout=240)
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py", line 555, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py", line 1039, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                        pass_fds, cwd, env,
+                        ^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+                        gid, gids, uid, umask,
+                        ^^^^^^^^^^^^^^^^^^^^^^
+                        start_new_session, process_group)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/subprocess.py", line 1990, in _execute_child
+    raise child_exception_type(errno_num, err_msg, err_filename)
+FileNotFoundError: [Errno 2] No such file or directory: '<EXECUTOR_HOME>/Applications/Blender.app/Contents/MacOS/Blender'
+
+----------------------------------------------------------------------
+Ran 1 test in 6.916s
+
+FAILED (errors=1)
+022 reproducibility failure evidence: <TEMP>/usagi-reproducibility-524y9zd3

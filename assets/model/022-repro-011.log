@@ -1,0 +1,70 @@
+01:24:30 | INFO: Data are loaded, start creating Blender stuff
+01:24:30 | INFO: Blender create Mesh node tripo_7f0710d5_2d7f_4ae2_95ba_a3929a66c6cf
+01:24:31 | INFO: Blender create Mesh node BlenderVrmAddonImport922204668902103Temp_1_
+01:24:31 | INFO: glTF import finished in 0.68s
+INFO Draco is available, use library at <USER_HOME>/Applications/Blender.app/Contents/Resources/5.2/scripts/addons_core/io_scene_gltf2/libbf_intern_draco_bridge.dylib
+INFO MeshOptimizer is available, use library at <USER_HOME>/Applications/Blender.app/Contents/Resources/5.2/scripts/addons_core/io_scene_gltf2/libbf_intern_meshopt_bridge.dylib
+01:25:00 | INFO: Starting glTF 2.0 export
+01:25:00 | INFO: Starting glTF 2.0 export
+01:25:00 | INFO: Extracting primitive: FaceEyes
+01:25:00 | INFO: Extracting primitive: FaceEyes
+01:25:00 | INFO: Primitives created: 1
+01:25:00 | INFO: Primitives created: 1
+01:25:00 | INFO: Extracting primitive: FaceMouth
+01:25:00 | INFO: Extracting primitive: FaceMouth
+01:25:00 | INFO: Primitives created: 1
+01:25:00 | INFO: Primitives created: 1
+01:25:00 | INFO: Extracting primitive: tripo_7f0710d5_2d7f_4ae2_95ba_a3929a66c6cf
+01:25:00 | INFO: Extracting primitive: tripo_7f0710d5_2d7f_4ae2_95ba_a3929a66c6cf
+01:25:01 | INFO: Primitives created: 3
+01:25:01 | INFO: Primitives created: 3
+01:25:01 | INFO: Finished glTF 2.0 export in 1.264596939086914 s
+01:25:01 | INFO: Finished glTF 2.0 export in 1.264596939086914 s
+<PROJECT>/pipeline/blender/face_usagi.py:205: DeprecationWarning: 'World.use_nodes' is expected to be removed in Blender 6.0
+  scene.world.use_nodes = True
+00:37.713  render           | Saved: 'assets/model/preview_face/neutral.png'
+00:39.742  render           | Saved: 'assets/model/preview_face/blink.png'
+00:41.828  render           | Saved: 'assets/model/preview_face/blinkLeft.png'
+00:44.035  render           | Saved: 'assets/model/preview_face/blinkRight.png'
+00:45.957  render           | Saved: 'assets/model/preview_face/happy.png'
+00:48.104  render           | Saved: 'assets/model/preview_face/angry.png'
+00:50.155  render           | Saved: 'assets/model/preview_face/sad.png'
+00:52.069  render           | Saved: 'assets/model/preview_face/relaxed.png'
+00:53.936  render           | Saved: 'assets/model/preview_face/surprised.png'
+00:55.914  render           | Saved: 'assets/model/preview_face/aa.png'
+00:57.976  render           | Saved: 'assets/model/preview_face/ih.png'
+00:59.798  render           | Saved: 'assets/model/preview_face/ou.png'
+01:01.919  render           | Saved: 'assets/model/preview_face/ee.png'
+01:03.600  render           | Saved: 'assets/model/preview_face/oh.png'
+
+Blender 5.2.3 LTS (hash e13b728c6880 built 2026-10-22 01:31:22)
+
+Blender quit
+01:25:38 | INFO: Data are loaded, start creating Blender stuff
+01:25:38 | INFO: Blender create Mesh node FaceEyes
+01:25:38 | INFO: Blender create Mesh node FaceMouth
+01:25:38 | INFO: Blender create Mesh node tripo_7f0710d5_2d7f_4ae2_95ba_a3929a66c6cf
+01:25:39 | INFO: Blender create Mesh node BlenderVrmAddonImport349713311811002Temp_3_
+01:25:39 | INFO: Blender create Mesh node BlenderVrmAddonImport349713311811002Temp_6_
+01:25:39 | INFO: glTF import finished in 1.09s
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.HIPS"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.SPINE"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.CHEST"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.NECK"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.HEAD"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_UPPER_LEG"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_LOWER_LEG"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_FOOT"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_UPPER_LEG"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_LOWER_LEG"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_FOOT"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_SHOULDER"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_UPPER_ARM"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_LOWER_ARM"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_HAND"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_SHOULDER"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_UPPER_ARM"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_LOWER_ARM"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_HAND"
+011 Blender 检查通过：网格 ['Cube', 'FaceEyes', 'FaceMouth', 'Usagi_Body']
+011 检查通过

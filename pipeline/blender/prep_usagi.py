@@ -417,10 +417,14 @@ def cut_isocontour(bm, field, material_index):
         values[vert] = 0.0
         for face in faces:
             intersections.setdefault(face, set()).add(vert)
+    # face_split(a, b) and face_split(b, a) retain opposite halves in the
+    # original face slot, changing later triangulation order and some normals.
+    # Newly split vertices need fresh indices before choosing the direction.
+    bm.verts.index_update()
     for face in original_faces:
         points = intersections.get(face, set())
         if len(points) == 2:
-            a, b = points
+            a, b = sorted(points, key=lambda vert: vert.index)
             if not any(b in edge.verts for edge in a.link_edges):
                 bmesh.utils.face_split(face, a, b)
     # 交点处非线性场沿弦会略微向内弯：用原三角面线性场的中心值，
@@ -454,10 +458,15 @@ def split_region_boundaries(obj, profile, ears):
         for sections in ears.values():
             cut_isocontour(bm, lambda p, n: ear_inner_field(p, n, sections), 1)
         # 相邻的 EarInner 面构成一个分量，面积加权平均法线才决定朝向。
+        # Cut operations dirty face indices. Stable seeds and accumulation order
+        # keep diagnostic extras byte-identical through prep -> rig -> face;
+        # set.pop() used to randomly swap the two ears in the exported JSON.
+        bm.faces.index_update()
         pending = {f for f in bm.faces if f.material_index == 1}
         ear_components = []
         while pending:
-            seed = pending.pop()
+            seed = min(pending, key=lambda face: face.index)
+            pending.remove(seed)
             component, queue = {seed}, [seed]
             while queue:
                 for edge in queue.pop().edges:
@@ -466,6 +475,7 @@ def split_region_boundaries(obj, profile, ears):
                             pending.remove(neighbor)
                             component.add(neighbor)
                             queue.append(neighbor)
+            component = sorted(component, key=lambda face: face.index)
             area = sum(f.calc_area() for f in component)
             normal_y = sum(f.normal.y * f.calc_area() for f in component) / max(area, 1e-14)
             keep = normal_y < -.25

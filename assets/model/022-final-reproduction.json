@@ -1,0 +1,24 @@
+{
+  "usagi_base.glb": {
+    "cmp_exit": 0,
+    "before_sha256": "012adab94af18bb2d9897b99839af81b5ac0a86853fd3a436b8bc48795ffa144",
+    "after_sha256": "012adab94af18bb2d9897b99839af81b5ac0a86853fd3a436b8bc48795ffa144",
+    "bytes": 769808
+  },
+  "usagi_body.vrm": {
+    "cmp_exit": 0,
+    "before_sha256": "6421b5b783fb035e6522ea24815cc6d6cb32b50261ea43cf6c1a2f753d93987a",
+    "after_sha256": "6421b5b783fb035e6522ea24815cc6d6cb32b50261ea43cf6c1a2f753d93987a",
+    "bytes": 1117660
+  },
+  "usagi.vrm": {
+    "cmp_exit": 0,
+    "before_sha256": "b427535e4b7363d29406bb2acbaac8bbc0d71a874316ef7f2b831466cfbda338",
+    "after_sha256": "b427535e4b7363d29406bb2acbaac8bbc0d71a874316ef7f2b831466cfbda338",
+    "bytes": 1467356
+  },
+  "deployed": {
+    "cmp_exit": 0,
+    "sha256": "b427535e4b7363d29406bb2acbaac8bbc0d71a874316ef7f2b831466cfbda338"
+  }
+}

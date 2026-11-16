@@ -1,0 +1,19 @@
+test_two_fresh_full_exports_are_byte_identical (__main__.ReproducibilityTests.test_two_fresh_full_exports_are_byte_identical) ... 022 reproducibility: {"usagi_base.glb": {"equal": false, "bytes": 769808, "first_sha256": "1acbd1709a19b358d0f8b2ed201b56acca44534a2f0461ee5b6a2e1cb17b6be7", "second_sha256": "9978042fe969220cdb76e4c20517bc7367c648aacfc90b6a5c1ed22cfd1a832f", "json_equal": true, "binary_equal": false}, "usagi_body.vrm": {"equal": false, "bytes": 1117660, "first_sha256": "2920eabd1553c5163916129d7002bd0ac7b98b08449bc992a0c4c6d415802f45", "second_sha256": "c6060d984097c8391ccaf6711cd161f4e6cefae8051d132645c8da510e97984f", "json_equal": true, "binary_equal": false}, "usagi.vrm": {"equal": false, "bytes": 1467356, "first_sha256": "31b6b0c5d344fc28746d0163d2264efa61c92cb275ddc28cf61b9586005da1ae", "second_sha256": "07c37e9f249c47eb6a076a6c8805fd0cf916be09e30383c966e4a8f54b9a38d6", "json_equal": true, "binary_equal": false}}
+FAIL
+
+======================================================================
+FAIL: test_two_fresh_full_exports_are_byte_identical (__main__.ReproducibilityTests.test_two_fresh_full_exports_are_byte_identical)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<PROJECT>/pipeline/tests/test_reproducibility.py", line 75, in test_two_fresh_full_exports_are_byte_identical
+    self.assertTrue(all(item['equal'] for item in evidence.values()),
+    ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                    f'Full exports differ: see {self.root}/comparison.json')
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: False is not true : Full exports differ: see <TEMP>/usagi-reproducibility-z4yshewu/comparison.json
+
+----------------------------------------------------------------------
+Ran 1 test in 177.102s
+
+FAILED (failures=1)
+022 reproducibility failure evidence: <TEMP>/usagi-reproducibility-z4yshewu

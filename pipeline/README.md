@@ -93,6 +93,12 @@ sh pipeline/build_usagi.sh prep
 
 `test_shape_consistency.py` 随 `run_tests.sh` 检查已生成与临时重建的底模。`check_shape.py` 直接导入未经清理的原始模型，使用 prep 的归一化与转向，以 BVHTree 双向比较区域外表面，最大距离必须 ≤0.0005（高度归一为 1）。`usagi_shape.report.json` 记录两个方向的区域顶点数、最大距离与位置。`preview_original/` 使用同一预览器、同一机位，保留原始雕刻五官，仅变换到 prep 坐标。
 
+等值线切面的两个交点按更新后的顶点索引固定方向，避免原面槽和后续三角面/法线顺序变化。耳内分量按更新后的面索引选起点，面积和法线统计也按面索引累加。分量报告会作为 extras 进入三阶段产物，不能使用集合的随机发现顺序；否则即使网格完全相同，两次构建的模型字节仍可能不同。`test_reproducibility.py` 随 `run_tests.sh` 在独立 Blender 进程中完整执行两轮真实模型 prep→rig→face（不渲染预览、不复制部署模型），逐字节比较 `usagi_base.glb`、`usagi_body.vrm` 和 `usagi.vrm`，并输出 SHA-256。可在无头策略检查通过后单独运行：
+
+```sh
+BLENDER=/absolute/path/to/Blender sh -eu -c '. pipeline/face/python_env.sh; "$FACE_PYTHON" pipeline/tests/test_reproducibility.py'
+```
+
 `prep` 产物：
 
 - `assets/model/usagi_base.glb`：保留腰线的正式底模，含三种材质与顶点组数据。

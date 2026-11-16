@@ -1,0 +1,59 @@
+01:21:50 | INFO: Data are loaded, start creating Blender stuff
+01:21:50 | INFO: Blender create Mesh node tripo_7f0710d5_2d7f_4ae2_95ba_a3929a66c6cf
+01:21:50 | INFO: glTF import finished in 0.57s
+Warning: Bone Heat Weighting: failed to find solution for one or more bones
+INFO Draco is available, use library at <USER_HOME>/Applications/Blender.app/Contents/Resources/5.2/scripts/addons_core/io_scene_gltf2/libbf_intern_draco_bridge.dylib
+INFO MeshOptimizer is available, use library at <USER_HOME>/Applications/Blender.app/Contents/Resources/5.2/scripts/addons_core/io_scene_gltf2/libbf_intern_meshopt_bridge.dylib
+01:22:13 | INFO: Starting glTF 2.0 export
+01:22:13 | INFO: Starting glTF 2.0 export
+01:22:13 | INFO: Extracting primitive: tripo_7f0710d5_2d7f_4ae2_95ba_a3929a66c6cf
+01:22:13 | INFO: Extracting primitive: tripo_7f0710d5_2d7f_4ae2_95ba_a3929a66c6cf
+01:22:14 | INFO: Primitives created: 3
+01:22:14 | INFO: Primitives created: 3
+01:22:14 | INFO: Finished glTF 2.0 export in 1.1323487758636475 s
+01:22:14 | INFO: Finished glTF 2.0 export in 1.1323487758636475 s
+<PROJECT>/pipeline/blender/rig_usagi.py:438: DeprecationWarning: 'World.use_nodes' is expected to be removed in Blender 6.0
+  scene.world.use_nodes = True
+00:33.572  render           | Saved: 'assets/model/preview_rig/neutral_t_front.png'
+00:38.730  render           | Saved: 'assets/model/preview_rig/neutral_t_45.png'
+00:43.966  render           | Saved: 'assets/model/preview_rig/arms_up_front.png'
+00:48.684  render           | Saved: 'assets/model/preview_rig/arms_up_45.png'
+00:53.535  render           | Saved: 'assets/model/preview_rig/arms_down_70_front.png'
+00:59.003  render           | Saved: 'assets/model/preview_rig/arms_down_70_45.png'
+01:04.458  render           | Saved: 'assets/model/preview_rig/head_left_30_front.png'
+01:09.778  render           | Saved: 'assets/model/preview_rig/head_left_30_45.png'
+01:14.605  render           | Saved: 'assets/model/preview_rig/ears_back_25_front.png'
+01:20.029  render           | Saved: 'assets/model/preview_rig/ears_back_25_45.png'
+01:24.620  render           | Saved: 'assets/model/preview_rig/one_leg_up_front.png'
+01:30.149  render           | Saved: 'assets/model/preview_rig/one_leg_up_45.png'
+01:35.107  render           | Saved: 'assets/model/preview_rig/head_left_20_front.png'
+
+Info: Saved as "usagi_rig.blend"
+Blender 5.2.3 LTS (hash e13b728c6880 built 2026-10-22 01:31:22)
+
+Blender quit
+01:23:30 | INFO: Data are loaded, start creating Blender stuff
+01:23:30 | INFO: Blender create Mesh node tripo_7f0710d5_2d7f_4ae2_95ba_a3929a66c6cf
+01:23:31 | INFO: Blender create Mesh node BlenderVrmAddonImport009360501958881Temp_1_
+01:23:31 | INFO: glTF import finished in 0.81s
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.HIPS"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.SPINE"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.CHEST"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.NECK"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.HEAD"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_UPPER_LEG"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_LOWER_LEG"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_FOOT"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_UPPER_LEG"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_LOWER_LEG"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_FOOT"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_SHOULDER"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_UPPER_ARM"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_LOWER_ARM"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.LEFT_HAND"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_SHOULDER"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_UPPER_ARM"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_LOWER_ARM"
+[VRM Add-on:WARNING] Duplicated VRM0 bone: "HumanBoneName.RIGHT_HAND"
+010 Blender 检查通过：弹簧 3 条、碰撞体 2 个、耳朵关节 10
+010 检查通过

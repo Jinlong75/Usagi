@@ -36,3 +36,5 @@ export FACE_RUNTIME_VRM
 npm --prefix "$FACE_RUNTIME_TEMP" install --no-save --ignore-scripts --no-audit --no-fund --silent \
     '@pixiv/three-vrm@3.5.5' 'three@0.187.0'
 node "$PIPELINE_DIR/tests/test_face_runtime.mjs" "$FACE_RUNTIME_TEMP"
+# 022: fresh processes must reproduce all three real-model artifacts byte for byte.
+"$FACE_PYTHON" "$PIPELINE_DIR/tests/test_reproducibility.py"
