@@ -1,6 +1,6 @@
 # Usagi 桌宠程序骨架
 
-开发用 Seed-san（VRM 1.0），Electron 主进程管理透明窗口、托盘与配置，three + three-vrm 渲染模型。包含程序化行为、叫声音效、气泡、自言自语、DeepSeek 聊天与设置；支持 macOS arm64 DMG 与 Windows x64 NSIS 安装包。
+默认加载 Usagi（VRM 1.0），Seed-san 仅在显式指定时使用。Electron 主进程管理透明窗口、托盘与配置，three + three-vrm 渲染模型。包含程序化行为、叫声音效、气泡、自言自语、DeepSeek 聊天与设置；支持 macOS arm64 DMG 与 Windows x64 NSIS 安装包。
 
 ## 运行
 
@@ -33,6 +33,8 @@ npm --prefix app run typecheck
 npm --prefix app test
 npm --prefix app run smoke
 ```
+
+任务 013 的执行者自测只运行 `npm --prefix app run typecheck` 和 `npm --prefix app test -- --no-cache --no-fsModuleCache`；两个 Vitest 参数仅关闭结果缓存与模块缓存，不筛选测试或改变断言，避免在仓库根 `node_modules/` 生成任务范围外文件。完整验收及 GUI 冒烟由门禁执行。
 
 `smoke` 构建后用 `--smoke` 启动隐藏窗口，设置 `offscreen: true`，不创建托盘、不读写应用配置、不轮询鼠标，开发时默认加载 `assets/models/usagi.vrm`，打包后加载包内同一模型。模型加载并渲染 60 帧后，依次播放待机、原地步态、开心、惊讶、喊叫、伸懒腰、拖动姿态和甩耳朵（走路不实际移动窗口）。每段按固定 1/60 秒步长推进并在代表时刻冻结弹簧状态，开心在跳跃最高点（175ms）截图，通过 `capturePage({stayHidden:true})` 获取带 alpha 的 PNG，检查非零 alpha 的占比在 2%～95%，并检查 VRM 版本为 1。开心最高点、喊叫和伸懒腰截图最上方两行 alpha 必须全为 0，模型触顶会打印 `ok:false`。60 秒超时或加载、截图失败均打印 `ok:false` JSON 并退出 1。
 
