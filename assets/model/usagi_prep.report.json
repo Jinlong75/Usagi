@@ -41,11 +41,11 @@
   "rotation_degrees": -90.0,
   "front_before": [
     0.9999969601631165,
-    -0.00247344933450222,
+    -0.0024733329191803932,
     0.0
   ],
   "front_after": [
-    -0.002473493106663227,
+    -0.0024733766913414,
     -0.9999969601631165,
     0.0
   ],
@@ -68,16 +68,16 @@
     "half_width": 0.06,
     "trunk_x_limit": 0.25622862577438354,
     "vertices_processed": 0,
-    "max_inward_depth_before": 0.021469797506685262,
-    "max_inward_depth_after": 0.021469797506685262,
+    "max_inward_depth_before": 0.021182574974107388,
+    "max_inward_depth_after": 0.021182574974107388,
     "volume_before": 0.13259153089428127,
     "volume_after": 0.13259153089428127,
     "method": "radial Laplacian relaxation toward angular Dirichlet harmonic profiles; signed-volume compensation with sin^2 boundary taper; Z/azimuth/arms pinned; depth vs interpolated fitted boundary ellipses"
   },
   "region_boundary": {
     "faces_before_tail_subdivision": 31616,
-    "faces_before_cut": 42902,
-    "faces_after_cut": 44286,
+    "faces_before_cut": 42572,
+    "faces_after_cut": 43934,
     "tail_halfspace_blend_m": 0.002,
     "connected_components": 1,
     "zero_area_faces": 0,
@@ -87,13 +87,6 @@
     "ear_faces_before_subdivision": 1565,
     "ear_faces_after_subdivision": 25040,
     "boundaries": {
-      "ear_l": [
-        {
-          "segments": 217,
-          "closed": true,
-          "max_turn_degrees": 26.345289553357293
-        }
-      ],
       "ear_r": [
         {
           "segments": 213,
@@ -101,20 +94,27 @@
           "max_turn_degrees": 25.923766136277248
         }
       ],
+      "ear_l": [
+        {
+          "segments": 217,
+          "closed": true,
+          "max_turn_degrees": 26.345289553357293
+        }
+      ],
       "tail": [
         {
-          "segments": 262,
+          "segments": 251,
           "closed": true,
-          "max_turn_degrees": 23.882343829218204
+          "max_turn_degrees": 23.290581362170176
         }
       ]
     },
     "ear_inner_max_face_normal_y": -0.598377525806427
   },
   "material_face_counts": {
-    "Body": 31858,
+    "Body": 31995,
     "EarInner": 2706,
-    "Tail": 9722
+    "Tail": 9233
   },
   "colors_srgb": {
     "Body": "#FFF1C1",
@@ -127,8 +127,8 @@
     "Tail": 4
   },
   "vertex_groups_storage": "_USAGI_REGION point attribute bitmask + usagi_vertex_groups extras; common.import_model restores Blender groups",
-  "vertices": 22145,
-  "faces": 44286,
+  "vertices": 21969,
+  "faces": 43934,
   "profile": {
     "height": 1.0,
     "head_top": 0.7132388949394226,

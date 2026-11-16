@@ -335,7 +335,7 @@ def tail_field(point, normal, profile):
     if "tail_center" in profile:
         center = Vector(profile["tail_center"])
         radius = profile["tail_radius"]
-        sphere = (point - center).length - radius * 1.15
+        sphere = (point - center).length - radius * 1.03  # 只留球本体；1.15 会在球上方身体留白色月牙（主导 2026-11-16）
         back = center.y - radius * .25 - point.y
         # 紧支撑 smooth-max：保留球内/背面两个约束，只圆滑它们相交处的尖角。
         # TODO(lead): 对照尾巴特写确认交界最多 0.5 mm 内收可接受。
