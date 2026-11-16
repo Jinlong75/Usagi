@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 // @ts-expect-error The allowed smoke entry is JavaScript; its validation is tested directly.
-import { BEHAVIORS, validBehaviorReport } from '../scripts/smoke.mjs';
+import { BEHAVIORS, validBehaviorReport, validUiReport } from '../scripts/smoke.mjs';
 import { runSmokeProcess } from '../scripts/smoke-process.mjs';
 
-const success = { ok: true, model: 'Seed-san.vrm', opaqueRatio: 0.21, vrmVersion: '1', expressions: ['blink', 'happy'],
+const success = { ok: true, ui: ['bubble', 'chat', 'settings'], model: 'Seed-san.vrm', opaqueRatio: 0.21, vrmVersion: '1', expressions: ['blink', 'happy'],
   behaviors: ['idle', 'walk', 'happy', 'surprised', 'shout', 'stretch', 'drag'],
   behaviorOpaqueRatios: { idle: 0.21, walk: 0.2, happy: 0.23, surprised: 0.19, shout: 0.25, stretch: 0.24, drag: 0.2 },
   behaviorTopTransparent: { happy: true, shout: true, stretch: true } };
@@ -103,3 +103,9 @@ describe('七种行为冒烟报告', () => {
     }
   });
 });
+
+ it('冒烟必须包含气泡、聊天、设置三种界面', () => {
+   expect(validUiReport(success)).toBe(true);
+   expect(validUiReport({ ...success, ui: ['bubble'] })).toBe(false);
+   expect(validUiReport({ ...success, ui: undefined })).toBe(false);
+ });

@@ -1,10 +1,18 @@
-import { app, BrowserWindow, ipcMain, Menu, nativeImage, screen, Tray } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, nativeImage, screen, Tray, safeStorage } from 'electron';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
-import { DEFAULT_CONFIG, readConfig, writeConfig } from './config';
+import { DEFAULT_CONFIG, normalizeConfig, readConfig, writeConfig } from './config';
 import { resolveModel } from './model';
 import { prepareMove, WindowMotion } from './motion';
 import { SoundLibrary } from './sounds';
+import { UiController } from './ipc/ui';
+import { AsyncKeyStore } from './ipc/keys';
+import { waitForQuitTask } from './ipc/quit';
+import { ChatService } from './chat/service';
+import { DeepSeekClient } from './chat/client';
+import { SessionStore } from './chat/sessionStore';
+import { SelfTalk } from './selfTalk';
+import { menuState } from '../shared/ui';
 import { initialBounds } from '../shared/window';
 import { beginGesture, isClick, updateGesture } from '../shared/gesture';
 import { topRowsTransparent } from '../shared/hit';
@@ -15,7 +23,13 @@ const smoke = process.argv.includes('--smoke');
 const root = resolve(__dirname, '../..');
 let win: BrowserWindow | null = null;
 let tray: Tray | null = null;
-let config: Config = { ...DEFAULT_CONFIG };
+let config: Config = structuredClone(DEFAULT_CONFIG);
+let ui: UiController;
+let selfTalk: SelfTalk;
+let sessionStore: SessionStore | undefined;
+let keyStore: AsyncKeyStore | undefined;
+let quitting = false;
+let quitFlushed = false;
 let configPath = '';
 let modelPath = '';
 let cursorTimer: ReturnType<typeof setInterval> | undefined;
@@ -48,10 +62,14 @@ function fail(reason: string): void {
 }
 const watchdog = smoke ? setTimeout(() => fail('模型渲染在 60 秒内未完成'), 59_000) : undefined;
 
-function save(): void {
-  if (smoke) return;
-  try { writeConfig(configPath, config); }
-  catch (error) { console.error('配置保存失败', error); }
+function save(next = config): { ok: true } | { ok: false; reason: string } {
+  try {
+    if (!smoke) writeConfig(configPath, next);
+    return { ok: true };
+  } catch (error) {
+    console.error('配置保存失败', error);
+    return { ok: false, reason: error instanceof Error ? error.message : String(error) };
+  }
 }
 
 function currentBounds(size = config.size) {
@@ -71,9 +89,13 @@ function setSize(size: Size): void {
   config.position = { x: actual.x, y: actual.y };
   save();
   refreshMenu();
+  ui?.broadcast();
 }
 
-function applyHit(): void { win?.setIgnoreMouseEvents(!hit && !gesture, { forward: true }); }
+function applyHit(): void {
+  if (config.mousePassthrough) win?.setIgnoreMouseEvents(true);
+  else win?.setIgnoreMouseEvents(!hit && !gesture, { forward: true });
+}
 
 function dragPosition(point: Point, now: number): void {
   if (!win || !gesture || !dragOrigin) return;
@@ -110,10 +132,34 @@ function finishDrag(cancelled: boolean): void {
   if (clicked) win.webContents.send('pet:click');
 }
 
-function refreshMenu(): void {
-  if (!tray || !win) return;
-  tray.setContextMenu(Menu.buildFromTemplate([
-    { label: win.isVisible() ? '隐藏桌宠' : '显示桌宠', click: () => {
+function updateConfig(value: unknown): void {
+  // A settings snapshot cannot rewind a pet moved/resized while the page was open.
+  const next = normalizeConfig(value);
+  const candidate = { ...next, position: config.position, size: config.size, modelPath: config.modelPath };
+  const saved = save(candidate);
+  if (!saved.ok) throw new Error(saved.reason);
+  config = candidate;
+  win?.setAlwaysOnTop(config.alwaysOnTop, 'floating');
+  applyHit(); refreshMenu(); ui?.broadcast(); if (!quitting) selfTalk?.restart();
+}
+
+// 菜单里的开关直接写配置：写盘失败时恢复勾选状态并用气泡提示，不让异常冒到主进程
+function updateFromMenu(value: unknown): boolean {
+  try {
+    updateConfig(value);
+    return true;
+  } catch (error) {
+    refreshMenu();
+    const reason = error instanceof Error ? error.message : String(error);
+    void ui?.bubble.showBubble(`设置保存失败：${reason}。请检查磁盘空间和文件权限。`, 4000);
+    return false;
+  }
+}
+
+function petMenu(): Electron.MenuItemConstructorOptions[] {
+  const state = menuState(config, win?.isVisible() ?? false);
+  return [
+    { label: state.visibility, click: () => {
       if (win?.isVisible()) {
         finishDrag(true); motion?.cancel(); win.webContents.send('pet:press', false);
         win.hide(); win.webContents.send('pet:visibility', { visible: false });
@@ -122,20 +168,27 @@ function refreshMenu(): void {
       }
       refreshMenu();
     } },
-    { label: '始终置顶', type: 'checkbox', checked: config.alwaysOnTop, click: (item) => {
-      config.alwaysOnTop = item.checked;
-      win?.setAlwaysOnTop(item.checked, 'floating');
-      save();
+    { label: '和乌萨奇聊天', click: () => { void ui.chat.open(); } },
+    { label: '设置…', click: () => { void ui.settings.open(); } },
+    { label: '自言自语', type: 'checkbox', checked: state.selfTalk, click: item => {
+      updateFromMenu({ ...config, selfTalk: { ...config.selfTalk, enabled: item.checked } });
     } },
+    { label: '鼠标穿透', type: 'checkbox', checked: state.mousePassthrough, click: item => {
+      finishDrag(true);
+      if (updateFromMenu({ ...config, mousePassthrough: item.checked }) && item.checked) {
+        void ui.bubble.showBubble('已开启鼠标穿透，在菜单栏图标里可以关掉哦', 4000);
+      }
+    } },
+    { label: '始终置顶', type: 'checkbox', checked: state.alwaysOnTop, click: item => { updateFromMenu({ ...config, alwaysOnTop: item.checked }); } },
     { label: '大小', submenu: (['small', 'medium', 'large'] as const).map((size, index) => ({
       label: ['小', '中', '大'][index]!, type: 'radio' as const,
-      checked: config.size === size, click: () => setSize(size),
+      checked: state.size === size, click: () => setSize(size),
     })) },
     { label: '重新载入模型', click: () => win?.webContents.send('pet:reload') },
-    { type: 'separator' },
-    { label: '退出', click: () => app.quit() },
-  ]));
+    { type: 'separator' }, { label: '退出', click: () => app.quit() },
+  ];
 }
+function refreshMenu(): void { if (tray && win) tray.setContextMenu(Menu.buildFromTemplate(petMenu())); }
 
 function makeTray(): void {
   // TODO(lead): 换成 Usagi 图标
@@ -156,6 +209,7 @@ function makeTray(): void {
 async function capture(result: RenderResult): Promise<void> {
   if (!smoke || completed || !win || captureBusy) return;
   if (!result.ok) return fail(result.reason ?? '模型加载失败');
+  if (smokeIndex >= smokeBehaviors.length) return;
   const expected = smokeIndex < 0 ? undefined : smokeBehaviors[smokeIndex];
   if (result.behavior !== expected) return fail('冒烟姿态顺序不匹配');
   captureBusy = true;
@@ -182,10 +236,14 @@ async function capture(result: RenderResult): Promise<void> {
     const next = smokeBehaviors[smokeIndex];
     if (next) win.webContents.send('pet:smoke-pose', next);
     else {
+      const { captureUi } = await import('../../scripts/smoke-ui');
+      // Return to idle before composing the pet + bubble screenshot.
+      win.webContents.send('pet:smoke-pose', 'idle');
+      await captureUi(ui, win, directory);
       completed = true;
       exitSmoke(0, { ok: true, model: modelPath, opaqueRatio: initialRatio, vrmVersion: result.vrmVersion,
         expressions: result.expressions ?? [], behaviors: smokeBehaviors, behaviorOpaqueRatios: behaviorRatios,
-        behaviorTopTransparent });
+        behaviorTopTransparent, ui: ['bubble', 'chat', 'settings'] });
     }
   } catch (error) { fail(String(error)); }
 }
@@ -228,8 +286,24 @@ async function start(): Promise<void> {
     if (smoke) fail(`页面加载失败：${code} ${description}`);
     else console.error('页面加载失败', code, description);
   });
+  const dependencies = smoke ? (await import('../../scripts/smoke-ui')).smokeDependencies() : (() => {
+    sessionStore = new SessionStore(app.getPath('userData'));
+    keyStore = new AsyncKeyStore(app.getPath('userData'), safeStorage);
+    return { store: sessionStore, keys: keyStore, service: new ChatService({ client: new DeepSeekClient(),
+      store: sessionStore, keyStore, getSettings: () => config.chat }) };
+  })();
+  ui = new UiController({ pet: win, root, smoke, config: () => config, update: updateConfig, ...dependencies });
+  selfTalk = new SelfTalk({ config: () => config.selfTalk,
+    blocked: () => !win?.isVisible() || !!gesture?.dragged || ui.active || ui.bubble.occupied,
+    show: (text, duration) => { void ui.bubble.showBubble(text, duration); },
+    sound: () => win?.webContents.send('pet:play-sound', 'idle_talk'),
+  });
   const trusted = (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) =>
     event.sender === win?.webContents && event.senderFrame === win?.webContents.mainFrame;
+  ipcMain.handle('pet:config', event => { if (!trusted(event)) throw new Error('未授权的配置请求'); return config; });
+  ipcMain.on('pet:context-menu', event => {
+    if (trusted(event) && win && hit && !config.mousePassthrough) Menu.buildFromTemplate(petMenu()).popup({ window: win });
+  });
   ipcMain.handle('pet:load-model', async (event) => {
     if (!trusted(event)) throw new Error('未授权的模型请求');
     modelPath = resolveModel(root, config.modelPath, smoke);
@@ -241,7 +315,7 @@ async function start(): Promise<void> {
     return { bounds, workArea: screen.getDisplayMatching(bounds).workArea };
   });
   ipcMain.handle('pet:sound', (event, use: SoundUse) => {
-    if (!trusted(event) || smoke || !['click_happy', 'click_surprise', 'click_shout', 'drag'].includes(use) ||
+    if (!trusted(event) || smoke || !['click_happy', 'click_surprise', 'click_shout', 'drag', 'idle_talk', 'chat_reply'].includes(use) ||
       (gesture?.dragged && use !== 'drag')) return null;
     return sounds.load(use).then((bytes) => bytes ? new Uint8Array(bytes).buffer : null);
   });
@@ -265,7 +339,7 @@ async function start(): Promise<void> {
     applyHit();
   });
   ipcMain.on('pet:drag-start', (event) => {
-    if (!trusted(event) || smoke || !hit || !win || gesture) return;
+    if (!trusted(event) || smoke || config.mousePassthrough || !hit || !win || gesture) return;
     motion?.cancel();
     gesture = beginGesture(screen.getCursorScreenPoint(), performance.now(), win.getBounds().width);
     win.webContents.send('pet:press', true);
@@ -286,6 +360,7 @@ async function start(): Promise<void> {
   if (!smoke) {
     applyHit();
     makeTray();
+    selfTalk.restart();
     cursorTimer = setInterval(() => {
       if (!win || win.isDestroyed() || !win.isVisible()) return;
       const now = performance.now();
@@ -319,7 +394,26 @@ app.whenReady().then(start).catch((error) => {
   if (smoke) fail(String(error));
   else { console.error(error); app.exit(1); }
 });
-app.on('before-quit', () => {
+app.on('before-quit', event => {
+  if (!smoke && !quitFlushed) {
+    event.preventDefault();
+    if (quitting) return;
+    quitting = true; selfTalk?.stop();
+    ui?.stopChat();
+    // Session persistence starts independently of renderer responsiveness. Settings
+    // and the following key flush each get 1.5s; total quit wait is at most 3s.
+    void Promise.all([
+      waitForQuitTask(() => sessionStore?.flush(), 2000),
+      (async () => {
+        await waitForQuitTask(() => ui?.settings.saveBeforeQuit(), 1500);
+        await waitForQuitTask(() => keyStore?.flush(), 1500);
+      })(),
+    ]).finally(() => {
+      ui?.quit(); quitFlushed = true; app.quit();
+    });
+    return;
+  }
+  selfTalk?.stop();
   clearTimeout(watchdog);
   clearInterval(cursorTimer);
   motion?.cancel();

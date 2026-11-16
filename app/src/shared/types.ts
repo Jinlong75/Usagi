@@ -6,11 +6,20 @@ export interface Config {
   size: Size;
   position: Point | null;
   alwaysOnTop: boolean;
+  chat: { baseUrl: string; model: string; temperature: number; maxTokens: number; thinking: 'enabled' | 'disabled' };
+  selfTalk: { enabled: boolean; minSec: number; maxSec: number; lines: string[] };
+  volume: number;
+  mousePassthrough: boolean;
 }
 export interface CursorSample { point: Point; bounds: Rect; workArea: Rect }
 export interface ModelData { bytes: Uint8Array; path: string; smoke: boolean }
 export interface RenderResult { ok: boolean; reason?: string; vrmVersion?: string; expressions?: string[]; behavior?: SmokeBehavior }
 export interface PetBridge {
+  contextMenu(): void;
+  getConfig(): Promise<Config>;
+  onConfig(callback: (config: Config) => void): () => void;
+  onExpression(callback: (expression: PetExpression) => void): () => void;
+  onSound(callback: (use: SoundUse) => void): () => void;
   loadModel(): Promise<ModelData>;
   windowInfo(): Promise<WindowInfo>;
   moveTo(request: MoveRequest): void;
@@ -35,5 +44,7 @@ export interface MoveRequest extends Point { durationMs: number }
 export type MoveResult = { ok: true; distance: number } | { ok: false; reason: string };
 export interface WindowInfo { bounds: Rect; workArea: Rect }
 export interface DragSample { active: boolean; velocity: Point; timestamp: number }
-export type SoundUse = 'click_happy' | 'click_surprise' | 'click_shout' | 'drag';
+export type SoundUse = 'click_happy' | 'click_surprise' | 'click_shout' | 'drag' | 'idle_talk' | 'chat_reply';
 export type SmokeBehavior = 'idle' | 'walk' | 'happy' | 'surprised' | 'shout' | 'stretch' | 'drag';
+
+export type PetExpression = 'happy' | 'surprised' | 'angry' | 'sad';

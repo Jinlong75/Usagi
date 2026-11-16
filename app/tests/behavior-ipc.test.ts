@@ -37,7 +37,7 @@ vi.mock('electron', () => {
     loadFile = vi.fn();
     loadURL = vi.fn();
   }
-  return { BrowserWindow,
+  return { BrowserWindow, safeStorage: { isAsyncEncryptionAvailable: async () => false },
     app: { whenReady: () => ({ then: (start: () => Promise<void>) => {
       host.start = start; return { catch: vi.fn() };
     } }), on: vi.fn(), getPath: () => '/unused-fixture', dock: { hide: vi.fn() } },

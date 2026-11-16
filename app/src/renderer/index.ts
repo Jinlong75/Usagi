@@ -2,7 +2,7 @@ import { AmbientLight, Box3, DirectionalLight, LoadingManager, Object3D, Orthogr
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 import type { VRM } from '@pixiv/three-vrm';
-import type { PetBridge, Point, WindowInfo, SmokeBehavior } from '../shared/types';
+import type { PetBridge, Point, WindowInfo, SmokeBehavior, PetExpression } from '../shared/types';
 import { alphaHit, canvasPixel } from '../shared/hit';
 import { breathe } from './behaviors/breathing';
 import { blink, createBlink } from './behaviors/blink';
@@ -40,8 +40,10 @@ let smokePoseStartedAt = performance.now();
 let smokeAge = 0;
 let smokeDragImpulse = false;
 const smokeAges = { idle: 0.875, walk: 0.7, happy: 0.175, surprised: 0.45, shout: 0.55, stretch: 1.1, drag: 0.5 };
+let chatExpression: { name: PetExpression; until: number } | undefined;
+let volume = 0.7;
 let gaze = { x: 0, y: 0 };
-const audio = new PetAudio((use) => window.pet.loadSound(use));
+const audio = new PetAudio((use) => window.pet.loadSound(use), () => volume);
 let elapsed = 0;
 let previous = performance.now();
 let direction: Point = { x: 0, y: 0 };
@@ -211,6 +213,11 @@ function renderPose(now: number, delta: number): void {
     }
     springs?.update(delta, dragging);
   }
+  if (chatExpression && now < chatExpression.until) {
+    for (const name of ['happy', 'surprised', 'angry', 'sad']) {
+      if (vrm.expressionManager?.getExpression(name)) vrm.expressionManager.setValue(name, name === chatExpression.name ? 1 : 0);
+    }
+  } else chatExpression = undefined;
   vrm.update(delta);
 }
 function animate(now: number): void {
@@ -281,6 +288,14 @@ try {
       wake(); previous = performance.now();
       if (!animationFrame) animationFrame = requestAnimationFrame(animate);
     }
+  });
+  void window.pet.getConfig().then(config => { volume = config.volume; });
+  window.pet.onConfig(config => { volume = config.volume; });
+  window.pet.onExpression(name => { chatExpression = { name, until: performance.now() + 2000 }; wake(); });
+  window.pet.onSound(use => { if (!smoke && petVisible && !dragging) void audio.play(use); });
+  renderer.domElement.addEventListener('contextmenu', event => {
+    event.preventDefault(); pointer = { x: event.clientX, y: event.clientY };
+    if (updateHit()) window.pet.contextMenu();
   });
   window.pet.onReload(() => { void loadModel(); });
   renderer.domElement.addEventListener('pointerdown', (event) => {
