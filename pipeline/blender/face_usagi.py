@@ -264,10 +264,10 @@ def face(input_path, landmarks, atlas_dir, output, report_path, preview_dir=None
     right, up, normal = plane(lm)
     sculpture = {}
     for name, (low, high) in SCULPTURE.items():
-        points = [Vector((y, -x, z)) for x, y, z in itertools.product(*zip(low, high))]
+        # These are already normalized/oriented usagi3d2 bounds (front -Y).
+        points = [Vector(p) for p in itertools.product(*zip(low, high))]
         sculpture[name] = dict(source_bounds=[low, high],
-                              rotated_bounds=[[min(p[i] for p in points) for i in range(3)],
-                                              [max(p[i] for p in points) for i in range(3)]],
+                              oriented_bounds=[low, high],
                               projected_bounds=[[min(p.dot(axis) for p in points), max(p.dot(axis) for p in points)]
                                                 for axis in (right, up)])
     report = dict(patches=patches, expressions=expressions, plugin_validation=warnings,

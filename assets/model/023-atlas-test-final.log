@@ -1,0 +1,11 @@
+test_dimensions_names_coverage_and_guard_band (__main__.AtlasTests.test_dimensions_names_coverage_and_guard_band) ... ok
+test_neutral_physical_bounds_and_cheek_proportions (__main__.AtlasTests.test_neutral_physical_bounds_and_cheek_proportions) ... ok
+test_new_model_measurements_match_layout_within_two_mm (__main__.AtlasTests.test_new_model_measurements_match_layout_within_two_mm) ... ok
+test_omega_cusp_opening_depth_tongue_and_happy_difference (__main__.AtlasTests.test_omega_cusp_opening_depth_tongue_and_happy_difference) ... ok
+test_reference_comparison_has_five_pairs_at_equal_head_width (__main__.AtlasTests.test_reference_comparison_has_five_pairs_at_equal_head_width) ... ok
+test_round_eyes_single_highlight_straight_blink_and_fixed_brows (__main__.AtlasTests.test_round_eyes_single_highlight_straight_blink_and_fixed_brows) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 2.792s
+
+OK

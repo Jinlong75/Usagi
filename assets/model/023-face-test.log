@@ -1,0 +1,89 @@
+INFO Draco is available, use library at /Users/mac/Applications/Blender.app/Contents/Resources/5.2/scripts/addons_core/io_scene_gltf2/libbf_intern_draco_bridge.dylib
+INFO MeshOptimizer is available, use library at /Users/mac/Applications/Blender.app/Contents/Resources/5.2/scripts/addons_core/io_scene_gltf2/libbf_intern_meshopt_bridge.dylib
+02:23:56 | INFO: Starting glTF 2.0 export
+02:23:56 | INFO: Extracting primitive: Sphere
+02:23:56 | INFO: Primitives created: 3
+02:23:56 | INFO: Finished glTF 2.0 export in 0.07822704315185547 s
+
+02:23:56 | INFO: Data are loaded, start creating Blender stuff
+02:23:56 | INFO: Blender create Mesh node Sphere
+02:23:56 | INFO: glTF import finished in 0.03s
+Warning: Bone Heat Weighting: failed to find solution for one or more bones
+02:24:00 | INFO: Starting glTF 2.0 export
+02:24:00 | INFO: Starting glTF 2.0 export
+02:24:00 | INFO: Extracting primitive: Sphere.003
+02:24:00 | INFO: Extracting primitive: Sphere.003
+02:24:00 | INFO: Primitives created: 3
+02:24:00 | INFO: Primitives created: 3
+02:24:00 | INFO: Finished glTF 2.0 export in 0.043203115463256836 s
+02:24:00 | INFO: Finished glTF 2.0 export in 0.043203115463256836 s
+
+02:24:02 | INFO: Data are loaded, start creating Blender stuff
+02:24:02 | INFO: Data are loaded, start creating Blender stuff
+02:24:02 | INFO: Blender create Mesh node Sphere.003
+02:24:02 | INFO: Blender create Mesh node Sphere.003
+02:24:02 | INFO: Blender create Mesh node BlenderVrmAddonImport125462689067500Temp_1_
+02:24:02 | INFO: Blender create Mesh node BlenderVrmAddonImport125462689067500Temp_1_
+02:24:02 | INFO: glTF import finished in 0.02s
+02:24:02 | INFO: glTF import finished in 0.02s
+02:24:07 | INFO: Starting glTF 2.0 export
+02:24:07 | INFO: Starting glTF 2.0 export
+02:24:07 | INFO: Starting glTF 2.0 export
+02:24:07 | INFO: Extracting primitive: FaceEyes
+02:24:07 | INFO: Extracting primitive: FaceEyes
+02:24:07 | INFO: Extracting primitive: FaceEyes
+02:24:07 | INFO: Primitives created: 1
+02:24:07 | INFO: Primitives created: 1
+02:24:07 | INFO: Primitives created: 1
+02:24:07 | INFO: Extracting primitive: FaceMouth
+02:24:07 | INFO: Extracting primitive: FaceMouth
+02:24:07 | INFO: Extracting primitive: FaceMouth
+02:24:07 | INFO: Primitives created: 1
+02:24:07 | INFO: Primitives created: 1
+02:24:07 | INFO: Primitives created: 1
+02:24:07 | INFO: Extracting primitive: Sphere.004
+02:24:07 | INFO: Extracting primitive: Sphere.004
+02:24:07 | INFO: Extracting primitive: Sphere.004
+02:24:07 | INFO: Primitives created: 3
+02:24:07 | INFO: Primitives created: 3
+02:24:07 | INFO: Primitives created: 3
+02:24:07 | INFO: Finished glTF 2.0 export in 0.03022909164428711 s
+02:24:07 | INFO: Finished glTF 2.0 export in 0.03022909164428711 s
+02:24:07 | INFO: Finished glTF 2.0 export in 0.03022909164428711 s
+test_01_source_surface_and_skin (__main__.FaceTests.test_01_source_surface_and_skin) ... ok
+test_02_exported_expressions_materials_and_offsets (__main__.FaceTests.test_02_exported_expressions_materials_and_offsets) ... ok
+test_03_preserve_body_rig_and_springs (__main__.FaceTests.test_03_preserve_body_rig_and_springs) ... ok
+test_04_preserve_all_node_trs_and_inverse_bind_matrices (__main__.FaceTests.test_04_preserve_all_node_trs_and_inverse_bind_matrices) ... ok
+test_05_production_rest_pose (__main__.FaceTests.test_05_production_rest_pose) ... ok
+test_99_round_trip (__main__.FaceTests.test_99_round_trip) ... 
+02:24:08 | INFO: Data are loaded, start creating Blender stuff
+02:24:08 | INFO: Data are loaded, start creating Blender stuff
+02:24:08 | INFO: Data are loaded, start creating Blender stuff
+02:24:08 | INFO: Blender create Mesh node FaceEyes
+02:24:08 | INFO: Blender create Mesh node FaceEyes
+02:24:08 | INFO: Blender create Mesh node FaceEyes
+02:24:08 | INFO: Blender create Mesh node FaceMouth
+02:24:08 | INFO: Blender create Mesh node FaceMouth
+02:24:08 | INFO: Blender create Mesh node FaceMouth
+02:24:08 | INFO: Blender create Mesh node Sphere.004
+02:24:08 | INFO: Blender create Mesh node Sphere.004
+02:24:08 | INFO: Blender create Mesh node Sphere.004
+02:24:08 | INFO: Blender create Mesh node BlenderVrmAddonImport669021566837397Temp_3_
+02:24:08 | INFO: Blender create Mesh node BlenderVrmAddonImport669021566837397Temp_3_
+02:24:08 | INFO: Blender create Mesh node BlenderVrmAddonImport669021566837397Temp_3_
+02:24:08 | INFO: Blender create Mesh node BlenderVrmAddonImport669021566837397Temp_6_
+02:24:08 | INFO: Blender create Mesh node BlenderVrmAddonImport669021566837397Temp_6_
+02:24:08 | INFO: Blender create Mesh node BlenderVrmAddonImport669021566837397Temp_6_
+02:24:08 | INFO: glTF import finished in 0.04s
+02:24:08 | INFO: glTF import finished in 0.04s
+02:24:08 | INFO: glTF import finished in 0.04s
+ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 19.309s
+
+OK
+011 合成模型全部通过 6 项
+Blender 5.2.3 LTS (hash e13b728c6880 built 2026-10-22 01:31:22)
+
+Blender quit

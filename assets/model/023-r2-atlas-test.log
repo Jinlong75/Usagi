@@ -1,0 +1,43 @@
+test_dimensions_names_coverage_and_guard_band (__main__.AtlasTests.test_dimensions_names_coverage_and_guard_band) ... ok
+test_f01_artwork_proportions_and_four_saturated_cheek_strokes (__main__.AtlasTests.test_f01_artwork_proportions_and_four_saturated_cheek_strokes) ... FAIL
+test_left_clipped_reference_infers_complete_width_from_f01_eyes (__main__.AtlasTests.test_left_clipped_reference_infers_complete_width_from_f01_eyes) ... ok
+test_neutral_physical_bounds_and_cheek_proportions (__main__.AtlasTests.test_neutral_physical_bounds_and_cheek_proportions) ... ok
+test_new_model_measurements_match_layout_within_two_mm (__main__.AtlasTests.test_new_model_measurements_match_layout_within_two_mm) ... ok
+test_omega_cusp_opening_depth_tongue_and_happy_difference (__main__.AtlasTests.test_omega_cusp_opening_depth_tongue_and_happy_difference) ... FAIL
+test_reference_comparison_has_five_pairs_at_equal_head_width (__main__.AtlasTests.test_reference_comparison_has_five_pairs_at_equal_head_width) ... ok
+test_round_eyes_single_highlight_straight_blink_and_fixed_brows (__main__.AtlasTests.test_round_eyes_single_highlight_straight_blink_and_fixed_brows) ... ok
+
+======================================================================
+FAIL: test_f01_artwork_proportions_and_four_saturated_cheek_strokes (__main__.AtlasTests.test_f01_artwork_proportions_and_four_saturated_cheek_strokes)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/mac/.cache/agent-router/wt/a772ab-023-_-8070cf/pipeline/tests/test_face_atlas.py", line 194, in test_f01_artwork_proportions_and_four_saturated_cheek_strokes
+    self.assertEqual(self.pixel(tile, 'FaceEyes', cx+shift+.003, cv)[:3], (224, 96, 126))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Tuples differ: (223, 92, 122) != (224, 96, 126)
+
+First differing element 0:
+223
+224
+
+- (223, 92, 122)
+?    ^   ^    ^
+
++ (224, 96, 126)
+?    ^   ^    ^
+
+
+======================================================================
+FAIL: test_omega_cusp_opening_depth_tongue_and_happy_difference (__main__.AtlasTests.test_omega_cusp_opening_depth_tongue_and_happy_difference)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/mac/.cache/agent-router/wt/a772ab-023-_-8070cf/pipeline/tests/test_face_atlas.py", line 164, in test_omega_cusp_opening_depth_tongue_and_happy_difference
+    self.assertAlmostEqual(depth/w, 1.20 if name in ('aa', 'oh', 'angry') else .55, delta=.08)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 0.924416614415727 != 1.2 within 0.08 delta (0.275583385584273 difference)
+
+----------------------------------------------------------------------
+Ran 8 tests in 11.776s
+
+FAILED (failures=2)
+011 图集失败现场： /var/folders/_4/mnxzgp757b3gdwrd3x4v_kmr0000gn/T/usagi-atlas-tb2w9047
