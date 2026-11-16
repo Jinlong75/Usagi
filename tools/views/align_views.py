@@ -3,7 +3,8 @@
 
 运行方法（仓库根目录，先按 extract_refs.py 建仓库外 Pillow 环境）：
   /tmp/usagi-004-views-venv/bin/python tools/views/align_views.py
-输入 views/selection.json、landmarks.json 与 candidates/ 原始生图；不重画或修造型。
+输入 views/selection.json、landmarks.json、reference_lines.json 与 candidates/ 原始生图；
+不重画或修造型。reference_lines.json 固定第二轮参考线，不随第三轮候选移动。
 输出 1024×1024 RGB PNG；角色高 870 px（85% 四舍五入），脚底 y=946。
 近白且近中性的像素归白，透明像素先合成白底；保留奶黄与粉色。
 """
@@ -91,10 +92,13 @@ def build_sheet(reference_lines):
     sheet.save(VIEWS / "sheet.png")
 
 
-def candidate_sheet():
+def candidate_sheet(selections):
     names = []
+    # 只展示当前选择所属轮次，历史候选及联系表另行保留。
+    folders = {Path(relative).parent for relative in selections.values()}
     for view in ORDER:
-        names.extend(sorted((VIEWS / "candidates/round2").glob(f"{view}_*.png")))
+        for folder in sorted(folders):
+            names.extend(sorted((VIEWS / folder).glob(f"{view}_*.png")))
     sheet = Image.new("RGB", (2048, ceil(len(names) / 4) * 544), "white")
     draw = ImageDraw.Draw(sheet)
     for pos, path in enumerate(names):
@@ -103,7 +107,7 @@ def candidate_sheet():
             thumb = white_background(image)
             thumb.thumbnail((500, 500))
             sheet.paste(thumb, (x + (512 - thumb.width) // 2, y + 30))
-        draw.text((x + 12, y + 8), f"round2/{path.stem}", fill="black")
+        draw.text((x + 12, y + 8), f"{path.parent.name}/{path.stem}", fill="black")
     sheet.save(VIEWS / "candidates_sheet.png")
 
 
@@ -131,10 +135,9 @@ def main():
                 for key, y in landmarks[view].items()
             },
         }
-    lines = {"EAR_TIP": TOP, **measurements["front"]["visual_landmarks_y"],
-             "SOLE": TOP + HEIGHT - 1}
+    lines = json.loads((VIEWS / "reference_lines.json").read_text())
     build_sheet(lines)
-    candidate_sheet()
+    candidate_sheet(selections)
     (VIEWS / "alignment.json").write_text(json.dumps(measurements, indent=2) + "\n")
     print(json.dumps(measurements, indent=2))
 

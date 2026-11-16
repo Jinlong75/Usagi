@@ -1,6 +1,26 @@
 {
-  "front": {"HEAD_TOP": 410, "ARM": 810, "WIDEST_BODY": 875, "TAIL_TARGET": 900},
-  "back": {"HEAD_TOP": 410, "ARM": 810, "WIDEST_BODY": 875, "TAIL_CENTER": 875},
-  "left": {"HEAD_TOP": 410, "ARM": 800, "WIDEST_BODY": 875, "TAIL_CENTER": 900},
-  "right": {"HEAD_TOP": 410, "ARM": 800, "WIDEST_BODY": 875, "TAIL_CENTER": 900}
+  "front": {
+    "HEAD_TOP": 418,
+    "ARM": 802,
+    "WIDEST_BODY": 875,
+    "TAIL_TARGET": 900
+  },
+  "back": {
+    "HEAD_TOP": 418,
+    "ARM": 802,
+    "WIDEST_BODY": 875,
+    "TAIL_CENTER": 860
+  },
+  "left": {
+    "HEAD_TOP": 423,
+    "ARM": 795,
+    "WIDEST_BODY": 875,
+    "TAIL_CENTER": 900
+  },
+  "right": {
+    "HEAD_TOP": 415,
+    "ARM": 790,
+    "WIDEST_BODY": 875,
+    "TAIL_CENTER": 890
+  }
 }

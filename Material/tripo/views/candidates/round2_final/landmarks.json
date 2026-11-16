@@ -1,0 +1,6 @@
+{
+  "front": {"HEAD_TOP": 410, "ARM": 810, "WIDEST_BODY": 875, "TAIL_TARGET": 900},
+  "back": {"HEAD_TOP": 410, "ARM": 810, "WIDEST_BODY": 875, "TAIL_CENTER": 875},
+  "left": {"HEAD_TOP": 410, "ARM": 800, "WIDEST_BODY": 875, "TAIL_CENTER": 900},
+  "right": {"HEAD_TOP": 410, "ARM": 800, "WIDEST_BODY": 875, "TAIL_CENTER": 900}
+}

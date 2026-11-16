@@ -1,18 +1,55 @@
 {
   "status": "completed_with_documented_visual_deviations",
+  "round": 3,
   "checks": {
     "front": {
-      "candidate": "candidates/round2/front_4.png",
+      "candidate": "candidates/round3/front_4.png",
       "size": [
         1024,
         1024
       ],
       "mode": "RGB",
       "source_bbox_exclusive": [
-        215,
-        68,
-        1039,
-        1184
+        234,
+        94,
+        1020,
+        1160
+      ],
+      "final_bbox_exclusive": [
+        191,
+        77,
+        832,
+        947
+      ],
+      "height_px": 870,
+      "height_fraction": 0.849609375,
+      "sole_y_inclusive": 946,
+      "background_rgb": [
+        255,
+        255,
+        255
+      ],
+      "visual_landmarks_y": {
+        "HEAD_TOP": 341,
+        "ARM": 655,
+        "WIDEST_BODY": 714,
+        "TAIL_TARGET": 735
+      },
+      "near_white_neutral_cleaned": true,
+      "all_four_outer_edges_pure_white": true
+    },
+    "back": {
+      "candidate": "candidates/round3/back_1.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "mode": "RGB",
+      "source_bbox_exclusive": [
+        233,
+        94,
+        1020,
+        1160
       ],
       "final_bbox_exclusive": [
         191,
@@ -29,92 +66,26 @@
         255
       ],
       "visual_landmarks_y": {
-        "HEAD_TOP": 344,
+        "HEAD_TOP": 341,
         "ARM": 655,
-        "WIDEST_BODY": 706,
-        "TAIL_TARGET": 726
-      }
-    },
-    "back": {
-      "candidate": "candidates/round2/back_4.png",
-      "size": [
-        1024,
-        1024
-      ],
-      "mode": "RGB",
-      "source_bbox_exclusive": [
-        214,
-        68,
-        1040,
-        1185
-      ],
-      "final_bbox_exclusive": [
-        190,
-        77,
-        833,
-        947
-      ],
-      "height_px": 870,
-      "height_fraction": 0.849609375,
-      "sole_y_inclusive": 946,
-      "background_rgb": [
-        255,
-        255,
-        255
-      ],
-      "visual_landmarks_y": {
-        "HEAD_TOP": 343,
-        "ARM": 655,
-        "WIDEST_BODY": 706,
-        "TAIL_CENTER": 706
-      }
+        "WIDEST_BODY": 714,
+        "TAIL_CENTER": 702
+      },
+      "near_white_neutral_cleaned": true,
+      "all_four_outer_edges_pure_white": true
     },
     "left": {
-      "candidate": "candidates/round2/left_6.png",
+      "candidate": "candidates/round3/left_2.png",
       "size": [
         1024,
         1024
       ],
       "mode": "RGB",
       "source_bbox_exclusive": [
-        268,
-        66,
-        926,
-        1176
-      ],
-      "final_bbox_exclusive": [
-        254,
-        77,
-        770,
-        947
-      ],
-      "height_px": 870,
-      "height_fraction": 0.849609375,
-      "sole_y_inclusive": 946,
-      "background_rgb": [
-        255,
-        255,
-        255
-      ],
-      "visual_landmarks_y": {
-        "HEAD_TOP": 347,
-        "ARM": 652,
-        "WIDEST_BODY": 711,
-        "TAIL_CENTER": 731
-      }
-    },
-    "right": {
-      "candidate": "candidates/round2/right_5.png",
-      "size": [
-        1024,
-        1024
-      ],
-      "mode": "RGB",
-      "source_bbox_exclusive": [
-        305,
-        73,
-        956,
-        1178
+        309,
+        94,
+        938,
+        1161
       ],
       "final_bbox_exclusive": [
         255,
@@ -131,26 +102,73 @@
         255
       ],
       "visual_landmarks_y": {
-        "HEAD_TOP": 342,
+        "HEAD_TOP": 345,
         "ARM": 649,
-        "WIDEST_BODY": 708,
-        "TAIL_CENTER": 728
-      }
+        "WIDEST_BODY": 714,
+        "TAIL_CENTER": 734
+      },
+      "near_white_neutral_cleaned": true,
+      "all_four_outer_edges_pure_white": true
+    },
+    "right": {
+      "candidate": "candidates/round3/right_2.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "mode": "RGB",
+      "source_bbox_exclusive": [
+        307,
+        94,
+        938,
+        1161
+      ],
+      "final_bbox_exclusive": [
+        254,
+        77,
+        769,
+        947
+      ],
+      "height_px": 870,
+      "height_fraction": 0.849609375,
+      "sole_y_inclusive": 946,
+      "background_rgb": [
+        255,
+        255,
+        255
+      ],
+      "visual_landmarks_y": {
+        "HEAD_TOP": 339,
+        "ARM": 644,
+        "WIDEST_BODY": 714,
+        "TAIL_CENTER": 726
+      },
+      "near_white_neutral_cleaned": true,
+      "all_four_outer_edges_pure_white": true
     }
   },
-  "references": "Restored unchanged from bad2c1e; no re-extraction this attempt.",
-  "candidates_round1": {
-    "front": 3,
-    "back": 2,
-    "left": 2,
-    "right": 2
-  },
-  "candidates_round2": {
+  "references": "Reused unchanged from round2 baseline; no new extraction.",
+  "candidates_round3": {
     "front": 4,
-    "back": 4,
-    "left": 6,
-    "right": 5
+    "back": 3,
+    "left": 4,
+    "right": 3
   },
+  "unique_original_candidate_sha256_count": 14,
+  "round2_archive_sha256": {
+    "front.png": "dcd216433bfc1edf88ac6e6d35072629a53fc0aaf2f1b44ac45f2be37df5d453",
+    "back.png": "85d90d7c7b5c67ec9c42b1d22be962b1516441ab02eed4a73969245792c2d836",
+    "left.png": "d4d7883cb56450bd607670a96f59fcbb9bb02b90aa4af02eadddc6c802862ddf",
+    "right.png": "25873d922f2b0a0c4f2fc880d948717fb9a7fa3f987ab9b99be6cc1b2e95e053",
+    "sheet.png": "6dbc85a5a4f953ccde1066b045be2d7a761c19f2f5ef565d666826aa4c9456e5",
+    "candidates_sheet.png": "cc5df8bc0d658593eafc81f14949795a805da6e2a28e54efe49b73432e2c8279",
+    "selection.json": "f28ade36bff44fa5953a008ffd71f802da87ad9148ba8b8b77c374bb46e922ee",
+    "alignment.json": "cdb805ec3145cdaa409d1acb9fe0986eac24acaa4e40c3f1ea06f2f6b1ffc71e",
+    "landmarks.json": "fe54967dad33d8761b958da02b8547b2b0b2eeb72eb79dfb5b756ca366528d59",
+    "selfcheck.json": "94bdc057f4f042faf8fe170124aa3ab1804d0056dd46e30a3e36e0b30ee9d1d5"
+  },
+  "round2_archive_matches_HEAD_byte_for_byte": true,
+  "reference_lines_unchanged": true,
   "manual_view_image_review": [
     "front.png",
     "back.png",
@@ -159,6 +177,20 @@
     "sheet.png",
     "candidates_sheet.png"
   ],
-  "visual_limitations": "See README.md: regularized silhouette, subtle fill variation, approx 22-25px back/side tail-height residual. Lead review required.",
+  "visual_limitations": "See README.md: regularized silhouette, small landmark shifts and approx 24-32px back/side tail-height residual.",
+  "worker_checks": [
+    {
+      "command": "/tmp/usagi-004-views-venv/bin/python tools/views/align_views.py",
+      "exit_code": 0
+    },
+    {
+      "command": "/tmp/usagi-004-views-venv/bin/python - (inline Pillow/archive/attachment inspection)",
+      "exit_code": 0
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0
+    }
+  ],
   "gate_command_run_by_worker": false
 }

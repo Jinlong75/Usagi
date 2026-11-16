@@ -1,16 +1,50 @@
 {
   "front": {
-    "candidate": "candidates/round2/front_4.png",
+    "candidate": "candidates/round3/front_4.png",
     "size": [
       1024,
       1024
     ],
     "mode": "RGB",
     "source_bbox_exclusive": [
-      215,
-      68,
-      1039,
-      1184
+      234,
+      94,
+      1020,
+      1160
+    ],
+    "final_bbox_exclusive": [
+      191,
+      77,
+      832,
+      947
+    ],
+    "height_px": 870,
+    "height_fraction": 0.849609375,
+    "sole_y_inclusive": 946,
+    "background_rgb": [
+      255,
+      255,
+      255
+    ],
+    "visual_landmarks_y": {
+      "HEAD_TOP": 341,
+      "ARM": 655,
+      "WIDEST_BODY": 714,
+      "TAIL_TARGET": 735
+    }
+  },
+  "back": {
+    "candidate": "candidates/round3/back_1.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGB",
+    "source_bbox_exclusive": [
+      233,
+      94,
+      1020,
+      1160
     ],
     "final_bbox_exclusive": [
       191,
@@ -27,92 +61,24 @@
       255
     ],
     "visual_landmarks_y": {
-      "HEAD_TOP": 344,
+      "HEAD_TOP": 341,
       "ARM": 655,
-      "WIDEST_BODY": 706,
-      "TAIL_TARGET": 726
-    }
-  },
-  "back": {
-    "candidate": "candidates/round2/back_4.png",
-    "size": [
-      1024,
-      1024
-    ],
-    "mode": "RGB",
-    "source_bbox_exclusive": [
-      214,
-      68,
-      1040,
-      1185
-    ],
-    "final_bbox_exclusive": [
-      190,
-      77,
-      833,
-      947
-    ],
-    "height_px": 870,
-    "height_fraction": 0.849609375,
-    "sole_y_inclusive": 946,
-    "background_rgb": [
-      255,
-      255,
-      255
-    ],
-    "visual_landmarks_y": {
-      "HEAD_TOP": 343,
-      "ARM": 655,
-      "WIDEST_BODY": 706,
-      "TAIL_CENTER": 706
+      "WIDEST_BODY": 714,
+      "TAIL_CENTER": 702
     }
   },
   "left": {
-    "candidate": "candidates/round2/left_6.png",
+    "candidate": "candidates/round3/left_2.png",
     "size": [
       1024,
       1024
     ],
     "mode": "RGB",
     "source_bbox_exclusive": [
-      268,
-      66,
-      926,
-      1176
-    ],
-    "final_bbox_exclusive": [
-      254,
-      77,
-      770,
-      947
-    ],
-    "height_px": 870,
-    "height_fraction": 0.849609375,
-    "sole_y_inclusive": 946,
-    "background_rgb": [
-      255,
-      255,
-      255
-    ],
-    "visual_landmarks_y": {
-      "HEAD_TOP": 347,
-      "ARM": 652,
-      "WIDEST_BODY": 711,
-      "TAIL_CENTER": 731
-    }
-  },
-  "right": {
-    "candidate": "candidates/round2/right_5.png",
-    "size": [
-      1024,
-      1024
-    ],
-    "mode": "RGB",
-    "source_bbox_exclusive": [
-      305,
-      73,
-      956,
-      1178
+      309,
+      94,
+      938,
+      1161
     ],
     "final_bbox_exclusive": [
       255,
@@ -129,10 +95,44 @@
       255
     ],
     "visual_landmarks_y": {
-      "HEAD_TOP": 342,
+      "HEAD_TOP": 345,
       "ARM": 649,
-      "WIDEST_BODY": 708,
-      "TAIL_CENTER": 728
+      "WIDEST_BODY": 714,
+      "TAIL_CENTER": 734
+    }
+  },
+  "right": {
+    "candidate": "candidates/round3/right_2.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGB",
+    "source_bbox_exclusive": [
+      307,
+      94,
+      938,
+      1161
+    ],
+    "final_bbox_exclusive": [
+      254,
+      77,
+      769,
+      947
+    ],
+    "height_px": 870,
+    "height_fraction": 0.849609375,
+    "sole_y_inclusive": 946,
+    "background_rgb": [
+      255,
+      255,
+      255
+    ],
+    "visual_landmarks_y": {
+      "HEAD_TOP": 339,
+      "ARM": 644,
+      "WIDEST_BODY": 714,
+      "TAIL_CENTER": 726
     }
   }
 }
