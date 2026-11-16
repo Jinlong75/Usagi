@@ -1,85 +1,62 @@
-# Usagi 无五官 T-pose 四视图（第二轮）
+# Usagi 无五官 T-pose 四视图（第三轮）
 
-供 Tripo 多视图图生 3D 的文件是本目录的 `front.png`、`back.png`、`left.png`、`right.png`。`sheet.png` 上排为四视图及六条浅灰参考线，下排为未裁切的原作参考帧。候选联系表为 `candidates_sheet.png`。
+当前供 Tripo 上传的是本目录的 `front.png`、`back.png`、`left.png`、`right.png`。`sheet.png` 上排为最终四图和固定的第二轮浅灰参考线，下排为原作参考帧。`candidates_sheet.png` 是第三轮候选联系表，不用于上传。
 
-## 本次修复及首轮保留
+## 第三轮范围与历史保留
 
-从任务指定提交 `bad2c1e` 取回全部参考帧、9 张首轮候选与脚本，未重新截帧。首轮候选原像素保存在 `candidates/round1/`，历史说明及生成记录为 `README_round1.md`、`generation_round1.json`；历史文档中的候选相对路径指移动前的位置。第二轮单独保存于 `candidates/round2/`。
+在主分支第二轮成果 `0a4edf0` 上只修正宽圆穹顶和侧面圆背，没有重新截帧。第二轮四张最终图按原像素保存在 `candidates/round2_final/{front,back,left,right}.png`；该目录还保留第二轮对照图、候选联系表及 selection/alignment/landmarks/selfcheck。第二轮说明全文归档为 `README_round2.md`，实际提示词和调用记录为 `generation_round2.json`。本文件追加记录第三轮实际交付；第一、二轮候选保持原样。
 
-上一次未通过的直接原因是工作区缺少 `front.png` 等 004 产物、存在未提交文件，并被报告改到了 003/005 说明。本次恢复 004 基线后重生成；没有修改 003/005、任务配置或检查脚本。开工时 003/005 对 HEAD 无差异；范围外的 `handoff.md` 已有改动未纳入本任务，遵守重试指令最后一段不自行恢复它。
+第三轮共 **14 次独立附图调用**：正面 4、背面 3、左侧 4、右侧 3，原始输出在 `candidates/round3/`。每次均把现有 T-pose 或原作 PNG 作为图像输入，没有纯文字生成，没有脚本画轮廓或翻转图片冒充另一侧。
 
-第二轮针对整团无腰、下腹较宽、低位水平短臂、侧面前后不对称、背面居中白尾巴、薄耳片分别迭代。共 **19 张独立工具调用生成的候选**：正面 4、背面 4、左侧 6、右侧 5；没有复制同一张图充数，也没有用翻转脚本冒充右视图生成。
+## 最终选择
 
-## 最终选择及参考图
-
-| 最终文件 | 第二轮候选 | 该次工具调用实际附图 | 选择原因 |
+| 最终图 | 第三轮候选 | 实际附图（相对于 Material/tripo） | 选择原因 |
 |---|---|---|---|
-| front.png | candidates/round2/front_4.png | front_2 候选、原作 front_full、ears | front_1/3 仍有腰，front_2 偏长；4 保留单一凸轮廓并拓宽成紧凑圆梨形，下腹不再是小球。 |
-| back.png | candidates/round2/back_4.png | back_2、选定 front_4、原作 back_full | 1/2/3 尾巴偏低；4 将尾巴上移，保持前后外轮廓、短臂及耳距，白尾巴居中。 |
-| left.png | candidates/round2/left_6.png | left_5、选定 front_4、原作 side | 1～4 身体偏薄，5 增加厚度，6 在保留较厚圆腹的基础上缩窄耳片。背直、腹凸、脚尖朝右，尾巴在左下背。 |
-| right.png | candidates/round2/right_5.png | right_4、选定 front_4、原作 side_opposite | 1～3 与较薄旧左侧匹配，4 跟随加厚左侧，5 再缩窄侧耳。朝向、内耳边与尾巴均反向，和最终左侧更接近。 |
+| front.png | front_4 | views/candidates/round2_final/front.png；refs/front_full.png | 前三张在拓宽头顶时引入上部鼓包；4 的穹顶较宽而侧线不再明显内收，下半部最接近二轮。 |
+| back.png | back_1 | views/candidates/round2_final/back.png；views/candidates/round3/front_4.png；refs/back_full.png | 保留居中白尾巴和低位短臂，上部轮廓与选中正面接近；2 略鼓，3 稍窄。 |
+| left.png | left_2 | views/candidates/round3/left_1.png；views/candidates/round2_final/left.png；views/candidates/round3/front_4.png；refs/side.png | 保留连续圆背和宽冠顶，厚度比 1 稍收；3 有局部转折，4 收背效果有限。 |
+| right.png | right_2 | views/candidates/round2_final/right.png；views/candidates/round3/left_2.png；views/candidates/round3/front_4.png；refs/side_opposite.png | 圆背、圆臀过渡清楚，厚度和全高更接近 left_2，1/3 的冠顶或手臂偏移稍大。 |
 
-表内省略前缀：原作位于 `../refs/`，候选位于 `candidates/round2/`。各个中间候选的完整附图列表见文末逐项记录与 `generation.json`。
-
-方向约定：`left.png` 是相机在角色左手边，角色朝画面右；`right.png` 是相机在角色右手边，角色朝画面左。
+方向保持：`left.png` 是相机在角色左手边，角色朝画面右；`right.png` 是相机在角色右手边，角色朝画面左。
 
 TODO(lead): 核对 Tripo 的左右约定。
 
-## 生图工具实际使用方式
+## 生图功能的实际用法
 
-使用内置 `image_gen.imagegen`（imagegen 技能的 built-in 模式），每张候选独立调用一次；传入 `referenced_image_paths` 的实际本地 PNG 路径，`transparent_background=false`。所有附图均先用 `view_image` 阅读，后续图以选定正面为几何参考，并附原作对应角度；没有纯文字调用，没有转用 CLI/API。
+使用 imagegen 技能的内置 `image_gen.imagegen`，每张候选一次调用；`transparent_background=false`。原作参考、第二轮图均先用 `view_image` 检查，后续候选在工具返回时直接查看。每次调用显式传入 `referenced_image_paths`，完整附图清单和实际 prompt 见文末以及 `generation_round3.json`；`generation.json` 同步为当前轮记录。
 
-工具输出默认保存在 `$CODEX_HOME/generated_images/<会话目录>/exec-*.png`；调用结束后从工具返回的默认位置复制到仓库 `candidates/round2/`，默认源文件保留。项目记录只保存生成文件 basename，不写用户主目录等本机隐私路径。原始候选未经裁剪、缩放或改色。参考图是模型输入依据，不代表模型逐像素复用了原图。
+工具默认将图片保存至 `$CODEX_HOME/generated_images/<会话目录>/exec-*.png`。本轮实际输出均为 1254×1254；按工具返回的实际路径复制进仓库 `candidates/round3/`，保留默认源文件。仓库记录只保存输出 basename，不保存本机用户路径。候选 PNG 没有裁剪、改色或缩放；最终四图由对齐脚本产生。附图确实传给了工具，但生成结果并非逐像素的局部修改。
 
-## 核对表评分
+## 第三轮核对表打分
 
-每项 0～2 分：0 明显不符，1 有可见偏差，2 在本轮候选中较好符合。分数是人工对照，不是客观相似度或主导验收结论。C=奶黄/棕线与平涂；S=整团无腰、下部较宽；E=原作细长耳形/侧面薄耳；L=低位水平短臂及小圆脚；T=尾巴（正面隐藏、后背居中/侧面后下部）；V=无五官、正交方向、白底；U=与选定正面的几何一致性。C 均扣 1 分，因生图仍有细微填色波动；T 后/侧视扣 1 分，因毛线及尾巴高度仍有偏差。
+人工对照原作及本轮候选，每项 0～2 分：0 明显不符，1 有可见偏差，2 本组中较好符合；不是客观相似度或主导验收结论。
 
-| 候选 | C | S | E | L | T | V | U | /14 | 观察 |
-|---|---:|---:|---:|---:|---:|---:|---:|---:|---|
-| front_1 | 1 | 0 | 1 | 1 | 2 | 2 | 0 | 7 | 手臂处仍收腰，头部最宽，弃用。 |
-| front_2 | 1 | 1 | 1 | 1 | 2 | 2 | 1 | 9 | 无腰但梨形偏长；作为后续纠正的图像底图。 |
-| front_3 | 1 | 0 | 1 | 1 | 2 | 2 | 0 | 7 | 虽更宽，仍回到双球轮廓，弃用。 |
-| front_4 | 1 | 2 | 2 | 2 | 2 | 2 | 2 | 13 | 选用；连续紧凑轮廓，短臂不再制造收腰。 |
-| back_1 | 1 | 2 | 2 | 2 | 1 | 2 | 2 | 12 | 前后轮廓接近，尾巴低于期望。 |
-| back_2 | 1 | 2 | 2 | 2 | 1 | 2 | 2 | 12 | 轮廓匹配较好，作为上移尾巴的底图。 |
-| back_3 | 1 | 2 | 2 | 2 | 1 | 2 | 2 | 12 | 毛线略不同，尾巴高度未改善。 |
-| back_4 | 1 | 2 | 2 | 2 | 1 | 2 | 2 | 12 | 选用；尾巴上移且居中，但与侧面还有高度差。 |
-| left_1 | 1 | 2 | 1 | 2 | 1 | 2 | 1 | 10 | 方向清楚，无腰；厚度不足，耳片偏宽。 |
-| left_2 | 1 | 2 | 1 | 2 | 1 | 2 | 1 | 10 | 背更直，尾巴完整；仍薄。 |
-| left_3 | 1 | 2 | 1 | 2 | 1 | 2 | 1 | 10 | 单团体形和小端面手更清楚，用作厚度迭代底图。 |
-| left_4 | 1 | 2 | 1 | 2 | 1 | 2 | 1 | 10 | 第一次加厚变化有限，耳片仍宽。 |
-| left_5 | 1 | 2 | 1 | 2 | 1 | 2 | 2 | 11 | 身体加厚到接近正面宽 85%，耳片需再窄。 |
-| left_6 | 1 | 2 | 2 | 2 | 1 | 2 | 2 | 12 | 选用；保留加厚单团身体，耳片明显缩窄。 |
-| right_1 | 1 | 2 | 1 | 2 | 1 | 2 | 1 | 10 | 朝左、尾巴朝右，跟随旧的较薄左侧。 |
-| right_2 | 1 | 2 | 1 | 2 | 1 | 2 | 1 | 10 | 耳朵反向正确，深度仍不足。 |
-| right_3 | 1 | 2 | 1 | 2 | 1 | 2 | 1 | 10 | 单团形较好，但与加厚左侧不匹配。 |
-| right_4 | 1 | 2 | 1 | 2 | 1 | 2 | 2 | 11 | 跟随 left_5 加厚；耳片偏宽。 |
-| right_5 | 1 | 2 | 2 | 2 | 1 | 2 | 2 | 12 | 选用；加厚轮廓与窄耳片同最终左侧对应。 |
+C=奶黄/棕线平涂；S=单团无腰、下部较宽；E=耳形/薄耳；L=水平短臂与小脚；T=尾巴（正面隐藏、背面居中、侧面后下部）；V=无五官/正交方向/白底；U=四视图一致性；D=宽圆穹顶；B=连续圆背（正背视图无此投影要求，记 2）。满分 18。C 扣 1 是细微填色不均，T 后侧视扣 1 是毛线与高度残差。
 
-## 对齐与参考线
+| 候选 | C | S | E | L | T | V | U | D | B | /18 | 观察 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| front_1 | 1 | 1 | 2 | 2 | 2 | 2 | 1 | 2 | 2 | 15 | 头顶变宽，但上部略鼓、手臂前略内收，弃用。 |
+| front_2 | 1 | 0 | 2 | 2 | 2 | 2 | 1 | 2 | 2 | 14 | 头部加宽过度，上部宽于下腹，弃用。 |
+| front_3 | 1 | 1 | 2 | 2 | 2 | 2 | 1 | 2 | 2 | 15 | 比 2 克制，仍有轻微上部鼓起，弃用。 |
+| front_4 | 1 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 2 | 17 | 选用；穹顶宽圆，侧线向下连续，低位短臂和下腹基本保留。 |
+| back_1 | 1 | 2 | 2 | 2 | 1 | 2 | 2 | 2 | 2 | 16 | 选用；上部与 front_4 接近，尾巴居中，下半部保留较好。 |
+| back_2 | 1 | 1 | 2 | 2 | 1 | 2 | 2 | 2 | 2 | 15 | 上部略鼓，尾巴与 1 接近，保留备选。 |
+| back_3 | 1 | 2 | 2 | 2 | 1 | 2 | 1 | 1 | 2 | 14 | 保留无腰轮廓，但穹顶比选中正面略窄，弃用。 |
+| left_1 | 1 | 2 | 2 | 2 | 1 | 2 | 1 | 2 | 2 | 15 | 圆背清楚，但加弧后身体较厚，继续微调。 |
+| left_2 | 1 | 2 | 2 | 2 | 1 | 2 | 2 | 2 | 2 | 16 | 选用；弧线连续、比 1 稍收，薄耳与原低位短手保留。 |
+| left_3 | 1 | 1 | 2 | 2 | 1 | 2 | 1 | 2 | 1 | 13 | 尾巴根附近有轻微转折，背部上段偏鼓，弃用。 |
+| left_4 | 1 | 2 | 2 | 2 | 1 | 2 | 1 | 2 | 2 | 15 | 与 2 接近，局部稍厚，30px 收背请求只实现少量，保留备选。 |
+| right_1 | 1 | 2 | 2 | 2 | 1 | 2 | 1 | 2 | 2 | 15 | 圆背明确，但身体高度/冠顶和左侧有小幅差异。 |
+| right_2 | 1 | 2 | 2 | 2 | 1 | 2 | 2 | 2 | 2 | 16 | 选用；与 left_2 的全高、轮廓厚度最接近，脚底统一，尾在右。 |
+| right_3 | 1 | 2 | 2 | 2 | 1 | 2 | 1 | 2 | 2 | 15 | 与 2 接近，但耳根与手臂略上移，保留备选。 |
 
-`tools/views/align_views.py` 仅合成白底、清除近白中性背景、按整体包围盒等比例缩放居中；没有画身体、挪动尾巴或拉伸局部。原始候选保留。RGB 1024×1024，非白角色包围盒统一高 **870 px**（84.9609375%，85% 四舍五入），顶端 y=77，脚底 y=946。水平包围盒居中允许奇数宽导致的半像素取整。近白清理阈值为各通道至少 240 且通道差不大于 12，保留奶黄、粉色及棕线。
+## 对齐、参考线与自查
 
-一张细耳尖缩放后原本会在清白时丢失一行：脚本在实际高度为 869 时改用 871 px 的整体等比例采样再裁纯白边，仍断言角色实际高度必须恰好 870；没有放宽原有尺寸断言。没有为对齐改局部姿态。
+`tools/views/align_views.py` 保持白底合成、近白清理和整体等比缩放，不修改局部造型。输出统一 RGB 1024×1024；非白包围盒高 **870 px**（85% 四舍五入），耳尖 y=77、脚底 y=946，横向按包围盒居中。近白清理阈值仍为各通道 >=240 且通道差 <=12，奶黄、粉色与棕线保留。工具若输出透明图，也先合成白底。
 
-`landmarks.json` 是在原始候选上用目视估计的源 y 坐标（约 ±10～25 px），不是自动几何测量；`alignment.json` 保存换算到最终画布的 y。HEAD_TOP 指双耳根之间的头顶，WIDEST_BODY 是排除手臂的下腹最宽区域的近似位置，不是把含手臂的整张图宽度当作腹宽。TAIL_TARGET 是无尾正面上的目标位置。
+`reference_lines.json` 直接取自二轮正面 `alignment.json`，固定为 EAR_TIP=77、HEAD_TOP=344、ARM=655、WIDEST_BODY=706、TAIL_TARGET=726、SOLE=946。六条线仅叠加到 `sheet.png`，不随本轮候选重新计算；最终上传图没有线。原脚本的尺寸/高度/脚底断言未改。`landmarks.json` 仍为在原候选上估计的视觉区域位置（约 ±10～25px），`alignment.json` 是其坐标换算；这些近似标记不是像素精确的最宽行测量。
 
-对照图的六条跨列参考线取自正面基准：耳尖、头顶、手臂、下腹最宽区域、尾巴目标高度、脚底。参考线仅存在 `sheet.png`，上传 Tripo 的四张图没有线。它们故意不分别追随每列的偏差；不同视角的实际目视标记保留在 JSON，让偏差可见。
-
-## 已知偏差与 TODO
-
-- 最大差距仍是**原作的自然不规则剪影和线条手感**。本轮已去掉双球收腰，但轮廓更规则、更像标准圆梨形，缺少动画的局部起伏；不能宣称“完全还原”。
-- 下腹最宽区域较宽，位置约在身体中下段（目视约 60% 左右），未精确锁定 65%；最宽处附近与短手根较近。手臂约在身体 55%～60%，改善了首轮偏高问题。
-- 四图填色仍有极细微亮度/色温波动（尤其背面略浅），不像理想的逐像素单一色值。背景清理为纯白；脚本没有擅自重绘角色填色。
-- 正背轮廓非常接近；侧面耳根与正面相差约数像素，左右耳的前倾角略不同。侧面耳片已缩窄，仍不是几何上无限薄的线。
-- 背面尾巴目视中心约 y=706，侧面约 y=728～731，存在约 22～25 px 高度差；白尾巴外圈毛线仍比原作粗且规则，侧面尾巴略呈半圆。背面居中有数像素的手绘误差。这些差异不通过脚本挪局部来掩盖。
-- 两个侧面深度已接近正面身体宽度的约 80%～85%（不计正背伸出的短手及尾巴），但各视图独立生成，不是严格的 3D 投影，不能保证隐藏面的几何完全对应。
-- TODO(lead): 对照 `sheet.png` 逐张确认轮廓、耳片、尾巴高度残差和配色是否足够还原，再交用户上传 Tripo；最终审美验收由主导决定。
-
-## 重建与自查记录
-
-Pillow 安装在仓库外临时环境，不新增项目依赖。仓库根目录：
+在仓库根目录运行（Pillow 环境在仓库外）：
 
 ```sh
 python3 -m venv /tmp/usagi-004-views-venv
@@ -87,218 +64,157 @@ python3 -m venv /tmp/usagi-004-views-venv
 /tmp/usagi-004-views-venv/bin/python tools/views/align_views.py
 ```
 
-该命令成功退出 0，生成对齐结果与联系表，内置断言仍核对 RGB、1024×1024、870 px 高度及同一脚底线。第一次执行在细耳尖清白后高度变为 869 时退出 1，现场输出为 `缩放后角色高度改变：(1, 1, 514, 870)`；已按上述等比例重采样修复，随后成功。后续因薄耳候选改选再运行一次，退出 0。
+本轮沿用已存在的 Pillow 13.0.0 环境。对齐命令退出 0；内置 RGB/尺寸/870px/脚底断言通过。使用 `view_image` 阅读最终 front/back/left/right、sheet、候选联系表，按上表逐项检查。聚焦像素及归档检查记录于 `selfcheck.json`：尺寸/高度/脚底、纯白边缘、二轮原像素归档、候选哈希与附图清单。没有启动 GUI 程序，也没有自行运行完整验收 `sh docs/specs/checks/004-check.sh`；该命令交提交后的门禁运行。
 
-执行者的聚焦自查按任务“自测”用 `view_image` 阅读最终 front/back/left/right、sheet，并查看候选联系表，对照上述核对表。当前记录见 `selfcheck.json`。没有运行 `sh docs/specs/checks/004-check.sh`、完整验收、GUI 程序或门禁专用命令；检查脚本由提交后的门禁执行。
+## 已知偏差与待主导核对
 
-## 第二轮全部实际提示词
+- 最大差距仍是**原作自然不规则的轮廓和线条手感**：本轮圆团轮廓更规则，填色有很轻的波动，不能宣称完全还原。仅按包围盒对齐，不伪造严格 3D 投影一致性。
+- 正背穹顶已放宽、两侧后背已从直线变为凸弧；侧面腹部仍饱满，背部稍平而有弧，尾巴从后下部凸出。穹顶上 1/3 的宽度关系是提示词约束及人工判断，没有声称精确量到 80%。
+- 修改提示词锁定了二轮其余部分，但模型没有逐像素保留它们：耳根/头顶、手臂、尾巴仍有数像素变化。当前视觉标记：正背头顶约 y341、左 y345、右 y339；手臂约 y655/655/649/644。二轮对应约 y344/343/347/342 与 y655/655/652/649。固定参考线不移动来遮掩这些差异。
+- 背面尾巴仍居中，目视中心约 y702；侧面约 y734/y726，背侧高度残差约 24～32px（继承二轮已有高度差并有少量漂移）。尾巴毛线依然偏规则，白尾轮廓比原作简化。
+- 正背最宽处不是一个尖锐的单行，拓宽后的上部到下腹形成宽区；侧面厚度目视约为正面身体宽度的 85% 左右，最大截面可能略厚。脚本只等比缩放，未挪动局部或横向拉伸。
+- TODO(lead): 对照 `sheet.png` 与 `candidates/round2_final/sheet.png` 验收穹顶、背弧及保留部件的高度残差，确认足够还原后再交用户上传 Tripo。
 
-以下每节为一张候选的完整 prompt 字符串，不是摘要。图片来源及生成 basename 与 `generation.json` 一致；附图参数均为 `referenced_image_paths`，背景参数均为 false。原作截图中的五官仅为身份参考，所有候选均要求无五官。
+## 第三轮实际提示词全文
+
+下列每节是实际发送的完整 prompt 字符串；附图顺序与 `referenced_image_paths` 一致。参考路径相对 `Material/tripo/`，basename 是工具默认保存文件名。
 
 ### front_1
 
-附图：`refs/front_full.png`、`refs/face.png`、`refs/ears.png`。
+附图：`views/candidates/round2_final/front.png`、`refs/front_full.png`、`refs/ears.png`。
 
-生成 basename：`exec-ca422529-04b5-4dd5-9774-9cefa4f117be.png`。
+生成 basename：`exec-742a0069-dceb-4da6-8770-260d826d5840.png`。
 
 ```text
-Use case: identity-preserve. Edit the attached original Usagi animation frames into ONE orthographic FRONT T-pose reference, 1024 square pure white background. Image 1 front_full is the primary source; image 2 face locks original ears and colors; image 3 ears locks slender ears and line style. Preserve original cream #FFF1C1, thin chocolate-brown outline, soft pink inner ears, tiny round-ended feet. Remove all facial features: no eyes, brows, nose, mouth, blush or dots. Upright, full body, ear tips and feet uncut, centered with margins, flat cel fills, no shading, texture, ground, text or objects. CRITICAL ROUND 2 SHAPE: the head and torso are ONE SINGLE rounded pear/egg-shaped mass with NO neck, NO waist, NO stacked balls. From ear roots the outer contour expands continuously downward to its widest point at about 65% of the ear-root-to-sole body height, then rounds inward only at bottom. Lower belly slightly WIDER than upper head. Do not draw an indentation at the arm roots. Body below ears is a single softly rounded oval, not a snowman. Two very SHORT round-ended arms extend horizontally from 57% down the ear-root-to-sole height, well below upper head; no shoulders or fingers. Two tiny feet peek out below. Ears keep source slender upright slightly splayed shape, about one third full silhouette height, not thick bunny ears. No tail visible from front. This is a precise source-image pose edit, not a generic rabbit redesign.
-Candidate 1: emphasize the source's broad softly rounded lower belly. Maintain a smooth convex contour at both arm roots.
+Use case: precise-object-edit / identity-preserve. Image 1 is the EDIT TARGET: approved round-2 Usagi faceless FRONT orthographic T-pose on white, 1024 square. Images 2-3 are original animation shape references only. Make ONE narrowly scoped correction to image 1: broaden and round the upper head dome. Current upper contour narrows too much into an egg under the ears; make a broad rounded crown with a shallow almost-flat arc between the unchanged ear roots and fuller upper shoulders. At one third of the ear-root-to-sole body height, head width should be about 80% of maximum lower-body width. Keep one single seamless plump head/body mass with no neck or waist, lower body widest. CHANGE ONLY upper body contour above the arms; preserve the exact lower half silhouette, maximum body width, widest-level height, two horizontal stubby arms at y~655, tiny feet and soles y~946, all ears including their tips y~77, ear spacing, pink inner ears, thin brown outline and cream fill of image 1. Head crown y~344 unchanged. Do not shorten ears or move features. Original images are ONLY guidance for broad dome curvature, do not copy their facial features, action pose or background. Keep entire face perfectly plain cream: no eyes, nose, mouth, brows or blush. Same pure white background, no shadows, no text, no guide lines, same view, same framing. Output ONE edited full-body square image, not a sheet.
 ```
 
 ### front_2
 
-附图：`refs/front_full.png`、`refs/face.png`、`refs/ears.png`。
+附图：`views/candidates/round2_final/front.png`、`views/candidates/round3/front_1.png`、`refs/front_full.png`。
 
-生成 basename：`exec-75c8f330-f8d9-4d43-a529-87344520c9e3.png`。
+生成 basename：`exec-21a0c2f0-15ef-4ba3-8b78-df6e6e007815.png`。
 
 ```text
-Use case: identity-preserve. Edit the attached original Usagi animation frames into ONE orthographic FRONT T-pose reference, 1024 square pure white background. Image 1 front_full is the primary source; image 2 face locks original ears and colors; image 3 ears locks slender ears and line style. Preserve original cream #FFF1C1, thin chocolate-brown outline, soft pink inner ears, tiny round-ended feet. Remove all facial features: no eyes, brows, nose, mouth, blush or dots. Upright, full body, ear tips and feet uncut, centered with margins, flat cel fills, no shading, texture, ground, text or objects. CRITICAL ROUND 2 SHAPE: the head and torso are ONE SINGLE rounded pear/egg-shaped mass with NO neck, NO waist, NO stacked balls. From ear roots the outer contour expands continuously downward to its widest point at about 65% of the ear-root-to-sole body height, then rounds inward only at bottom. Lower belly slightly WIDER than upper head. Do not draw an indentation at the arm roots. Body below ears is a single softly rounded oval, not a snowman. Two very SHORT round-ended arms extend horizontally from 57% down the ear-root-to-sole height, well below upper head; no shoulders or fingers. Two tiny feet peek out below. Ears keep source slender upright slightly splayed shape, about one third full silhouette height, not thick bunny ears. No tail visible from front. This is a precise source-image pose edit, not a generic rabbit redesign.
-Candidate 2 essential correction: DRAW ONLY ONE PEAR SHAPED OVAL from ear roots to soles. The left body boundary at 25%,45%,60%,65%,75% down the BODY should be respectively x=36%,29%,27%,26%,28% of canvas, mirrored right boundary. Thus upper head is narrower than lower belly. The arms are tiny tabs ADDED to this continuous oval at 57% body height; the outline returns directly to the SAME convex oval below each tab, never moving inward into a waist. Body widest BELOW arms. No upper circular head bulge. Use a narrower upper third and broad plump lower two-thirds. Small thin source ears, about 29% total height. Fine dark brown 5px equivalent line at 1024. Pure FLAT solid fills, zero gradient or paper grain.
+Use case: precise-object-edit / identity-preserve. Image 1 approved round2 front is the primary EDIT TARGET; image 2 shows the desired BROADER crown only but has a faulty waist; image 3 original Usagi is shape reference. Output one faceless FRONT orthographic T-pose on white. Change ONLY upper head contour of IMAGE 1 to a broader flatter dome, preserving every other part of IMAGE 1. Between original ear roots, crown stays at same height y344/1024; upper shoulders expand outward earlier, so head at 1/3 body height is ~80% of max body width. CRITICAL: no upper-head ball, no inward tuck before the arms, no waist. The contour must gently WIDEN continuously from crown to arms and to widest LOWER BELLY below arms. Do not copy image2's inward narrowing just ABOVE its arms; image1 lower body and arm junction shape are approved. At the original 1024 target scale, outer body left x~295 at y450, x~256 at y550, x~242 at y625, x~238 at y705; right side symmetrical. This gives broad upper third without head bulge or waist. Keep the original arm geometry and level y655, belly width and level y706, feet and sole y946; ears and pink interiors unchanged with tips y77; keep all lower pixels conceptually locked. Same cream, fine dark-brown outline, no neck, plain blank face with NO facial marks. White background, no shadow, text, guide lines or extras. Full body, same proportions and framing as image1. One square image.
 ```
 
 ### front_3
 
-附图：`refs/front_full.png`、`refs/face.png`、`refs/ears.png`。
+附图：`views/candidates/round2_final/front.png`、`refs/front_full.png`。
 
-生成 basename：`exec-7f1ac662-12b9-4ddb-9243-98aff4fcf43a.png`。
+生成 basename：`exec-3afca876-aecd-4f4f-b918-18317eb55609.png`。
 
 ```text
-Use case: identity-preserve. Edit the attached original Usagi animation frames into ONE orthographic FRONT T-pose reference, 1024 square pure white background. Image 1 front_full is the primary source; image 2 face locks original ears and colors; image 3 ears locks slender ears and line style. Preserve original cream #FFF1C1, thin chocolate-brown outline, soft pink inner ears, tiny round-ended feet. Remove all facial features: no eyes, brows, nose, mouth, blush or dots. Upright, full body, ear tips and feet uncut, centered with margins, flat cel fills, no shading, texture, ground, text or objects. CRITICAL ROUND 2 SHAPE: the head and torso are ONE SINGLE rounded pear/egg-shaped mass with NO neck, NO waist, NO stacked balls. From ear roots the outer contour expands continuously downward to its widest point at about 65% of the ear-root-to-sole body height, then rounds inward only at bottom. Lower belly slightly WIDER than upper head. Do not draw an indentation at the arm roots. Body below ears is a single softly rounded oval, not a snowman. Two very SHORT round-ended arms extend horizontally from 57% down the ear-root-to-sole height, well below upper head; no shoulders or fingers. Two tiny feet peek out below. Ears keep source slender upright slightly splayed shape, about one third full silhouette height, not thick bunny ears. No tail visible from front. This is a precise source-image pose edit, not a generic rabbit redesign.
-Candidate 3: compact BROAD single pear-shaped ROUND BALL, not a tall egg. Ear-root-to-sole body height only 1.15 times its widest body width. Body widest at 65% down from ear roots (below the arm attachments). Broad lower belly only 8% wider than upper head, continuous smooth convex sides, no indent anywhere at hand level. Upper portion is NOT a separate sphere. The two arms emerge at 57% down this SINGLE body and are tiny horizontal rounded tabs. Slender ears about 30% total height, preserve original ear spacing and pink interiors. All fills absolutely uniform solid RGB colors, cream #FFF1C1, pale pink, outline deep brown rather than black, approximately 5 pixels at 1024 resolution. Entire character takes about 85% canvas height. No gradients or noise, sharp 2D cel reference.
+Edit image 1, the approved faceless Usagi FRONT T-pose, using image 2 original Usagi as reference ONLY for the broad round crown. Make the head dome wider and less egg-like. THIS IS A TINY LOCAL EDIT TO THE TOP CAP ONLY. Do not redesign the whole silhouette. Keep the entire lower 45% of image 1 unchanged including arms, lower belly and feet. Keep both ears identical. Change only the cap of the head between y345 and y530 in the 1024 target: a broad, shallow rounded dome with full upper corners like the original, almost flat between ears, instead of a narrow tapering egg. The cap should expand outwards much earlier near the ear bases then blend back smoothly into the existing side contour by y550. Body outline must continue widening gently downward to the original largest lower-belly width at y706. Do NOT bulge a separate round head, do NOT narrow above or below arms, NO neck, NO waist, NO snowman. Conceptual contour guidance for 1024: head dome crown y344; outer upper corners x350 and x674 near y385, x300 and x724 near y450, returning to original x265 and x759 near y550. Nothing above the arms may become wider than the original belly at x238 to786. All arm, widest-body, feet, ear-tip heights and body width exactly as image1. Preserve cream, pink, fine brown outline, white background, no shadows. Same full-body front orthographic framing; no facial features or marks, no labels. Output one square image.
 ```
 
 ### front_4
 
-附图：`views/candidates/round2/front_2.png`、`refs/front_full.png`、`refs/ears.png`。
+附图：`views/candidates/round2_final/front.png`、`refs/front_full.png`。
 
-生成 basename：`exec-837c4ec5-e6c4-430e-a129-bccd7a589c0b.png`。
+生成 basename：`exec-c0a46958-3d11-4de9-861e-c1b9fef39d81.png`。
 
 ```text
-Use case: identity-preserve. Image 1 is a selected T-pose silhouette. Images 2 and 3 are the original Usagi animation design references. Produce ONE FRONT orthographic faceless T-pose, precise correction of IMAGE 1: keep its SINGLE smooth pear-shaped body contour with NO WAIST, the lower belly widest at 65% body height, its tiny horizontal short arms at 57%, its feet, ear length, spacing and pink inner ears. Make the body less tall and MORE ROUND by widening its merged head-body horizontally by about 15%, while preserving the narrow upper-to-broad-lower silhouette; do not create an upper head bulb or indent at the arms. Keep the original references' compact ROUND BALL feel. The body below ears should be only 1.10 times taller than wide. Ears remain the SAME slender original width, do not widen ears when broadening body. Thin dark chocolate outline 5px at 1024, absolutely flat solid cream RGB(255,241,193), soft pink ears, absolutely pure white background, no texture or gradients. Total silhouette height 85% square canvas. Both ear tips and feet fully visible. Zero eyes/mouth/nose/brows/blush, no tail visible from front, no other marks, no objects or shadows. Most important: preserve Image 1's continuous convex lower-wider outline while making it more compact.
+Precise local image edit. Image1 is the edit target, a plain-faced front Usagi T-pose; image2 is original cartoon crown-shape reference only. Keep image1 almost exactly unchanged. Widen ONLY the very top of the head below ear roots: make the crown shallow and broad rather than pointed, by pushing its upper outer shoulders outward by about TWENTY pixels on each side near y390 (on 1024 image1), then smoothly tapering that offset back to ZERO by y480. Head top and ear-root y344 remain unchanged. The key is a slightly flatter and wider TOP CAP, not a bigger circular head. All pixels and contours at y500 and below must retain image1 shape and width. Original body width at y550=513px and y600=540px must remain; lower belly at y705=550px must remain the maximum body width, so there is no waist or upper-head bulge. Keep the whole ONE-piece head-body silhouette, same low horizontal short arms y655, tiny feet, ear tips y77, soles y946, ears, pink inner ears, cream color and fine brown outline. Do not inflate middle head or change lower body. No facial features, blush, shading or shadow, pure white background, full-body FRONT orthographic view. Output one square edited image only.
 ```
 
 ### back_1
 
-附图：`views/candidates/round2/front_4.png`、`refs/back_full.png`。
+附图：`views/candidates/round2_final/back.png`、`views/candidates/round3/front_4.png`、`refs/back_full.png`。
 
-生成 basename：`exec-fa21bc44-6189-47ad-8406-2ca289ce7ab3.png`。
-
-```text
-Use case: identity-preserve. Image 1 selected ROUND TWO FRONT T-pose is the EXACT geometry lock. Image 2 original Usagi back animation is tail texture and placement evidence. Produce ONE BACK orthographic T-pose of image 1, as a true 180-degree turn. Copy image 1 outer contour precisely: ONE continuous round pear body, no separate head, NO WAIST, lower belly widest below arm roots, tiny rounded feet, same slender ears and same ear length/spacing, short horizontal arms at about 57% down body below ear roots. Keep all image-1 proportions and its compact broad body. Back of ears cream, NO pink visible from rear. Add ONE small white fluffy circular tail CENTERED EXACTLY on the symmetry axis of lower back at 65% down from ear roots to soles; use a few short irregular deep brown fur strokes along its perimeter like original image 2, no flower, cog or spiky sun. Tail diameter about 20% body width. No face anywhere, no seams. Colors flat cream #FFF1C1 and thin deep brown outline matching image 1, absolute white background, no shading, gradients, texture, ground, shadow, props or text. One character fully visible with unclipped ears and soles, square 1024 composition, 85% character height. The source back frame must not cause a head bulge or waist: image 1 is the silhouette authority.
-Candidate 1: exact front silhouette lock; tail centered at lower back.
-```
-
-### back_2
-
-附图：`views/candidates/round2/front_4.png`、`refs/back_full.png`。
-
-生成 basename：`exec-b8d2b0fa-57eb-498f-8792-c586852e8daf.png`。
+生成 basename：`exec-98aa154b-2974-427b-a458-8c272bb9da13.png`。
 
 ```text
-Use case: identity-preserve. Image 1 selected ROUND TWO FRONT T-pose is the EXACT geometry lock. Image 2 original Usagi back animation is tail texture and placement evidence. Produce ONE BACK orthographic T-pose of image 1, as a true 180-degree turn. Copy image 1 outer contour precisely: ONE continuous round pear body, no separate head, NO WAIST, lower belly widest below arm roots, tiny rounded feet, same slender ears and same ear length/spacing, short horizontal arms at about 57% down body below ear roots. Keep all image-1 proportions and its compact broad body. Back of ears cream, NO pink visible from rear. Add ONE small white fluffy circular tail CENTERED EXACTLY on the symmetry axis of lower back at 65% down from ear roots to soles; use a few short irregular deep brown fur strokes along its perimeter like original image 2, no flower, cog or spiky sun. Tail diameter about 20% body width. No face anywhere, no seams. Colors flat cream #FFF1C1 and thin deep brown outline matching image 1, absolute white background, no shading, gradients, texture, ground, shadow, props or text. One character fully visible with unclipped ears and soles, square 1024 composition, 85% character height. The source back frame must not cause a head bulge or waist: image 1 is the silhouette authority.
-Candidate 2: prioritize matching ear roots, arm height and widest belly to image 1 exactly. Tail has sparse hand-drawn fur dashes.
-```
-
-### back_3
-
-附图：`views/candidates/round2/front_4.png`、`refs/back_full.png`。
-
-生成 basename：`exec-f847ea0c-12cc-4432-856b-5d3ca700a42a.png`。
-
-```text
-Use case: identity-preserve. Image 1 selected ROUND TWO FRONT T-pose is the EXACT geometry lock. Image 2 original Usagi back animation is tail texture and placement evidence. Produce ONE BACK orthographic T-pose of image 1, as a true 180-degree turn. Copy image 1 outer contour precisely: ONE continuous round pear body, no separate head, NO WAIST, lower belly widest below arm roots, tiny rounded feet, same slender ears and same ear length/spacing, short horizontal arms at about 57% down body below ear roots. Keep all image-1 proportions and its compact broad body. Back of ears cream, NO pink visible from rear. Add ONE small white fluffy circular tail CENTERED EXACTLY on the symmetry axis of lower back at 65% down from ear roots to soles; use a few short irregular deep brown fur strokes along its perimeter like original image 2, no flower, cog or spiky sun. Tail diameter about 20% body width. No face anywhere, no seams. Colors flat cream #FFF1C1 and thin deep brown outline matching image 1, absolute white background, no shading, gradients, texture, ground, shadow, props or text. One character fully visible with unclipped ears and soles, square 1024 composition, 85% character height. The source back frame must not cause a head bulge or waist: image 1 is the silhouette authority.
-Candidate 3: prioritize precise front-back contour consistency and small centered white tail; smooth continuous outward curve below ear roots.
+Use case: precise-object-edit / identity-preserve. Image 1 is EDIT TARGET: approved round2 Usagi BACK orthographic faceless T-pose. Image 2 is revised front and is the exact guide for new broader dome. Image3 original animation is supporting identity reference only. Change ONLY image1's top cap to match image2 broad shallow rounded head crown, fuller upper corners, almost flat gently arced crown between ear roots, not narrow egg. Preserve the seamless single mass with no waist, lower belly remains widest. Keep ALL lower-body shape and levels unchanged from image1: horizontal short arms at y655, maximum lower belly y706, center white tail at x512 y706, same little feet and soles y946 at 1024 scale. Ear tips y77 and crown y344 unchanged. Back ears remain cream with NO pink interior. Same ear shape and spacing as image1, don't copy front pink ears. Keep tail round white with sparse dark-brown broken fur strokes, don't lower, enlarge or move tail. Keep original cream, brown outline thickness, no facial features, plain white background, no shading, text or guides. Output one full-body square BACK image, same framing. Only crown contour changes, not torso, ears or limbs.
 ```
 
 ### left_1
 
-附图：`views/candidates/round2/front_4.png`、`refs/side.png`、`refs/back_full.png`。
+附图：`views/candidates/round2_final/left.png`、`views/candidates/round3/front_4.png`、`refs/side.png`。
 
-生成 basename：`exec-e30d7976-b43f-41dd-bb6a-8da8abf8bed1.png`。
-
-```text
-Use case: identity-preserve. Image 1 is selected ROUND TWO FRONT T-pose and EXACT vertical proportion, cream color and thin brown line lock. Image 2 is the ORIGINAL Usagi side animation, image 3 original back for white fur tail. Produce ONE TRUE ORTHOGRAPHIC SIDE image, rotate front character 90 degrees. CRITICAL: ONE continuous compact pear/egg mass, absolutely NO neck or waist or two stacked spheres. Body front-back depth 85% of FRONT body width, lower half fullest, body height same as image 1. Back contour almost straight from upper back into lower back; FRONT BELLY substantially more convex and fuller, so direction is immediately clear even without facial features. Narrow flat ear blades seen edge-on, overlapping ears with only a fine second edge, same full ear height as image 1, lean slightly TOWARD facing direction, a very thin pink inner rim on FRONT edge. Tiny round foot peeks out toward FRONT at base. T-pose arms remain horizontally out toward camera; seen end-on as ONE SMALL oval centered at 57% down body from ear roots to soles, NOT a forearm pointing in screen direction. Add a small WHITE furry round tail protruding modestly from BACK at 65% down BODY (ear roots to soles), well above feet, diameter 20% front body width, sparse irregular brown fur dashes. Do not put tail at ankle or foot. Completely remove ALL eyes, nose, mouth, blush, brows, dots, protruding muzzle; smooth blank cream face. Thin chocolate brown outline matches image 1, flat solid #FFF1C1 and pale pink, pure white background, no lighting, shadow, shading, grain, gradient, objects, text. Full body and ear tips uncut, 85% square 1024 canvas height.
-LEFT view: camera at character LEFT hand, FACE SCREEN RIGHT, back and tail SCREEN LEFT. Belly bulges to RIGHT, back LEFT flatter, ear leans RIGHT, tiny foot extends RIGHT.
-Candidate 1: preserve compact silhouette, single pear side profile.
-```
-
-### left_2
-
-附图：`views/candidates/round2/front_4.png`、`refs/side.png`、`refs/back_full.png`。
-
-生成 basename：`exec-d513c0aa-a44c-4492-b0d9-9cd0e3e92291.png`。
+生成 basename：`exec-12c12420-07c2-447c-80e6-bc7c6bdf1a39.png`。
 
 ```text
-Use case: identity-preserve. Image 1 is selected ROUND TWO FRONT T-pose and EXACT vertical proportion, cream color and thin brown line lock. Image 2 is the ORIGINAL Usagi side animation, image 3 original back for white fur tail. Produce ONE TRUE ORTHOGRAPHIC SIDE image, rotate front character 90 degrees. CRITICAL: ONE continuous compact pear/egg mass, absolutely NO neck or waist or two stacked spheres. Body front-back depth 85% of FRONT body width, lower half fullest, body height same as image 1. Back contour almost straight from upper back into lower back; FRONT BELLY substantially more convex and fuller, so direction is immediately clear even without facial features. Narrow flat ear blades seen edge-on, overlapping ears with only a fine second edge, same full ear height as image 1, lean slightly TOWARD facing direction, a very thin pink inner rim on FRONT edge. Tiny round foot peeks out toward FRONT at base. T-pose arms remain horizontally out toward camera; seen end-on as ONE SMALL oval centered at 57% down body from ear roots to soles, NOT a forearm pointing in screen direction. Add a small WHITE furry round tail protruding modestly from BACK at 65% down BODY (ear roots to soles), well above feet, diameter 20% front body width, sparse irregular brown fur dashes. Do not put tail at ankle or foot. Completely remove ALL eyes, nose, mouth, blush, brows, dots, protruding muzzle; smooth blank cream face. Thin chocolate brown outline matches image 1, flat solid #FFF1C1 and pale pink, pure white background, no lighting, shadow, shading, grain, gradient, objects, text. Full body and ear tips uncut, 85% square 1024 canvas height.
-LEFT view: camera at character LEFT hand, FACE SCREEN RIGHT, back and tail SCREEN LEFT. Belly bulges to RIGHT, back LEFT flatter, ear leans RIGHT, tiny foot extends RIGHT.
-Candidate 2: tail center exactly 65% down BODY below ear roots, not 65% down entire including ears; vertical back on LEFT and fuller belly on RIGHT. Ear blade very thin.
-```
-
-### left_3
-
-附图：`views/candidates/round2/front_4.png`、`refs/side.png`、`refs/back_full.png`。
-
-生成 basename：`exec-502786a9-6681-4eeb-8d9e-2535a1c0d318.png`。
-
-```text
-Use case: identity-preserve. Image 1 is selected ROUND TWO FRONT T-pose and EXACT vertical proportion, cream color and thin brown line lock. Image 2 is the ORIGINAL Usagi side animation, image 3 original back for white fur tail. Produce ONE TRUE ORTHOGRAPHIC SIDE image, rotate front character 90 degrees. CRITICAL: ONE continuous compact pear/egg mass, absolutely NO neck or waist or two stacked spheres. Body front-back depth 85% of FRONT body width, lower half fullest, body height same as image 1. Back contour almost straight from upper back into lower back; FRONT BELLY substantially more convex and fuller, so direction is immediately clear even without facial features. Narrow flat ear blades seen edge-on, overlapping ears with only a fine second edge, same full ear height as image 1, lean slightly TOWARD facing direction, a very thin pink inner rim on FRONT edge. Tiny round foot peeks out toward FRONT at base. T-pose arms remain horizontally out toward camera; seen end-on as ONE SMALL oval centered at 57% down body from ear roots to soles, NOT a forearm pointing in screen direction. Add a small WHITE furry round tail protruding modestly from BACK at 65% down BODY (ear roots to soles), well above feet, diameter 20% front body width, sparse irregular brown fur dashes. Do not put tail at ankle or foot. Completely remove ALL eyes, nose, mouth, blush, brows, dots, protruding muzzle; smooth blank cream face. Thin chocolate brown outline matches image 1, flat solid #FFF1C1 and pale pink, pure white background, no lighting, shadow, shading, grain, gradient, objects, text. Full body and ear tips uncut, 85% square 1024 canvas height.
-LEFT view: camera at character LEFT hand, FACE SCREEN RIGHT, back and tail SCREEN LEFT. Belly bulges to RIGHT, back LEFT flatter, ear leans RIGHT, tiny foot extends RIGHT.
-Candidate 3: emphasize visibly asymmetric belly-forward profile, no snowman indentation. Match image 1's arm-root and ear-root levels precisely.
-```
-
-### back_4
-
-附图：`views/candidates/round2/back_2.png`、`views/candidates/round2/front_4.png`、`refs/back_full.png`。
-
-生成 basename：`exec-fe5c0da3-30e6-4aa3-9500-001d8e75c974.png`。
-
-```text
-Use case: precise-object-edit. Edit image 1, the faceless BACK T-pose, using image 2 front as geometry lock and image 3 original animation tail reference. Change ONLY tail position: move the exact same centered white furry circular tail UP so tail center is at 65% down from EAR ROOTS to SOLES, about 8% of body height higher than image 1. Keep tail centered on body symmetry axis, same small size, sparse original brown fur dashes. Keep every other silhouette, ear, arm, foot, cream color and contour pixel geometry consistent with image 1. No face, no pink on rear ears, no other edits. Pure white background, flat unshaded 2D, square composition.
-```
-
-### left_4
-
-附图：`views/candidates/round2/left_3.png`、`views/candidates/round2/front_4.png`、`refs/side.png`。
-
-生成 basename：`exec-935c9985-9dd0-4790-a8ff-3f74dbcf8aee.png`。
-
-```text
-Use case: identity-preserve. Edit IMAGE 1 LEFT SIDE T-pose, supported by image 2 selected FRONT proportions and image 3 original Usagi side. Keep exact image 1 asymmetry: flatter back SCREEN LEFT, rounded belly SCREEN RIGHT, tiny foot toward RIGHT, skinny ear blade leaning RIGHT with pink rim on RIGHT edge, small end-on oval arm, white tail SCREEN LEFT at lower back. Change ONLY: broaden front-back body thickness about 15% to reach 85% of image 2 frontal BODY width, while keeping ear-root-to-sole height unchanged. Preserve one smooth continuous compact pear shape, no neck or waist. Tail center 65% down body from ear roots to soles, arm center 57% down. Keep ear height and narrow edge-on width, same tiny foot, same small tail size and sparse fur dashes. Flat cream #FFF1C1 and thin dark brown stroke, plain cream face no features. Pure white background, no shadows, gradients, textures or objects, full body uncut, 1024 square.
+Use case: precise-object-edit / identity-preserve. Image1 is the EDIT TARGET: approved round2 LEFT orthographic Usagi profile FACING RIGHT. Image2 revised front guides broad head dome, image3 original animation guides naturally rounded back. Make ONLY TWO contour corrections to image1: (1) replace its cut-flat VERTICAL LEFT BACK EDGE with one smooth outward-convex rounded arc flowing from crown through back into rump; back a little flatter than full right belly but visibly curved, absolutely no long ruler-straight segment. Keep maximum side body thickness about 80-85% of front body width, so don't make a big new bulge. Curve back mostly by bringing upper/lower back slightly INWARD while the middle stays near its original x position. Guide at 1024: back near x350 at y450, x322 at y550, x310 at y665, x322 at y780, rounding to x375 y860. (2) slightly broaden the very top cap below the unchanged ears into a full shallow round dome matching image2, not pointed egg. Keep one seamless head/body mass without neck or waist. LOCK everything else from image1: facing right; thin narrow slightly forward-leaning ears with pink sliver; ear tips y77, crown y347; horizontal arm seen as same small oval at y652; widest-body region ~y711; white fuzzy tail on LEFT BACK at y731, not near foot; tiny front-facing foot and sole y946; original right belly curve, original body height, cream fill and fine brown outline, plain faceless surface. Tail stays attached to curved back, same size and height. White background, no shadow, text or guides, no eyes/nose/mouth/blush. One square full-body LEFT view, no sheet.
 ```
 
 ### right_1
 
-附图：`views/candidates/round2/front_4.png`、`refs/side_opposite.png`、`refs/back_full.png`、`views/candidates/round2/left_4.png`。
+附图：`views/candidates/round2_final/right.png`、`views/candidates/round3/left_1.png`、`views/candidates/round3/front_4.png`、`refs/side_opposite.png`。
 
-生成 basename：`exec-f983f0cd-d81a-4a87-a5db-70389e8b8bd3.png`。
+生成 basename：`exec-3b98baf2-bcb2-4b78-b40d-04f5f3fa5c16.png`。
 
 ```text
-Use case: identity-preserve. Image 1 is selected ROUND TWO FRONT T-pose and EXACT vertical proportion, cream color and thin brown line lock. Image 2 is the ORIGINAL Usagi side animation, image 3 original back for white fur tail. Produce ONE TRUE ORTHOGRAPHIC SIDE image, rotate front character 90 degrees. CRITICAL: ONE continuous compact pear/egg mass, absolutely NO neck or waist or two stacked spheres. Body front-back depth 85% of FRONT body width, lower half fullest, body height same as image 1. Back contour almost straight from upper back into lower back; FRONT BELLY substantially more convex and fuller, so direction is immediately clear even without facial features. Narrow flat ear blades seen edge-on, overlapping ears with only a fine second edge, same full ear height as image 1, lean slightly TOWARD facing direction, a very thin pink inner rim on FRONT edge. Tiny round foot peeks out toward FRONT at base. T-pose arms remain horizontally out toward camera; seen end-on as ONE SMALL oval centered at 57% down body from ear roots to soles, NOT a forearm pointing in screen direction. Add a small WHITE furry round tail protruding modestly from BACK at 65% down BODY (ear roots to soles), well above feet, diameter 20% front body width, sparse irregular brown fur dashes. Do not put tail at ankle or foot. Completely remove ALL eyes, nose, mouth, blush, brows, dots, protruding muzzle; smooth blank cream face. Thin chocolate brown outline matches image 1, flat solid #FFF1C1 and pale pink, pure white background, no lighting, shadow, shading, grain, gradient, objects, text. Full body and ear tips uncut, 85% square 1024 canvas height.
-RIGHT view: camera at character RIGHT hand, FACE SCREEN LEFT, back and tail SCREEN RIGHT. Belly bulges LEFT, back RIGHT flatter, ear leans LEFT with pink rim LEFT, tiny foot extends LEFT. Image 4 selected LEFT view locks depth, ear blade thickness, arm and tail heights: RIGHT must be its mirror-consistent opposite side. Do not leave ear leaning the old direction when reversing view.
-Candidate 1: prioritize mirror-consistent geometry to selected left view, same single pear shape.
+Use case: precise-object-edit / identity-preserve. Image1 is EDIT TARGET: round2 RIGHT profile Usagi FACING LEFT. Image2 is corrected opposite-side LEFT profile, supporting rounded-back curvature only; image3 corrected front is broad dome reference, image4 original animation confirms rounded back. Make only TWO corrections to image1: replace its cut-flat vertical RIGHT back with a softly outward-curved back and rump, and broaden very top crown into shallow rounded dome. The right back must follow a continuous convex ARC from upper head to rounded lower rump, visibly curved at all levels, slightly flatter than left-side belly. Preserve side thickness about 80-85% of front body width. Don't inflate whole body, don't introduce a waist, stacked balls or separate head. Keep everything else from image1 unchanged: very thin flat forward-leaning ears with pink edge; ear tips y77 and crown y342 at 1024; left-facing round belly and tiny front foot; small oval arm endpoint at y649; largest lower-body level y708; same white fuzzy tail at RIGHT BACK centered y728, same size and sparse brown fur strokes, attached to back not foot; sole y946. Preserve original ear lengths, body height, low short arm position, foot size, cream color, thin dark brown outline, plain faceless surface, pure white background, no shadow, no text or guides. Image2 is NOT the output angle: output must be facing LEFT with tail on RIGHT and ears leaning LEFT, matching image1. One square full-body RIGHT orthographic view.
+```
+
+### left_2
+
+附图：`views/candidates/round3/left_1.png`、`views/candidates/round2_final/left.png`、`views/candidates/round3/front_4.png`、`refs/side.png`。
+
+生成 basename：`exec-0eb4506a-6e90-4785-ad4f-9bb41e14632e.png`。
+
+```text
+Precise-object-edit. Image1 corrected LEFT profile is target. Keep its rounded back and broad shallow crown; make one tiny correction to bring its side depth closer to original image2: reduce body thickness by ONLY 4 percent, by moving curved LEFT back inward a little. Image3 selected front provides same-character width reference, image4 original provides contour reference. Output still FACING RIGHT, tail LEFT. Maintain a continuous outward-convex arc along entire back; never restore image2's cut-flat vertical back. Keep rounded rump. At the middle body, ear-root-to-sole 50-65%, side depth should be about 0.83 times the FRONT body width, excluding arms and tail. Back maximum outward curve should occur low, near widest-belly level, not at upper head. Preserve image1's exact front belly contour, single no-waist body, crown height, ear shape, thinness and pink sliver, arm oval size and vertical level, tail size and vertical level, forward tiny foot, feet and total height. Same cream, fine brown contour, white background, no shading or shadows, no facial features or text. Don't change angle or framing, only the small back-curve adjustment. One square image.
+```
+
+### left_3
+
+附图：`views/candidates/round2_final/left.png`、`views/candidates/round3/right_1.png`、`views/candidates/round3/front_4.png`、`refs/side.png`。
+
+生成 basename：`exec-ee2ab773-6217-4999-8297-b7add872ecbb.png`。
+
+```text
+Edit image1 (round2 LEFT profile, facing RIGHT) to correct ONLY its back and crown. Original cartoon reference is image4; revised opposite-side profile image2 is for matching body THICKNESS and curved-back shape; selected front image3 is for matching broad crown. Keep original image1 maximum side thickness unchanged, about 82% of front body width; do not add volume outside the original straight-back x position. Instead sculpt a gently rounded convex LEFT back by moving the upper back and lower rump slightly inward while preserving the middle-back position. It must be visibly CURVED from crown to rump, no long vertical flat edge. Keep generous lower belly toward RIGHT and a slightly flatter but round back toward LEFT, one seamless plump mass without waist. Top head should be a BROAD shallow round dome, not a tapered egg. Preserve image1 ears exactly: thin overlapping forward-leaning strips, pink inner-edge sliver, same tip and root heights. Keep arm oval level, white tail size and level, lower belly widest level and forward tiny foot and sole level unchanged. Tail stays at LEFT back, original height, sparse brown fur marks. Match cream and fine dark-brown outline of image1, same faceless surface, pure white, no shadow. Same pose/view/framing. ONE square LEFT orthographic view facing RIGHT, not the direction of image2. No labels, guides, eyes, mouth, nose or blush.
+```
+
+### left_4
+
+附图：`views/candidates/round3/left_1.png`、`views/candidates/round3/front_4.png`、`refs/side.png`。
+
+生成 basename：`exec-3db424b8-703e-4ba5-8f6c-dce9ff893037.png`。
+
+```text
+Edit image1 only: make its LEFT back curve less bulging. Move the whole LEFT back contour 30 pixels RIGHT at the body's middle, smoothly blending to the same crown at top and same bottom at feet. This removes a thin crescent of yellow from the back, REPLACING it with white background, and translates attached white tail slightly RIGHT to stay attached at exactly the same height. Do not move or change the RIGHT belly contour, foot, ear, arm oval, crown height, tail height, or any other part. The back must remain visibly rounded, with a long gentle OUTWARD-CONVEX ARC, no straight vertical segment and no notch at tail. Side thickness after edit should be about 82-85% of image2 front body's width, exclude arms and tail. Image3 original is rounded-back reference. Preserve broad shallow dome, one continuous faceless body with NO waist, thin ear strip with pink interior sliver, same brown line and cream fill, pure white background, no shadow. One full-body square LEFT profile facing RIGHT, tail on LEFT. Absolutely no facial features, labels or guides.
 ```
 
 ### right_2
 
-附图：`views/candidates/round2/front_4.png`、`refs/side_opposite.png`、`refs/back_full.png`、`views/candidates/round2/left_4.png`。
+附图：`views/candidates/round2_final/right.png`、`views/candidates/round3/left_2.png`、`views/candidates/round3/front_4.png`、`refs/side_opposite.png`。
 
-生成 basename：`exec-18af2a1f-6268-4299-86b4-7df4228b2bf1.png`。
+生成 basename：`exec-e46079a1-d937-43f7-a07c-8e8d2a8a424d.png`。
 
 ```text
-Use case: identity-preserve. Image 1 is selected ROUND TWO FRONT T-pose and EXACT vertical proportion, cream color and thin brown line lock. Image 2 is the ORIGINAL Usagi side animation, image 3 original back for white fur tail. Produce ONE TRUE ORTHOGRAPHIC SIDE image, rotate front character 90 degrees. CRITICAL: ONE continuous compact pear/egg mass, absolutely NO neck or waist or two stacked spheres. Body front-back depth 85% of FRONT body width, lower half fullest, body height same as image 1. Back contour almost straight from upper back into lower back; FRONT BELLY substantially more convex and fuller, so direction is immediately clear even without facial features. Narrow flat ear blades seen edge-on, overlapping ears with only a fine second edge, same full ear height as image 1, lean slightly TOWARD facing direction, a very thin pink inner rim on FRONT edge. Tiny round foot peeks out toward FRONT at base. T-pose arms remain horizontally out toward camera; seen end-on as ONE SMALL oval centered at 57% down body from ear roots to soles, NOT a forearm pointing in screen direction. Add a small WHITE furry round tail protruding modestly from BACK at 65% down BODY (ear roots to soles), well above feet, diameter 20% front body width, sparse irregular brown fur dashes. Do not put tail at ankle or foot. Completely remove ALL eyes, nose, mouth, blush, brows, dots, protruding muzzle; smooth blank cream face. Thin chocolate brown outline matches image 1, flat solid #FFF1C1 and pale pink, pure white background, no lighting, shadow, shading, grain, gradient, objects, text. Full body and ear tips uncut, 85% square 1024 canvas height.
-RIGHT view: camera at character RIGHT hand, FACE SCREEN LEFT, back and tail SCREEN RIGHT. Belly bulges LEFT, back RIGHT flatter, ear leans LEFT with pink rim LEFT, tiny foot extends LEFT. Image 4 selected LEFT view locks depth, ear blade thickness, arm and tail heights: RIGHT must be its mirror-consistent opposite side. Do not leave ear leaning the old direction when reversing view.
-Candidate 2: keep small white tail at 65% body height on RIGHT, with sparse fur strokes. Compact round body, no waist.
+Precise-object-edit, same Usagi model sheet. Image1 round2 RIGHT profile FACING LEFT is edit target. Image2 revised LEFT is the exact opposite-side shape reference, image3 front is the crown guide, image4 original is style/back-curve reference. Correct ONLY the straight right BACK edge into a rounded continuous convex arc similar to image2, and broaden the crown into a low shallow dome. Preserve original image1 widths and vertical landmark levels as closely as possible. Side body thickness excluding tail around 82-85% of front belly width, no extra bulge, keep a slightly flatter but curved BACK and fuller BELLY. Lower rump rounds smoothly to sole, no angular cut, no straight back segment. ONE continuous head-body with no waist. Keep the ear-tip to foot height, thin forward-slanted ear blade with pink edge, short arm viewed as a small oval at original mid-body height, lower-body widest level, white tail on RIGHT at same lower-back height, tiny forward foot at lower LEFT, original cream and dark-brown line. Keep all facial features absent, pure white, no shadows, text or guides. Full body RIGHT orthographic square, facing LEFT with tail RIGHT. No other changes.
+```
+
+### back_2
+
+附图：`views/candidates/round2_final/back.png`、`views/candidates/round3/front_4.png`、`refs/back_full.png`。
+
+生成 basename：`exec-fb8e5b24-5d06-46df-942f-5d6a684dddda.png`。
+
+```text
+Precise-object-edit: image1 is approved BACK Usagi T-pose and primary target; image2 is revised FRONT and its broad top cap is the shape reference; image3 original confirms identity. Produce an independent candidate that changes ONLY the UPPER CROWN of image1 into the broader shallow dome of image2, nearly flat gently arced between ears, with full upper corners instead of narrow egg. Seamless one-piece head/body; outline below crown keeps widening continuously to original widest lower belly, no bulging separate head or waist. Preserve all of image1 BELOW ARMS exactly: arm height, short round hand ends, maximum width, widest level, centered white fur tail same diameter and center, tiny feet, ear-tip to sole span. Keep ears as BACK surfaces, cream only, no pink. Maintain same fine brown outlines, cream fill, plain white background, no texture/shading/shadow, no facial marks, no labels or guides. One full-body square orthographic BACK view, same framing. Do not alter tail or limbs.
+```
+
+### back_3
+
+附图：`views/candidates/round2_final/back.png`、`views/candidates/round3/front_4.png`、`refs/back_full.png`。
+
+生成 basename：`exec-006d6d46-f1b6-48a9-8734-72a23b5f88a1.png`。
+
+```text
+Make a conservative alternate BACK candidate by editing image1. Image2 selected FRONT locks the revised broader dome; image3 original locks character identity. Only broaden the TOP cap below ear roots by making the upper shoulders fuller and crown shallow and round. Keep the rest of image1, especially body from mid-head downward, completely unchanged. Avoid any upper-head bulge larger than lower belly: outer contour gently widens continuously down to original low widest point; no waist or stacked spheres. Preserve every vertical landmark: ear tips, crown, low horizontal short arms, lower-belly widest level, centered white fluffy tail height, tiny feet and sole line. Back ear surfaces are cream, no pink. Do not change line thickness, tail fur marks, ear lengths/spacing, fill colors, white background, scale or framing. No facial features, shading, shadows, labels or guides. Full body in frame, one square orthographic BACK view.
 ```
 
 ### right_3
 
-附图：`views/candidates/round2/front_4.png`、`refs/side_opposite.png`、`refs/back_full.png`、`views/candidates/round2/left_4.png`。
+附图：`views/candidates/round2_final/right.png`、`views/candidates/round3/left_2.png`、`views/candidates/round3/front_4.png`、`refs/side_opposite.png`。
 
-生成 basename：`exec-aacbb239-280d-4cf4-ba66-0a4b187ab02f.png`。
-
-```text
-Use case: identity-preserve. Image 1 is selected ROUND TWO FRONT T-pose and EXACT vertical proportion, cream color and thin brown line lock. Image 2 is the ORIGINAL Usagi side animation, image 3 original back for white fur tail. Produce ONE TRUE ORTHOGRAPHIC SIDE image, rotate front character 90 degrees. CRITICAL: ONE continuous compact pear/egg mass, absolutely NO neck or waist or two stacked spheres. Body front-back depth 85% of FRONT body width, lower half fullest, body height same as image 1. Back contour almost straight from upper back into lower back; FRONT BELLY substantially more convex and fuller, so direction is immediately clear even without facial features. Narrow flat ear blades seen edge-on, overlapping ears with only a fine second edge, same full ear height as image 1, lean slightly TOWARD facing direction, a very thin pink inner rim on FRONT edge. Tiny round foot peeks out toward FRONT at base. T-pose arms remain horizontally out toward camera; seen end-on as ONE SMALL oval centered at 57% down body from ear roots to soles, NOT a forearm pointing in screen direction. Add a small WHITE furry round tail protruding modestly from BACK at 65% down BODY (ear roots to soles), well above feet, diameter 20% front body width, sparse irregular brown fur dashes. Do not put tail at ankle or foot. Completely remove ALL eyes, nose, mouth, blush, brows, dots, protruding muzzle; smooth blank cream face. Thin chocolate brown outline matches image 1, flat solid #FFF1C1 and pale pink, pure white background, no lighting, shadow, shading, grain, gradient, objects, text. Full body and ear tips uncut, 85% square 1024 canvas height.
-RIGHT view: camera at character RIGHT hand, FACE SCREEN LEFT, back and tail SCREEN RIGHT. Belly bulges LEFT, back RIGHT flatter, ear leans LEFT with pink rim LEFT, tiny foot extends LEFT. Image 4 selected LEFT view locks depth, ear blade thickness, arm and tail heights: RIGHT must be its mirror-consistent opposite side. Do not leave ear leaning the old direction when reversing view.
-Candidate 3: match image 4 lower-belly width, head-top height, arm-center y and foot size exactly; reverse ear lean and rim as well as tail.
-```
-
-### left_5
-
-附图：`views/candidates/round2/left_4.png`、`views/candidates/round2/front_4.png`、`refs/side.png`。
-
-生成 basename：`exec-0033ae90-d462-43a4-98af-a6f35a5d8044.png`。
+生成 basename：`exec-978f809e-921b-4a29-9cde-2a845f5a7745.png`。
 
 ```text
-Use case: precise-object-edit. Image 1 is LEFT SIDE T-pose facing RIGHT. Image 2 is FRONT proportion lock, image 3 original source. Make ONE revised LEFT SIDE image. The current side body is TOO THIN. Broaden the whole cream body front-to-back from about 510px to about 610px in the same 1254px square composition: back edge near x=320 and fullest front belly near x=930. Keep ear-tip y=65, ear-root y=410, foot-bottom y=1170, arm-center y=810. Thus width increases by 20% while vertical coordinates stay fixed. Keep back almost vertical at screen LEFT, round front belly bulging screen RIGHT, single continuous egg-shaped body without any waist, NOT two balls. Body widest about y=875. Tail is a small white fur bump on LEFT back center y=900 with a few short brown dashes; foot at bottom front RIGHT. Narrow overlapping edge-on ear blades lean RIGHT with pink thin rim on RIGHT; preserve their height and width (do NOT widen ears), same small oval arm seen end-on. Match exact cream #FFF1C1 and original thin deep brown outline, no eyes nose mouth blush or other face marks. Flat color no texture or lighting, pure white background, no ground, text, objects or shadow. Full character uncut. Main change is visibly wider deeper side body, not bigger overall character.
-```
-
-### right_4
-
-附图：`views/candidates/round2/front_4.png`、`views/candidates/round2/left_5.png`、`refs/side_opposite.png`。
-
-生成 basename：`exec-47dd1c5b-8066-4298-825b-a991f9d53c3f.png`。
-
-```text
-Use case: identity-preserve. Generate ONE RIGHT SIDE orthographic T-pose of exact faceless Usagi in the attached references. Image 1 is selected FRONT lock, image 2 is selected LEFT SIDE geometry authority, image 3 original opposite-side animation identity evidence. The result must have the SAME DEPTH, vertical proportions, body width, ear height, arm height, tail height and foot size as image 2, viewed from opposite hand. It is the mirror-consistent turnaround of image 2: face SCREEN LEFT, belly bulges LEFT, back is almost straight SCREEN RIGHT, tiny foot at front LEFT, small white furry tail on RIGHT back at 65% below ear roots. Body is one single compact pear/egg with no neck or waist. Mirror both narrow edge-on ear blades: ear leans LEFT, thin pink rim on LEFT edge, small second edge on RIGHT, not broad frontal ears. Near arm stays a small end-on oval at same y as image 2. Keep body depth about 85% frontal body width; match image 2 broadened depth, do not revert to older narrow side. Exact flat cream #FFF1C1, original thin deep chocolate contour and pale pink, no eye/nose/mouth/brow/blush, no muzzle. Pure white background, no shadows, gradient, texture, props or text, full ear tips and feet visible, centered square image, character about 85% high.
-```
-
-### left_6
-
-附图：`views/candidates/round2/left_5.png`、`views/candidates/round2/front_4.png`、`refs/side.png`。
-
-生成 basename：`exec-88749258-bddc-4910-bc48-a817b5258085.png`。
-
-```text
-Use case: precise-object-edit. Image 1 is the selected LEFT SIDE faceless Usagi T-pose, facing SCREEN RIGHT, with back and tail SCREEN LEFT. Image 2 front and image 3 original source support identity. Make ONE precise correction to image 1: the SIDE EARS are currently TOO THICK. Reduce the combined overlapping ear-blade WIDTH to only about 35 pixels in a 1254-square composition, with the SAME ear-tip height y=65 and ear-root height y=410. Front view has broad pink surfaces, but a true SIDE view shows only very thin upright blades like narrow ribbons, about one third the current image-1 ear thickness. Ear gently leans toward RIGHT, with only a hairline pink rim at RIGHT edge and one fine second rear edge. Keep the ear positions near image 1 center; do not enlarge head or shorten ear. Preserve image 1's ENTIRE BODY CONTOUR, depth, single pear shape without waist, flat back, forward belly, short foot, small end-on arm oval at y=800, and small WHITE fur tail at y=900 with brown fur dashes. This is an ear-thickness-only correction; retain all other identity geometry and colors. No face features of any kind, no eyes nose mouth blush. Match original thin deep brown outline, cream #FFF1C1, very thin pink inner rim, pure white background, no shadows, gradients, texture, text or props, full body uncut.
-```
-
-### right_5
-
-附图：`views/candidates/round2/right_4.png`、`views/candidates/round2/front_4.png`、`refs/side_opposite.png`。
-
-生成 basename：`exec-8824fb86-2739-4a97-bcc7-a94bcd193279.png`。
-
-```text
-Use case: precise-object-edit. Image 1 is the selected RIGHT SIDE faceless Usagi T-pose, facing SCREEN LEFT, with back and tail SCREEN RIGHT. Image 2 front and image 3 original source support identity. Make ONE precise correction to image 1: the SIDE EARS are currently TOO THICK. Reduce the combined overlapping ear-blade WIDTH to only about 35 pixels in a 1254-square composition, with the SAME ear-tip height y=65 and ear-root height y=410. Front view has broad pink surfaces, but a true SIDE view shows only very thin upright blades like narrow ribbons, about one third the current image-1 ear thickness. Ear gently leans toward LEFT, with only a hairline pink rim at LEFT edge and one fine second rear edge. Keep the ear positions near image 1 center; do not enlarge head or shorten ear. Preserve image 1's ENTIRE BODY CONTOUR, depth, single pear shape without waist, flat back, forward belly, short foot, small end-on arm oval at y=800, and small WHITE fur tail at y=900 with brown fur dashes. This is an ear-thickness-only correction; retain all other identity geometry and colors. No face features of any kind, no eyes nose mouth blush. Match original thin deep brown outline, cream #FFF1C1, very thin pink inner rim, pure white background, no shadows, gradients, texture, text or props, full body uncut.
+Conservative local edit of image1 RIGHT Usagi profile, FACING LEFT. References: image2 approved corrected opposite-side LEFT for rounded-back curvature, image3 selected front for broad shallow head dome, image4 original animation for identity. Change only two contours: round the right BACK smoothly outward from upper head through middle back and rump with NO long straight vertical part; broaden the crown very slightly into a low round dome. Keep side depth and every vertical landmark of image1: ear tips, crown, arm oval, widest lower-belly level, white tail center on right lower back, sole. Limit side depth to approx 82-85% of selected front body width; back arc slightly flatter than full left belly, no extra upper-body bulge, no neck or waist. Preserve thin forward-leaning ear strips and pink edge, tiny forward foot, tail size and sparse brown fur strokes, flat cream fill and fine dark-brown outline. Blank face, white background, no shadows, text, guides or new objects. Keep full-body framing. One square RIGHT orthographic image with tail RIGHT and face direction LEFT.
 ```
