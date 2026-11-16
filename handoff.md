@@ -33,11 +33,12 @@
 （软件生成，`ar lead handoff --write` 更新；只改"主导判断"一列；处理完的失败任务删掉那一行）
 
 公共目录：~/.config/agent-router
-任务表生成于：2026-11-16T11:06:21Z
+任务表生成于：2026-11-16T11:19:08Z
 
 | 记录名 | 状态 | 启动方式 | 接回命令 | 主导判断 |
 |---|---|---|---|---|
 | 013-合流换上Usagi并调校 | 排队中 | 托管 | `ar wait 013-合流换上Usagi并调校` |  |
+| 014-耳朵与尾巴色块边界平滑 | 排队中 | 托管 | `ar wait 014-耳朵与尾巴色块边界平滑` |  |
 | 001-Tripo建模操作指南 | 已停止 | — | `ar status 001-Tripo建模操作指南` |  |
 | 005-Usagi叫声切片 | 失败 | — | `ar status 005-Usagi叫声切片` |  |
 <!-- /ar:handoff:tasks -->
@@ -47,6 +48,7 @@
 1. **011 已合入**（合并提交 8cefaec）：第 2 次审查 pass；脚骨 TRS 与逆绑定矩阵已与输入一致（新测试覆盖），MASK 队列 0，线宽/腮红/嘴按参考图。主导随后自己微调 ω 嘴尾巴方向（1fe930a，从左弯底部垂下、末端右勾，照参考图），重出 usagi.vrm，pipeline/run_tests.sh 通过。遗留：耳朵内侧粉色边缘锯齿（010 身体贴图），013 后另开小任务。完成条件：已完成，无需操作（`ar status 011-五官贴片与表情` 为已合并）。
 2. **012 已合入**（16:5x，合并提交 185359f）：-dev 占位 dmg 127MB，打包冒烟 ok；图标从参考图正面裁出（主导看过，好）。遗留：`dist:win` 在本机失败——NSIS 的 makensis 是 x86_64，本机 arm64 没装 Rosetta（`Unknown system error -86`）；出正式包时主导先 `softwareupdate --install-rosetta --agree-to-license`（用户已授权装工具）再试，仍不行就交用户在 Windows 上跑 `npm --prefix app run dist:win`。EXE 资源编辑被关掉，exe/快捷方式可能是 Electron 默认图标，正式包时核对。
 3. **013 在跑**（托管，Codex，17:5x 派发）：`ar wait 013-合流换上Usagi并调校`。验收看冒烟截图（Usagi 入画、五官、耳朵甩动、表情互斥），主导 `npm --prefix app run dev` 实看。完成条件：013 accept。
+3b. **014 在跑**（托管，Codex，用户要求并行）：耳朵内侧粉色与尾巴白色色块边界沿曲线切网格变平滑，prep→rig→face 整条重出。`ar wait 014-耳朵与尾巴色块边界平滑`。验收看 `preview/ears_closeup_front.png`、`tail_closeup_back.png`、`expression_sheet.png`（嘴型须保持 1fe930a 的样子）；新测试要求边界环相邻段转角 <35°，看反向实验。**两者都合入后**：013 拷贝的 `assets/models/usagi.vrm` 是旧模型，主导 `cp assets/model/usagi.vrm assets/models/usagi.vrm` 提交，再跑全量验收。完成条件：014 accept 且 assets/models/usagi.vrm 与 assets/model/usagi.vrm 一致。
 4. 013 合入后：`ar verify --detach` 全量验收（上次通过后已合入 4+ 个任务；首次 Electron 下载约 20 分钟，012 已配 npmmirror 镜像）；再 `npm --prefix app run dist`（或让执行者跑）出正式 dmg/exe（不含 Seed-san）；主导自己装 dmg 试；然后请用户试用并填自己的 DeepSeek Key。完成条件：正式 dmg 在 app/release/，用户收到安装说明。
 5. 收尾：Windows 实机安装与 Mate Engine 导入需要用户在 Windows 电脑上验证（Mate Engine wiki 第三方镜像称支持 VRM 0.x/1.x，未官方确认）。完成条件：把待用户验证清单交给用户。
 
