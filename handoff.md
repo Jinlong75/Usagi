@@ -1,10 +1,10 @@
 # 接续工作入口
 
-更新时间：2026-11-16 13:25，主导 Claude Code（Opus 5.5）。本文件覆盖改写，按需写全但不无限增加：150 行以内最好，最多 250 行；历史移到 docs/autonomy/ 下的归档文件，不追加流水账。带 `ar:handoff` 标记的段落由 `ar lead handoff --write` 生成，其余都由主导写，软件不动；写完运行 `ar lead handoff check`。
+更新时间：2026-11-16 16:30，主导 Claude Code（Opus 5.5）。本文件覆盖改写，按需写全但不无限增加：150 行以内最好，最多 250 行；历史移到 docs/autonomy/ 下的归档文件，不追加流水账。带 `ar:handoff` 标记的段落由 `ar lead handoff --write` 生成，其余都由主导写，软件不动；写完运行 `ar lead handoff check`。
 
 ## 一句话
 
-接回 006（第 3 次，等门禁）与 009（第 2 次）验收；006+007 合入后派 008；009 合入后写 010 骨骼权重弹簧 VRM、011 五官贴片表情；最后换模型、调动作、打包。
+接回 011（五官表情）与 012（安装包）验收；两者合入后派 013 合流（换上 Usagi 调校），再跑全量验收、出正式 dmg、请用户试用。
 
 ## 开工必做
 
@@ -33,23 +33,23 @@
 （软件生成，`ar lead handoff --write` 更新；只改"主导判断"一列；处理完的失败任务删掉那一行）
 
 公共目录：~/.config/agent-router
-任务表生成于：2026-11-16T06:23:02Z
+任务表生成于：2026-11-16T09:28:02Z
 
 | 记录名 | 状态 | 启动方式 | 接回命令 | 主导判断 |
 |---|---|---|---|---|
-| 006-行为状态机与互动 | 运行中 | 托管 | `ar wait 006-行为状态机与互动` |  |
-| 009-Usagi模型整备 | 运行中 | 托管 | `ar wait 009-Usagi模型整备` |  |
+| 012-安装包打包 | 排队中 | 托管 | `ar wait 012-安装包打包` |  |
+| 011-五官贴片与表情 | 排队中 | 托管 | `ar wait 011-五官贴片与表情` |  |
 | 001-Tripo建模操作指南 | 已停止 | — | `ar status 001-Tripo建模操作指南` |  |
 | 005-Usagi叫声切片 | 失败 | — | `ar status 005-Usagi叫声切片` |  |
 <!-- /ar:handoff:tasks -->
 
 ## 下一步
 
-1. **006-行为状态机与互动**（第 3 次尝试，执行者已提交 9b854b3，排门禁名额）：通过后看 attempts/3 的冒烟截图（shout/happy/stretch 顶部不能被裁），review show 逐条 confirm，accept（要 `--ack external:<摘要>`，摘要在最新 attempts/N/external-audit.json；先核对 non-concurrent 项）。这是第 3 次，再失败就主导自己接手。
-2. **009-Usagi模型整备**（第 2 次，--rebase 重试）：主导已修检查脚本（6bb54fb，merge_vertices）；要求底模保留腰线（--smooth-waist 默认 off）。通过后看 assets/model/preview/ 与 preview_landmarks_*.png，核对：正面朝 -Y、脸部干净、耳内粉色、尾巴白、关键点位置。完成条件：`ar accept 009-Usagi模型整备` 成功。
-3. 006 合入后派 008（`ar dispatch docs/specs/008-气泡聊天窗设置页接线.md --detach`，依赖 006/007）；派前 `ar spec impact` 复核受影响测试。
-4. 009 合入后写 010：基于 assets/model/usagi_base.glb + usagi_landmarks.json 建 VRM humanoid 骨骼（短手短脚 Q 版）、耳朵骨链（各 3～4 节）、尾巴骨、自动权重+修复、MToon 材质（平涂色 + 深棕描边 #4A2A1A）、耳朵 spring bone + 头/身碰撞球，VRM 插件导出 VRM 1.0 到 assets/models/usagi.vrm（桌宠程序按这个路径加载），出姿态预览。再写 011：脸部贴片（照 Material/tripo/usagi_3d_ref.png 与原作描眼、嘴、眉、腮红）+ UV 平移表情（blink/happy/angry/sad/surprised/aa/ih/ou/ee/oh）。完成条件：010、011 说明提交并 `ar dispatch <说明> --detach` 派出。
-5. 合流：换成 Usagi 模型后按 Q 版身材调动作幅度与取景；012 打包（electron-builder mac dmg arm64 + win nsis；本机下载 Electron 很慢，用镜像/缓存；审查 R5-1 冒烟首次下载无超时一并处理）。完成条件：门禁出 .dmg。
+1. **011-五官贴片与表情**（在跑，Codex）：门禁跑 `sh docs/specs/checks/011-check.sh`（主导维护，已用 Seed-san 验证插件属性路径）。验收看 `atlas_preview.png` 与 `preview_face/expression_sheet.png`：五官照 `Material/tripo/usagi_3d_ref.png` 正面与原作（黑椭圆眼带高光、额头两道上弯眉线、ω 嘴、粉腮红三斜线），位置落在原雕刻五官处、无串格；happy 阻止 blink。accept 时 `--ack external:<摘要>`（最新 attempts/N/external-audit.json，核对非 concurrent 项）。顺带看 010 留下的脸部正中淡竖线（左右接缝）在贴片后是否明显。完成条件：`ar accept 011-五官贴片与表情`。
+2. **012-安装包打包**（第 2 次，已补 allowed_paths：app/src/main/index.ts、app/src/settings/**）：门禁跑 `sh docs/specs/checks/012-check.sh`（dist:mac → 挂载 dmg 查资源 → 打包后 `--smoke` 要 `"ok":true`）。此时 usagi.vrm 还没进 assets/models，产物应是 `-dev` 占位包。看汇报：dist:win 在 mac 上是否成功、dmg/exe 大小、安装指南 `docs/guides/02-安装与使用.md`。完成条件：`ar accept 012-安装包打包`。
+3. 011、012 都合入后派 013：`ar dispatch docs/specs/013-合流换上Usagi并调校.md --detach`（先 `ar spec impact` 复核受影响测试）。验收看冒烟截图（Usagi 入画、五官、耳朵甩动、表情），主导 `npm --prefix app run dev` 实看。完成条件：013 accept。
+4. 013 合入后：`ar verify --detach` 全量验收（上次通过后已合入 4+ 个任务；首次 Electron 下载约 20 分钟，012 已配 npmmirror 镜像）；再 `npm --prefix app run dist`（或让执行者跑）出正式 dmg/exe（不含 Seed-san）；主导自己装 dmg 试；然后请用户试用并填自己的 DeepSeek Key。完成条件：正式 dmg 在 app/release/，用户收到安装说明。
+5. 收尾：Windows 实机安装与 Mate Engine 导入需要用户在 Windows 电脑上验证（Mate Engine wiki 第三方镜像称支持 VRM 0.x/1.x，未官方确认）。完成条件：把待用户验证清单交给用户。
 
 ## 授权与边界
 
@@ -64,6 +64,10 @@
 - **门禁不经过 shell**：verify 每条按空格拆开直接执行，`cd app && …` 会"0 秒假通过"，`&&`、`for`、管道都不能用。写成单条命令（`npm --prefix app test`）或主导维护的检查脚本（`sh docs/specs/checks/<编号>-check.sh`）。已反馈给 AgentRouter 开发会话。
 - type: chore 默认不开 worktree，在主工作区跑；两个这样的任务会被同时放进主工作区互相污染门禁（AgentRouter 缺陷 221/222，修复任务 958）。958 合入前：chore 说明里写 `worktree: true`（spec check 报"不认识的字段"可忽略，派发认它），或一次只派一个不开 worktree 的写任务。这类任务门禁被误判时不要 accept --force：主导手动跑验收命令确认，再 `ar lead pending seen` 写明原因。
 - 全量验收已配（project.json fullVerify），首次 11:59 通过（20 分钟，主要在下载 Electron）。合入时 accept 常要 `--ack external:<摘要>`：看 external-audit.json 里非 concurrent 的项，确认都不是本任务执行者在工作区外写的。
+- 已合入：002、003、004（第三轮四视图，用户没用）、005（主导手动验收）、006、007、008、009、010。模型产物：`assets/model/usagi_base.glb`（009）、`usagi_body.vrm`（010，VRM 1.0，弹簧 9 关节）、011 将出 `usagi.vrm`；桌宠默认加载 `assets/models/usagi.vrm`（013 负责拷贝）。
+- 检查脚本 `docs/specs/checks/0xx-check*.{sh,py}` 归主导维护；写新检查前先用 Seed-san 跑一遍验证 VRM 插件属性路径（插件模块 bl_ext.blender_org.vrm；需要插件时 Blender 不能带 --factory-startup）。
+- 带 `--rebase` 的 retry 只重跑门禁、不让执行者动手；要执行者改东西用普通 retry --note。
+- 审查常抓真问题（丢数据、弹簧末端、取景），逐条 confirm；小修主导可在 worktree 改后 `retry --regate`。
 - DeepSeek 当前模型 ID：deepseek-flash（默认）、deepseek-v4-pro；deepseek-v4-flash 是旧名。
 - 全局名额常被别的项目占满时，`ar next --dispatch` 不派；直接 `ar dispatch <说明> --detach` 能进队列。
 
