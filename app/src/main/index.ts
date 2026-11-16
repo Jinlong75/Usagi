@@ -5,6 +5,9 @@ import { tmpdir } from 'node:os';
 import { DEFAULT_CONFIG, normalizeConfig, readConfig, writeConfig } from './config';
 import { resolveModel } from './model';
 import { prepareMove, WindowMotion } from './motion';
+import { startTickLoop } from './timing';
+import { configureWindowsRendering } from './performance';
+import { FpsLog } from './fps';
 import { SoundLibrary } from './sounds';
 import { UiController } from './ipc/ui';
 import { AsyncKeyStore } from './ipc/keys';
@@ -21,6 +24,7 @@ import type { Gesture } from '../shared/gesture';
 import type { Config, Point, RenderResult, Size, MoveRequest, SmokeBehavior, SoundUse, Rect } from '../shared/types';
 
 const smoke = process.argv.includes('--smoke');
+configureWindowsRendering(app.commandLine);
 const root = resolve(__dirname, '../..');
 let win: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -34,7 +38,8 @@ let quitFlushed = false;
 let configPath = '';
 let modelPath = '';
 let modelAspect: number | undefined;
-let cursorTimer: ReturnType<typeof setInterval> | undefined;
+let stopCursor: (() => void) | undefined;
+let fpsLog: FpsLog | undefined;
 let moveSaveTimer: ReturnType<typeof setTimeout> | undefined;
 let gesture: Gesture | null = null;
 let dragOrigin: Point | null = null;
@@ -55,7 +60,9 @@ let idleImage: { bitmap: Uint8Array; width: number; height: number; face?: Rect 
 let earDifferenceRatio = 0;
 let happyFaceDifferenceRatio = 0;
 const earDegrees: Partial<Record<SmokeBehavior, number>> = {};
-let lastCursorSentAt = -Infinity;
+// A non-focusable pet may receive no blur when another application's window activates.
+const HIT_REASSERT_MS = 1000;
+let lastHitAppliedAt = -Infinity;
 
 function exitSmoke(code: number, result: object): void {
   // app.exit() is immediate; wait for piped stdout so the gate receives the JSON.
@@ -102,6 +109,7 @@ function setSize(size: Size): void {
 function applyHit(): void {
   if (config.mousePassthrough) win?.setIgnoreMouseEvents(true);
   else win?.setIgnoreMouseEvents(!hit && !gesture, { forward: true });
+  lastHitAppliedAt = performance.now();
 }
 
 function dragPosition(point: Point, now: number): void {
@@ -123,7 +131,7 @@ function finishDrag(cancelled: boolean): void {
   if (!win || !gesture) return;
   const now = performance.now();
   const point = screen.getCursorScreenPoint();
-  dragPosition(point, now);
+  if (!cancelled) dragPosition(point, now);
   const clicked = !cancelled && isClick(gesture, point, now, lastDragEndedAt);
   if (gesture.dragged) {
     lastDragEndedAt = now;
@@ -187,6 +195,7 @@ function petMenu(): Electron.MenuItemConstructorOptions[] {
       }
     } },
     { label: '始终置顶', type: 'checkbox', checked: state.alwaysOnTop, click: item => { updateFromMenu({ ...config, alwaysOnTop: item.checked }); } },
+    { label: '显示帧率', type: 'checkbox', checked: config.showFps, click: item => { updateFromMenu({ ...config, showFps: item.checked }); } },
     { label: '大小', submenu: (['small', 'medium', 'large'] as const).map((size, index) => ({
       label: ['小', '中', '大'][index]!, type: 'radio' as const,
       checked: state.size === size, click: () => setSize(size),
@@ -271,6 +280,7 @@ async function capture(result: RenderResult): Promise<void> {
 
 async function start(): Promise<void> {
   configPath = join(app.getPath('userData'), 'config.json');
+  fpsLog = new FpsLog(app.getPath('userData'));
   if (!smoke) {
     try { config = readConfig(configPath); }
     catch (error) { console.error('配置读取失败，使用默认值', error); }
@@ -402,20 +412,23 @@ async function start(): Promise<void> {
   ipcMain.on('pet:error', (event, message: unknown) => {
     if (trusted(event) && typeof message === 'string') console.error('模型加载失败：' + message);
   });
+  ipcMain.on('pet:fps', (event, value: unknown) => {
+    if (!trusted(event) || smoke || !config.showFps) return;
+    void fpsLog?.record(value).catch(error => console.error('帧率日志写入失败', error));
+  });
   if (!smoke) {
     applyHit();
     makeTray();
     selfTalk.restart();
-    cursorTimer = setInterval(() => {
+    stopCursor = startTickLoop(() => {
       if (!win || win.isDestroyed() || !win.isVisible()) return;
       const now = performance.now();
-      if (!gesture && now - lastCursorSentAt < 50) return;
-      lastCursorSentAt = now;
       const point = screen.getCursorScreenPoint();
-      dragPosition(point, performance.now());
+      dragPosition(point, now);
       const bounds = win.getBounds();
       win.webContents.send('pet:cursor', { point, bounds, workArea: screen.getDisplayMatching(bounds).workArea });
-    }, 1000 / 60);
+      if (process.platform === 'win32' && now - lastHitAppliedAt >= HIT_REASSERT_MS) applyHit();
+    });
     let observedPosition = win.getBounds();
     win.on('move', () => {
       clearTimeout(moveSaveTimer);
@@ -436,7 +449,11 @@ async function start(): Promise<void> {
         save();
       }, 200);
     });
-    win.on('blur', () => finishDrag(true));
+    win.on('blur', () => {
+      finishDrag(true);
+      if (process.platform === 'win32') applyHit();
+    });
+    win.on('focus', () => { if (process.platform === 'win32') applyHit(); });
     win.once('ready-to-show', () => {
       win?.showInactive(); win?.webContents.send('pet:visibility', { visible: true }); refreshMenu();
     });
@@ -470,7 +487,7 @@ app.on('before-quit', event => {
   }
   selfTalk?.stop();
   clearTimeout(watchdog);
-  clearInterval(cursorTimer);
+  stopCursor?.();
   motion?.cancel();
   clearTimeout(moveSaveTimer);
   if (!smoke) { finishDrag(true); save(); }

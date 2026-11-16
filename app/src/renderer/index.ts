@@ -2,11 +2,12 @@ import { AmbientLight, Box3, DirectionalLight, LoadingManager, Object3D, Orthogr
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 import type { VRM } from '@pixiv/three-vrm';
-import type { PetBridge, Point, WindowInfo, SmokeBehavior, PetExpression, Rect } from '../shared/types';
+import type { Config, PetBridge, Point, WindowInfo, SmokeBehavior, PetExpression, Rect } from '../shared/types';
 import { alphaHit, canvasPixel } from '../shared/hit';
+import { FrameStats, formatFps, FPS_LOG_INTERVAL_MS, renderPixelRatio } from '../shared/performance';
 import { breathe } from './behaviors/breathing';
 import { blink, createBlink } from './behaviors/blink';
-import { cursorDirection, look } from './behaviors/look';
+import { cursorDirection, look, smoothDirection } from './behaviors/look';
 import { BehaviorMachine, TURN_ANGLE } from './behavior/machine';
 import { PetAudio } from './behavior/audio';
 import { ARM_REST, MotionRig, sampleMotion } from './motion';
@@ -50,10 +51,28 @@ const audio = new PetAudio((use) => window.pet.loadSound(use), () => volume);
 let elapsed = 0;
 let previous = performance.now();
 let direction: Point = { x: 0, y: 0 };
+let targetDirection: Point = { x: 0, y: 0 };
 let pointer: Point = { x: -1, y: -1 };
 let lastHit = false;
 let pointerDown = false;
 let blinkState = createBlink();
+let showFps = false;
+let lastFpsLoggedAt = 0;
+const frameStats = new FrameStats();
+const fpsOverlay = document.createElement('div');
+fpsOverlay.hidden = true;
+// Pure diagnostic overlay: never changes the canvas layout or alpha hit testing.
+fpsOverlay.style.cssText = 'position:fixed;left:4px;top:4px;z-index:10;pointer-events:none;padding:3px 5px;background:#000b;color:white;font:12px monospace;border-radius:3px';
+document.body.append(fpsOverlay);
+function resetFps(): void { frameStats.reset(); lastFpsLoggedAt = performance.now(); }
+function receiveConfig(config: Config): void {
+  volume = config.volume;
+  if (showFps !== config.showFps) {
+    showFps = config.showFps; resetFps();
+    fpsOverlay.hidden = !showFps;
+    fpsOverlay.textContent = 'FPS 测量中…';
+  }
+}
 const scene = new Scene();
 const camera = new OrthographicCamera(-1, 1, 1, -1, 0.01, 100);
 const lookTarget = new Object3D();
@@ -264,9 +283,19 @@ function animate(now: number): void {
   const delta = Math.min((now - previous) / 1000, 0.05);
   previous = now;
   elapsed += delta;
+  if (!smoke && window.pet.platform === 'win32') direction = smoothDirection(direction, targetDirection, delta);
   renderPose(now, delta);
   renderer.render(scene, camera);
   if (!smoke) updateHit();
+  if (!smoke && showFps) {
+    const sample = frameStats.frame(now);
+    if (sample) {
+      fpsOverlay.textContent = formatFps(sample);
+      if (now - lastFpsLoggedAt >= FPS_LOG_INTERVAL_MS) {
+        window.pet.reportFps(sample); lastFpsLoggedAt = now;
+      }
+    }
+  }
   if (vrm && smoke) {
     if (smokePose ? smokeAge >= smokeAges[smokePose] && ++smokePoseFrames >= 2 && !reported : ++frames >= 60 && !reported) {
       reported = true;
@@ -277,24 +306,35 @@ function animate(now: number): void {
 }
 
 try {
+  // Keep MSAA for the silhouette; the Windows DPR cap bounds its fill/compositing cost.
+  // The retained buffer is required by alpha readPixels outside the render callback.
   renderer = new WebGLRenderer({ alpha: true, antialias: true, preserveDrawingBuffer: true });
   renderer.setClearColor(0x000000, 0);
-  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setPixelRatio(renderPixelRatio(window.devicePixelRatio, window.pet.platform));
   renderer.setSize(window.innerWidth, window.innerHeight);
   document.body.append(renderer.domElement);
   window.addEventListener('resize', () => {
-    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setPixelRatio(renderPixelRatio(window.devicePixelRatio, window.pet.platform));
     renderer.setSize(window.innerWidth, window.innerHeight);
     frameModel();
   });
   window.pet.onCursor((sample) => {
     windowInfo = { bounds: sample.bounds, workArea: sample.workArea };
-    direction = cursorDirection(sample.point, sample.bounds);
+    const nextDirection = cursorDirection(sample.point, sample.bounds);
+    if (window.pet.platform === 'win32' && (nextDirection.x !== targetDirection.x || nextDirection.y !== targetDirection.y)) wake();
+    targetDirection = nextDirection;
+    if (window.pet.platform !== 'win32') direction = nextDirection;
     pointer = { x: sample.point.x - sample.bounds.x, y: sample.point.y - sample.bounds.y };
+    // The native cursor keeps arriving even if Windows stops forwarding DOM moves.
+    // Refresh immediately from the retained frame, including while idle at 30 FPS.
+    if (!smoke && petVisible && window.pet.platform === 'win32') updateHit();
   });
   void window.pet.windowInfo().then((info) => { windowInfo = info; }).catch(showError);
   window.pet.onClick(() => { if (petVisible) { wake(); machine.click(); flushCommands(); } });
-  window.pet.onPress((pressed) => { if (petVisible) { wake(); audio.stop(); machine.press(pressed); flushCommands(); } });
+  window.pet.onPress((pressed) => {
+    if (!pressed) pointerDown = false;
+    if (petVisible) { wake(); audio.stop(); machine.press(pressed); flushCommands(); }
+  });
   window.pet.onMoveDone((result) => { if (petVisible) { wake(); machine.moveDone(result); } });
   window.pet.onDrag((sample) => {
     if (!petVisible) return;
@@ -318,6 +358,7 @@ try {
     machine.visibility(visible); flushCommands();
     dragging = false; velocityX = 0; pointerDown = false;
     audio.stop(); springs?.restore();
+    resetFps();
     if (!visible) {
       cancelAnimationFrame(animationFrame); animationFrame = 0;
     } else {
@@ -325,8 +366,8 @@ try {
       if (!animationFrame) animationFrame = requestAnimationFrame(animate);
     }
   });
-  void window.pet.getConfig().then(config => { volume = config.volume; });
-  window.pet.onConfig(config => { volume = config.volume; });
+  void window.pet.getConfig().then(receiveConfig);
+  window.pet.onConfig(receiveConfig);
   window.pet.onExpression(name => { chatExpression = { name, until: performance.now() + 2000 }; wake(); });
   window.pet.onSound(use => { if (!smoke && petVisible && !dragging) void audio.play(use); });
   renderer.domElement.addEventListener('contextmenu', event => {

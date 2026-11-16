@@ -5,7 +5,7 @@ import type { Config } from '../shared/types';
 export const DEFAULT_CONFIG: Config = {
   modelPath: null, size: 'medium', position: null, alwaysOnTop: true,
   chat: { baseUrl: 'https://api.deepseek.com', model: 'deepseek-flash', temperature: 0.7, maxTokens: 2048, thinking: 'disabled' },
-  selfTalk: { enabled: true, minSec: 20, maxSec: 60, lines: [] }, volume: 0.7, mousePassthrough: false,
+  selfTalk: { enabled: true, minSec: 20, maxSec: 60, lines: [] }, volume: 0.7, mousePassthrough: false, showFps: false,
 };
 const finite = (value: unknown, fallback: number, min: number, max = Infinity) =>
   typeof value === 'number' && Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback;
@@ -40,6 +40,7 @@ export function normalizeConfig(value: unknown): Config {
     .filter((line): line is string => typeof line === 'string').map(line => line.trim()).filter(Boolean))];
   result.volume = finite(data.volume, result.volume, 0, 1);
   if (typeof data.mousePassthrough === 'boolean') result.mousePassthrough = data.mousePassthrough;
+  if (typeof data.showFps === 'boolean') result.showFps = data.showFps;
   return result;
 }
 

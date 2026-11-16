@@ -1,4 +1,5 @@
 import type { MoveRequest, MoveResult, Point, WindowInfo } from '../shared/types';
+import { startTickLoop } from './timing';
 
 /** Last safety check against the current display; preserve the requested average speed. */
 export function prepareMove(info: WindowInfo, request: MoveRequest):
@@ -25,15 +26,15 @@ export function easeInOut(progress: number): number {
 export interface MotionWindow { getPosition(): number[]; setPosition(x: number, y: number): void }
 /** Cancelling clears the only timer and leaves the current native window position untouched. */
 export class WindowMotion {
-  private timer?: ReturnType<typeof setInterval>;
+  private stop?: () => void;
   constructor(private window: MotionWindow, private done: (result: MoveResult) => void, private now = () => performance.now()) {}
-  cancel(): void { clearInterval(this.timer); this.timer = undefined; }
+  cancel(): void { this.stop?.(); this.stop = undefined; }
   move(request: MoveRequest): void {
     this.cancel();
     const [x = 0, y = 0] = this.window.getPosition();
     const origin: Point = { x, y };
     const began = this.now();
-    this.timer = setInterval(() => {
+    this.stop = startTickLoop(() => {
       const progress = Math.min(1, (this.now() - began) / request.durationMs);
       const eased = easeInOut(progress);
       this.window.setPosition(Math.round(origin.x + (request.x - origin.x) * eased), Math.round(origin.y + (request.y - origin.y) * eased));
@@ -42,6 +43,6 @@ export class WindowMotion {
         const [actualX = origin.x] = this.window.getPosition();
         this.done({ ok: true, distance: Math.abs(actualX - origin.x) });
       }
-    }, 1000 / 60);
+    });
   }
 }

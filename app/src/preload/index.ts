@@ -8,6 +8,8 @@ function listen<T>(channel: string, callback: (value: T) => void): () => void {
 }
 
 const bridge: PetBridge = {
+  platform: process.platform,
+  reportFps: sample => ipcRenderer.send('pet:fps', sample),
   contextMenu: () => ipcRenderer.send('pet:context-menu'),
   getConfig: () => ipcRenderer.invoke('pet:config'),
   onConfig: callback => listen('config:changed', callback),

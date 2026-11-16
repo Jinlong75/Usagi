@@ -19,11 +19,14 @@ const host = vi.hoisted(() => ({
   contents: undefined as any,
   save: vi.fn(),
   savedPosition: { x: 340, y: 90 } as Point | null,
+  ignore: vi.fn(),
+  commandLine: { getSwitchValue: vi.fn(() => ''), appendSwitch: vi.fn() },
+  options: {} as any,
 }));
 
 vi.mock('electron', () => {
   class BrowserWindow {
-    constructor(bounds: Rect) { host.bounds = { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height }; }
+    constructor(bounds: Rect) { host.options = bounds; host.bounds = { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height }; }
     webContents = host.contents = { send: host.send, mainFrame: host.frame,
       setWindowOpenHandler: vi.fn(), on: vi.fn() };
     isVisible() { return host.visible; }
@@ -40,14 +43,14 @@ vi.mock('electron', () => {
     }
     setAlwaysOnTop = vi.fn();
     setVisibleOnAllWorkspaces = vi.fn();
-    setIgnoreMouseEvents = vi.fn();
+    setIgnoreMouseEvents = host.ignore;
     on = (name: string, callback: () => void) => host.listeners.set(name, [...(host.listeners.get(name) ?? []), callback]);
     once = (name: string, callback: () => void) => host.events.set(name, callback);
     loadFile = vi.fn();
     loadURL = vi.fn();
   }
   return { BrowserWindow, safeStorage: { isAsyncEncryptionAvailable: async () => false },
-    app: { whenReady: () => ({ then: (start: () => Promise<void>) => {
+    app: { commandLine: host.commandLine, whenReady: () => ({ then: (start: () => Promise<void>) => {
       host.start = start; return { catch: vi.fn() };
     } }), on: vi.fn(), getPath: () => '/unused-fixture', dock: { hide: vi.fn() } },
     ipcMain: { on: (name: string, callback: (...args: any[]) => any) => host.handlers.set(name, callback),
@@ -79,6 +82,7 @@ async function boot(): Promise<void> {
 }
 
 describe('可见性与移动 IPC（原生窗口替身，无 GUI）', () => {
+  const platform = Object.getOwnPropertyDescriptor(process, 'platform')!;
   beforeEach(async () => {
     vi.useFakeTimers();
     vi.stubGlobal('__dirname', fileURLToPath(new URL('../out', import.meta.url)));
@@ -87,7 +91,42 @@ describe('可见性与移动 IPC（原生窗口替身，无 GUI）', () => {
     host.visible = false; host.bounds = { x: 340, y: 90, width: 320, height: 420 };
     await boot();
   });
-  afterEach(() => { host.send.mockReset(); vi.clearAllTimers(); vi.useRealTimers(); vi.unstubAllGlobals(); });
+  afterEach(() => { Object.defineProperty(process, 'platform', platform); host.send.mockReset(); vi.clearAllTimers(); vi.useRealTimers(); vi.unstubAllGlobals(); });
+
+  it('Windows 正式窗口禁用后台降频；blur/focus 即使没有拖动也重设穿透，外部窗口激活后轮询兜底', async () => {
+    Object.defineProperty(process, 'platform', { value: 'win32' });
+    host.commandLine.appendSwitch.mockClear();
+    await boot();
+    expect(host.commandLine.appendSwitch).toHaveBeenCalledWith('disable-features', 'CalculateNativeWinOcclusion');
+    expect(host.commandLine.appendSwitch).toHaveBeenCalledWith('disable-renderer-backgrounding');
+    expect(host.options.webPreferences).toMatchObject({ offscreen: false, backgroundThrottling: false });
+    host.ignore.mockClear();
+    host.listeners.get('blur')!.forEach(callback => callback());
+    expect(host.ignore).toHaveBeenCalledExactlyOnceWith(true, { forward: true });
+    host.ignore.mockClear();
+    host.listeners.get('focus')!.forEach(callback => callback());
+    expect(host.ignore).toHaveBeenCalledExactlyOnceWith(true, { forward: true });
+    send('pet:hit', true);
+    host.ignore.mockClear(); host.send.mockClear();
+    vi.advanceTimersByTime(1050);
+    expect(host.send.mock.calls.filter(([channel]) => channel === 'pet:cursor').length).toBeGreaterThan(55);
+    expect(host.ignore).toHaveBeenCalledWith(false, { forward: true });
+  });
+
+  it('拖动失焦取消并可再次拖动，不因没有 pointerup 持续跟随', () => {
+    send('pet:hit', true); send('pet:drag-start');
+    host.bounds.x += 30;
+    vi.advanceTimersByTime(20);
+    host.listeners.get('blur')!.forEach(callback => callback());
+    expect(host.send).toHaveBeenCalledWith('pet:press', false);
+    const held = { ...host.bounds }; host.send.mockClear();
+    vi.advanceTimersByTime(100);
+    expect(host.bounds).toEqual(held);
+    expect(host.send).not.toHaveBeenCalledWith('pet:drag', expect.objectContaining({ active: true }));
+    send('pet:drag-start');
+    expect(host.send).toHaveBeenCalledWith('pet:press', true);
+    send('pet:drag-end', true);
+  });
 
   it('托盘 hide/showInactive 显式通知渲染器，隐藏时等待不会重新掷骰，显示从 idle 开始', () => {
     let now = 0;
