@@ -2,12 +2,17 @@ import { AmbientLight, Box3, DirectionalLight, LoadingManager, Object3D, Orthogr
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
 import type { VRM } from '@pixiv/three-vrm';
-import type { PetBridge, Point } from '../shared/types';
+import type { PetBridge, Point, WindowInfo, SmokeBehavior } from '../shared/types';
 import { alphaHit, canvasPixel } from '../shared/hit';
 import { breathe } from './behaviors/breathing';
 import { blink, createBlink } from './behaviors/blink';
 import { cursorDirection, look } from './behaviors/look';
-import { click } from './behaviors/click';
+import { BehaviorMachine, TURN_ANGLE } from './behavior/machine';
+import { PetAudio } from './behavior/audio';
+import { MotionRig, sampleMotion } from './motion';
+import { DragSprings } from './motion/springs';
+import { frameBounds, measureMotionBounds } from './motion/framing';
+import { renderInterval } from './behavior/power';
 
 declare global { interface Window { pet: PetBridge } }
 
@@ -18,8 +23,25 @@ let smoke = false;
 let frames = 0;
 let reported = false;
 let loadGeneration = 0;
-let baseY = 0;
-let clickAt = -Infinity;
+let rig: MotionRig | null = null;
+let springs: DragSprings | null = null;
+let machine = new BehaviorMachine();
+let windowInfo: WindowInfo | null = null;
+let dragging = false;
+let velocityX = 0;
+let lastActivity = performance.now();
+let animationFrame = 0;
+let petVisible = true;
+let neutralBounds: Box3 | null = null;
+let motionBounds: Box3 | null = null;
+let smokePose: SmokeBehavior | undefined;
+let smokePoseFrames = 0;
+let smokePoseStartedAt = performance.now();
+let smokeAge = 0;
+let smokeDragImpulse = false;
+const smokeAges = { idle: 0.875, walk: 0.7, happy: 0.175, surprised: 0.45, shout: 0.55, stretch: 1.1, drag: 0.5 };
+let gaze = { x: 0, y: 0 };
+const audio = new PetAudio((use) => window.pet.loadSound(use));
 let elapsed = 0;
 let previous = performance.now();
 let direction: Point = { x: 0, y: 0 };
@@ -45,30 +67,29 @@ function showError(error: unknown): void {
 }
 
 function frameModel(): void {
-  if (!vrm) return;
-  const box = new Box3().setFromObject(vrm.scene);
-  const size = box.getSize(new Vector3());
-  const center = box.getCenter(new Vector3());
+  if (!vrm || !neutralBounds || !motionBounds) return;
   const aspect = window.innerWidth / window.innerHeight;
-  const height = Math.max(size.y / 0.9, size.x / aspect / 0.9, 0.1);
-  // The bottom 5% stays below the soles, even when width determines the framing.
-  const bottom = box.min.y - height * 0.05;
+  const { height, bottom, centerX, centerZ, front } = frameBounds(neutralBounds, [motionBounds], aspect);
   camera.left = -height * aspect / 2;
   camera.right = height * aspect / 2;
   camera.top = height / 2;
   camera.bottom = -height / 2;
-  camera.position.set(center.x, bottom + height / 2, box.max.z + 5);
-  camera.lookAt(center.x, bottom + height / 2, center.z);
+  camera.position.set(centerX, bottom + height / 2, front + 5);
+  camera.lookAt(centerX, bottom + height / 2, centerZ);
   camera.updateProjectionMatrix();
 }
 
 async function loadModel(): Promise<void> {
   const generation = ++loadGeneration;
   errorText.hidden = true;
+  springs?.restore();
+  audio.stop();
+  window.pet.cancelMove();
   if (vrm) { scene.remove(vrm.scene); VRMUtils.deepDispose(vrm.scene); vrm = null; }
   try {
     const data = await window.pet.loadModel();
     smoke = data.smoke;
+    if (smoke && !animationFrame) animationFrame = requestAnimationFrame(animate);
     const failedResources: string[] = [];
     const manager = new LoadingManager();
     manager.onError = (url) => failedResources.push(url);
@@ -98,10 +119,22 @@ async function loadModel(): Promise<void> {
     vrm.scene.position.x -= center.x;
     vrm.scene.position.z -= center.z;
     vrm.scene.updateMatrixWorld(true);
-    baseY = vrm.scene.position.y;
+    rig = new MotionRig(vrm);
+    springs = new DragSprings(vrm);
+    machine = new BehaviorMachine();
+    if (!smoke && !petVisible) { machine.visibility(false); flushCommands(); }
+    // Synchronous sampling finishes and restores neutral before any frame is drawn.
+    const measured = measureMotionBounds(vrm, rig);
+    neutralBounds = measured.neutral;
+    motionBounds = measured.motion;
+    dragging = false;
     frameModel();
     elapsed = 0;
-    clickAt = -Infinity;
+    smokePose = undefined;
+    smokePoseFrames = 0;
+    smokePoseStartedAt = performance.now();
+    gaze = { x: 0, y: 0 };
+    wake();
     blinkState = createBlink();
     frames = 0;
     reported = false;
@@ -123,24 +156,81 @@ function updateHit(): boolean {
   return hit;
 }
 
-function animate(now: number): void {
-  requestAnimationFrame(animate);
-  const delta = Math.min((now - previous) / 1000, 0.05);
-  previous = now;
-  if (vrm) {
-    elapsed += delta;
+function flushCommands(): void {
+  for (const command of machine.drain()) {
+    if (command.type === 'cancel') window.pet.cancelMove();
+    else if (command.type === 'move') window.pet.moveTo(command.request);
+    else if (!smoke && (!dragging || command.use === 'drag')) void audio.play(command.use);
+  }
+}
+function wake(): void { lastActivity = performance.now(); }
+function renderPose(now: number, delta: number): void {
+  if (!vrm || !rig) return;
+  rig.reset();
+  if (smoke) {
+    const name = smokePose ?? 'idle';
+    smokeAge = Math.min(smokeAges[name], (now - smokePoseStartedAt) / 1000);
+    rig.apply(sampleMotion(name, smokeAge, { velocityX: 500 }));
+    if (name === 'drag' && springs) {
+      if (!smokeDragImpulse && smokeAge >= 0.25) {
+        springs.sample({ x: 0, y: 0 }, 0); springs.sample({ x: 500, y: 0 }, 100); smokeDragImpulse = true;
+      }
+      springs.update(delta, true);
+    } else springs?.update(delta, false);
+    breathe(vrm, name === 'idle' ? smokeAge : 0);
+  } else {
+    const state = machine.tick(windowInfo);
+    flushCommands();
+    if (state.state !== 'idle') lastActivity = now;
+    const age = Math.max(0, (now - state.startedAt) / 1000);
+    const duration = state.durationMs / 1000;
     breathe(vrm, elapsed);
     blink(vrm, blinkState, elapsed);
-    look(vrm, lookTarget, direction, delta);
-    click(vrm, elapsed - clickAt, baseY);
-    vrm.update(delta);
+    // Keep the gaze tracker out of explicit head motions and reactions.
+    if (state.state === 'idle') {
+      const head = vrm.humanoid.getNormalizedBoneNode('head');
+      if (head) { head.rotation.x = gaze.x; head.rotation.y = gaze.y; }
+      look(vrm, lookTarget, direction, delta);
+      if (head) gaze = { x: head.rotation.x, y: head.rotation.y };
+      rig.apply(sampleMotion(Math.floor(state.startedAt / 3500) % 2 ? 'lookAround' : 'idle', age));
+    } else {
+      if (vrm.lookAt) { vrm.lookAt.target = null; vrm.lookAt.reset(); }
+      if (state.state === 'act') rig.apply(sampleMotion(state.action!, age));
+      else if (state.state === 'click') rig.apply(sampleMotion(state.reaction!, age));
+      else if (state.state === 'drag') {
+        // Fade in once, then hold the suspended pose for the whole gesture.
+        rig.apply(sampleMotion('drag', Math.min(0.5, age + 0.001), { velocityX }));
+      } else if (state.state === 'move') {
+        rig.apply(sampleMotion('walk', age, { duration }));
+        vrm.scene.rotation.y += state.direction * TURN_ANGLE;
+      } else if (state.state === 'turn') {
+        const p = Math.min(1, age / duration);
+        const eased = p * p * (3 - 2 * p);
+        vrm.scene.rotation.y += state.fromAngle + (state.toAngle - state.fromAngle) * eased;
+      }
+    }
+    springs?.update(delta, dragging);
   }
+  vrm.update(delta);
+}
+function animate(now: number): void {
+  animationFrame = 0;
+  if (!smoke && !petVisible) return;
+  animationFrame = requestAnimationFrame(animate);
+  const interval = smoke ? 0 : renderInterval(now, lastActivity, !petVisible);
+  if (now - previous + 0.1 < interval) return;
+  const delta = Math.min((now - previous) / 1000, 0.05);
+  previous = now;
+  elapsed += delta;
+  renderPose(now, delta);
   renderer.render(scene, camera);
   if (!smoke) updateHit();
-  if (vrm && smoke && ++frames >= 60 && !reported) {
-    reported = true;
-    window.pet.rendered({ ok: true, vrmVersion: vrm.meta.metaVersion,
-      expressions: vrm.expressionManager?.expressions.map((expression) => expression.expressionName) ?? [] });
+  if (vrm && smoke) {
+    if (smokePose ? smokeAge >= smokeAges[smokePose] && ++smokePoseFrames >= 2 && !reported : ++frames >= 60 && !reported) {
+      reported = true;
+      window.pet.rendered({ ok: true, vrmVersion: vrm.meta.metaVersion, behavior: smokePose,
+        expressions: vrm.expressionManager?.expressions.map((expression) => expression.expressionName) ?? [] });
+    }
   }
 }
 
@@ -156,15 +246,48 @@ try {
     frameModel();
   });
   window.pet.onCursor((sample) => {
+    windowInfo = { bounds: sample.bounds, workArea: sample.workArea };
     direction = cursorDirection(sample.point, sample.bounds);
     pointer = { x: sample.point.x - sample.bounds.x, y: sample.point.y - sample.bounds.y };
   });
-  window.pet.onClick(() => { clickAt = elapsed; });
+  void window.pet.windowInfo().then((info) => { windowInfo = info; }).catch(showError);
+  window.pet.onClick(() => { if (petVisible) { wake(); machine.click(); flushCommands(); } });
+  window.pet.onPress((pressed) => { if (petVisible) { wake(); audio.stop(); machine.press(pressed); flushCommands(); } });
+  window.pet.onMoveDone((result) => { if (petVisible) { wake(); machine.moveDone(result); } });
+  window.pet.onDrag((sample) => {
+    if (!petVisible) return;
+    wake();
+    if (sample.active !== dragging) {
+      dragging = sample.active; machine.drag(dragging); audio.stop(); flushCommands();
+    }
+    velocityX = sample.velocity.x;
+    if (dragging) springs?.sample(sample.velocity, sample.timestamp);
+    else springs?.restore();
+  });
+  window.pet.onSmokePose((pose) => {
+    if (!smoke) return;
+    springs?.restore(); smokePose = pose; smokePoseFrames = 0; reported = false;
+    smokePoseStartedAt = performance.now(); smokeDragImpulse = false;
+  });
+  window.pet.onVisibility(({ visible }) => {
+    if (smoke) return;
+    petVisible = visible;
+    machine.visibility(visible); flushCommands();
+    dragging = false; velocityX = 0; pointerDown = false;
+    audio.stop(); springs?.restore();
+    if (!visible) {
+      cancelAnimationFrame(animationFrame); animationFrame = 0;
+    } else {
+      wake(); previous = performance.now();
+      if (!animationFrame) animationFrame = requestAnimationFrame(animate);
+    }
+  });
   window.pet.onReload(() => { void loadModel(); });
   renderer.domElement.addEventListener('pointerdown', (event) => {
     if (event.button !== 0) return;
     pointer = { x: event.clientX, y: event.clientY };
     if (!updateHit()) return;
+    void audio.unlock().catch(() => {});
     pointerDown = true;
     renderer.domElement.setPointerCapture(event.pointerId);
     window.pet.beginDrag();
@@ -182,5 +305,5 @@ try {
     pointer = { x: event.clientX, y: event.clientY };
   });
   void loadModel();
-  requestAnimationFrame(animate);
+  animationFrame = requestAnimationFrame(animate);
 } catch (error) { showError(error); }

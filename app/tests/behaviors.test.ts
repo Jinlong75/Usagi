@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { blink, blinkInterval, blinkValue, createBlink } from '../src/renderer/behaviors/blink';
 import { breathingAngle } from '../src/renderer/behaviors/breathing';
-import { clickPose } from '../src/renderer/behaviors/click';
+import { jumps, neutralPose, sampleMotion } from '../src/renderer/motion';
 import { cursorDirection, look } from '../src/renderer/behaviors/look';
 import { Object3D, Quaternion } from 'three';
 import type { VRM } from '@pixiv/three-vrm';
@@ -38,11 +38,16 @@ describe('待机与点击动作', () => {
     expect(breathingAngle(0.875)).toBeCloseTo(0.018);
     expect(breathingAngle(3.5)).toBeCloseTo(0);
   });
-  it('点击时跳跃、开心 1.2s 后恢复', () => {
-    expect(clickPose(-1)).toEqual({ happy: 0, jump: 0 });
-    expect(clickPose(0.225)).toEqual({ happy: 1, jump: 0.08 });
-    expect(clickPose(0.6)).toEqual({ happy: 1, jump: 0 });
-    expect(clickPose(1.2)).toEqual({ happy: 0, jump: 0 });
+  it('开心点击两次跳跃，每次落地挤压 220ms，1.2s 后恢复', () => {
+    expect(sampleMotion('happy', -1)).toEqual(neutralPose());
+    expect(sampleMotion('happy', 0.225).expressions.happy).toBe(1);
+    expect(jumps(0.175).y).toBeCloseTo(0.08);
+    expect(jumps(0.745).y).toBeCloseTo(0.08);
+    expect(sampleMotion('happy', 0.46).scale[1]).toBeCloseTo(0.85);
+    expect(sampleMotion('happy', 1.03).scale[1]).toBeCloseTo(0.85);
+    expect(jumps(0.57).squash).toBeCloseTo(0);
+    expect(jumps(1.14).squash).toBe(0);
+    expect(sampleMotion('happy', 1.2)).toEqual(neutralPose());
   });
   it('鼠标方向使用窗口位置，并限制到 [-1,1]', () => {
     const bounds = { x: -320, y: 20, width: 320, height: 420 };

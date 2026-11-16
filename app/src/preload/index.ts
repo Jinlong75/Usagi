@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { CursorSample, PetBridge } from '../shared/types';
+import type { CursorSample, DragSample, MoveResult, PetBridge, SmokeBehavior } from '../shared/types';
 
 function listen<T>(channel: string, callback: (value: T) => void): () => void {
   const handler = (_event: Electron.IpcRendererEvent, value: T) => callback(value);
@@ -8,6 +8,15 @@ function listen<T>(channel: string, callback: (value: T) => void): () => void {
 }
 
 const bridge: PetBridge = {
+  windowInfo: () => ipcRenderer.invoke('pet:window-info'),
+  moveTo: (request) => ipcRenderer.send('pet:move-to', request),
+  cancelMove: () => ipcRenderer.send('pet:move-cancel'),
+  loadSound: (use) => ipcRenderer.invoke('pet:sound', use),
+  onMoveDone: (callback) => listen<MoveResult>('pet:move-done', callback),
+  onVisibility: (callback) => listen<{ visible: boolean }>('pet:visibility', callback),
+  onPress: (callback) => listen<boolean>('pet:press', callback),
+  onDrag: (callback) => listen<DragSample>('pet:drag', callback),
+  onSmokePose: (callback) => listen<SmokeBehavior>('pet:smoke-pose', callback),
   loadModel: () => ipcRenderer.invoke('pet:load-model'),
   setHit: (hit) => ipcRenderer.send('pet:hit', hit),
   beginDrag: () => ipcRenderer.send('pet:drag-start'),
