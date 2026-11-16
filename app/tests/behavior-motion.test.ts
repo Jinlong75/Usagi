@@ -259,7 +259,7 @@ it('按模型高度跳 10%，落地 XZ 1.08，短腿摇摆大于手臂，伸展�
   const stretch = sampleMotion('stretch', 1.1);
   expect(stretch.hipsY).toBeCloseTo(0.025);
   expect(stretch.bones.chest![0]).toBeCloseTo(-0.1);
-  expect(stretch.bones.leftUpperArm![2] - 1.1).toBeCloseTo(1.5);
+  expect(stretch.bones.leftShoulder![2] + stretch.bones.leftUpperArm![2] - 1.1).toBeCloseTo(1.5);
 });
 
 it('像素比较只看指定区域，跟随脸部位移，透明度和颜色变化都能检出', () => {

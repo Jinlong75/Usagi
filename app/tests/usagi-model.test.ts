@@ -65,6 +65,27 @@ describe('真实 Usagi 资源的无界面验证', () => {
     }
     expect(document.extensions.VRMC_springBone.colliders.length).toBeGreaterThanOrEqual(2);
   });
+  it.each([['stretch', 1.1], ['shout', 0.55]] as const)('%s 的两只手举到颈部以上，结束后回中性', async (name, age) => {
+    const vrm = await load();
+    const rig = new MotionRig(vrm);
+    const world = (bone: 'leftHand' | 'rightHand' | 'neck', raw = false) =>
+      (raw ? vrm.humanoid.getRawBoneNode(bone) : vrm.humanoid.getNormalizedBoneNode(bone))!.getWorldPosition(new Vector3());
+    const resting = [world('leftHand', true), world('rightHand', true)];
+    const height = new Box3().setFromObject(vrm.scene, true).getSize(new Vector3()).y;
+    rig.apply(sampleMotion(name, age));
+    vrm.update(0); vrm.scene.updateMatrixWorld(true);
+    for (const raw of [false, true]) {
+      expect(world('leftHand', raw).y).toBeGreaterThan(world('neck', raw).y);
+      expect(world('rightHand', raw).y).toBeGreaterThan(world('neck', raw).y);
+      // A tiny clearance passes even with the hands hidden against the lower body.
+      expect(world('leftHand', raw).y - world('neck', raw).y).toBeGreaterThan(height * 0.1);
+      expect(world('rightHand', raw).y - world('neck', raw).y).toBeGreaterThan(height * 0.1);
+    }
+    rig.reset(); rig.apply(sampleMotion(name, name === 'stretch' ? 2.2 : 1.3));
+    vrm.update(0); vrm.scene.updateMatrixWorld(true);
+    expect(world('leftHand', true).distanceTo(resting[0]!)).toBeLessThan(1e-6);
+    expect(world('rightHand', true).distanceTo(resting[1]!)).toBeLessThan(1e-6);
+  });
   it('真实耳链受力反向、甩头可见，释放 1.5s 后回稳，动态范围完整入画', async () => {
     const vrm = await load();
     const rig = new MotionRig(vrm);

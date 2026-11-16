@@ -115,7 +115,7 @@ async function loadModel(): Promise<void> {
     VRMUtils.combineMorphs(loaded);
     VRMUtils.rotateVRM0(loaded);
     loaded.scene.traverse((object) => { object.frustumCulled = false; });
-    // Rest the short arms beside the body; raised clips add 2.6 radians to this baseline.
+    // Rest the short arms beside the body; raised clips turn shoulders and arms together.
     loaded.humanoid.getNormalizedBoneNode('leftUpperArm')?.rotation.set(0, 0, -1.1);
     loaded.humanoid.getNormalizedBoneNode('rightUpperArm')?.rotation.set(0, 0, 1.1);
     loaded.update(0);

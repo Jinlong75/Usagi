@@ -51,8 +51,15 @@ export function sampleMotion(name: MotionName, t: number, options: MotionOptions
     pose.scale = [1 + jump.squash * (0.08 / 0.15), 1 - jump.squash, 1 + jump.squash * (0.08 / 0.15)];
     if (name === 'happy') pose.expressions.happy = 1;
   } else if (name === 'stretch' || name === 'shout') {
-    pose.bones.leftUpperArm = [-0.06 * weight, 0, 2.6 * weight];
-    pose.bones.rightUpperArm = [-0.06 * weight, 0, -2.6 * weight];
+    // Usagi's shoulder-to-upper-arm offset is long, but each arm segment is only
+    // ~0.036 units. Lift that offset too, so the hands reach the sides of the head.
+    // VRM 1.0 normalized arms extend along ±X: opposite Z turns raise both sides.
+    const shoulder = name === 'stretch' ? 0.9 : 0.7;
+    const upperArm = 2.6 - shoulder; // Resting ±1.1 + both turns leaves the arms near vertical.
+    pose.bones.leftShoulder = [0, 0, shoulder * weight];
+    pose.bones.rightShoulder = [0, 0, -shoulder * weight];
+    pose.bones.leftUpperArm = [-0.06 * weight, 0, upperArm * weight];
+    pose.bones.rightUpperArm = [-0.06 * weight, 0, -upperArm * weight];
     pose.bones.chest = [-0.1 * weight, 0, 0];
     pose.hipsY = height * 0.025 * weight;
     if (name === 'shout') pose.expressions.angry = 1;
@@ -92,7 +99,7 @@ export function sampleMotion(name: MotionName, t: number, options: MotionOptions
   }
   return pose;
 }
-const BONES: VRMHumanBoneName[] = ['hips', 'spine', 'chest', 'neck', 'head', 'leftUpperArm', 'rightUpperArm',
+const BONES: VRMHumanBoneName[] = ['hips', 'spine', 'chest', 'neck', 'head', 'leftShoulder', 'rightShoulder', 'leftUpperArm', 'rightUpperArm',
   'leftLowerArm', 'rightLowerArm', 'leftUpperLeg', 'rightUpperLeg', 'leftLowerLeg', 'rightLowerLeg'];
 const EXPRESSIONS = ['happy', 'angry', 'sad', 'relaxed', 'surprised', 'aa', 'ih', 'ou', 'ee', 'oh'];
 

@@ -1,13 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fileURLToPath } from 'node:url';
 import { BehaviorMachine } from '../src/renderer/behavior/machine';
-import type { MoveRequest, MoveResult } from '../src/shared/types';
+import type { MoveRequest, MoveResult, Point, Rect } from '../src/shared/types';
 
 // Exercise the real main-process handlers with a native-window double, without Electron/GUI.
 const host = vi.hoisted(() => ({
   start: undefined as undefined | (() => Promise<void>),
   handlers: new Map<string, (...args: any[]) => any>(),
   events: new Map<string, (...args: any[]) => any>(),
+  listeners: new Map<string, (() => void)[]>(),
   menu: [] as any[],
   bounds: { x: 340, y: 90, width: 320, height: 420 },
   area: { x: 0, y: 0, width: 1000, height: 800 },
@@ -16,10 +17,12 @@ const host = vi.hoisted(() => ({
   frame: {},
   contents: undefined as any,
   save: vi.fn(),
+  savedPosition: { x: 340, y: 90 } as Point | null,
 }));
 
 vi.mock('electron', () => {
   class BrowserWindow {
+    constructor(bounds: Rect) { host.bounds = { x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height }; }
     webContents = host.contents = { send: host.send, mainFrame: host.frame,
       setWindowOpenHandler: vi.fn(), on: vi.fn() };
     isVisible() { return host.visible; }
@@ -29,10 +32,15 @@ vi.mock('electron', () => {
     getBounds() { return { ...host.bounds }; }
     getPosition() { return [host.bounds.x, host.bounds.y]; }
     setPosition(x: number, y: number) { host.bounds = { ...host.bounds, x, y }; }
+    setBounds(bounds: Rect) {
+      const moved = bounds.x !== host.bounds.x || bounds.y !== host.bounds.y;
+      host.bounds = { ...bounds };
+      if (moved) host.listeners.get('move')?.forEach(callback => callback());
+    }
     setAlwaysOnTop = vi.fn();
     setVisibleOnAllWorkspaces = vi.fn();
     setIgnoreMouseEvents = vi.fn();
-    on = vi.fn();
+    on = (name: string, callback: () => void) => host.listeners.set(name, [...(host.listeners.get(name) ?? []), callback]);
     once = (name: string, callback: () => void) => host.events.set(name, callback);
     loadFile = vi.fn();
     loadURL = vi.fn();
@@ -52,7 +60,7 @@ vi.mock('electron', () => {
 });
 vi.mock('../src/main/config', async (importOriginal) => {
   const original = await importOriginal<typeof import('../src/main/config')>();
-  return { ...original, readConfig: () => ({ ...original.DEFAULT_CONFIG }), writeConfig: host.save };
+  return { ...original, readConfig: () => ({ ...structuredClone(original.DEFAULT_CONFIG), position: host.savedPosition }), writeConfig: host.save };
 });
 
 function send(channel: string, value?: unknown): void {
@@ -60,15 +68,22 @@ function send(channel: string, value?: unknown): void {
 }
 const request: MoveRequest = { x: 520, y: 90, durationMs: 2000 };
 
+async function boot(): Promise<void> {
+  vi.clearAllTimers(); vi.resetModules();
+  host.handlers.clear(); host.events.clear(); host.listeners.clear(); host.send.mockClear(); host.save.mockClear();
+  await import('../src/main/index');
+  await host.start!();
+  host.events.get('ready-to-show')!();
+}
+
 describe('可见性与移动 IPC（原生窗口替身，无 GUI）', () => {
   beforeEach(async () => {
-    vi.useFakeTimers(); vi.resetModules();
+    vi.useFakeTimers();
     vi.stubGlobal('__dirname', fileURLToPath(new URL('../out', import.meta.url)));
+    host.area = { x: 0, y: 0, width: 1000, height: 800 };
+    host.savedPosition = { x: 340, y: 90 };
     host.visible = false; host.bounds = { x: 340, y: 90, width: 320, height: 420 };
-    host.handlers.clear(); host.events.clear(); host.send.mockClear(); host.save.mockClear();
-    await import('../src/main/index');
-    await host.start!();
-    host.events.get('ready-to-show')!();
+    await boot();
   });
   afterEach(() => { host.send.mockReset(); vi.clearAllTimers(); vi.useRealTimers(); vi.unstubAllGlobals(); });
 
@@ -110,6 +125,7 @@ describe('可见性与移动 IPC（原生窗口替身，无 GUI）', () => {
   });
 
   it('主进程安全裁剪后按实际距离重算时长，完成回执返回实际距离并保存', () => {
+    send('pet:framed', { aspect: 320 / 420, headTop: 0.1 });
     host.bounds.x = 750;
     send('pet:move-to', { x: 690, y: 90, durationMs: 60 / 90 * 1000 });
     vi.advanceTimersByTime(500);
@@ -120,5 +136,38 @@ describe('可见性与移动 IPC（原生窗口替身，无 GUI）', () => {
     expect(host.bounds).toMatchObject({ x: 660, y: 90 });
     expect(host.send).toHaveBeenCalledWith('pet:move-done', { ok: true, distance: 90 });
     expect(host.save).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({ position: { x: 660, y: 90 } }));
+  });
+
+  it.each([{ x: 300, y: 200 }, { x: 300, y: 546 }])('启动至首次取景按实际高度恢复 %j，连续两次重启不漂移', async (position) => {
+    host.area = { x: 0, y: 0, width: 1440, height: 900 };
+    host.savedPosition = position;
+    for (let restart = 0; restart < 2; restart++) {
+      await boot();
+      // Startup still has the legacy 420px height, including a fallback for y=546.
+      expect(host.bounds.height).toBe(420);
+      host.listeners.get('move')?.forEach(callback => callback());
+      vi.advanceTimersByTime(250);
+      expect(host.save).not.toHaveBeenCalled();
+      send('pet:framed', { aspect: 1.0175, headTop: 0.1 });
+      expect(host.bounds).toEqual({ ...position, width: 320, height: 314 });
+      // A renderer resize reports framing again. It must not shift the restored position.
+      send('pet:framed', { aspect: 1.0175, headTop: 0.1 });
+      expect(host.bounds).toEqual({ ...position, width: 320, height: 314 });
+      host.listeners.get('move')?.forEach(callback => callback());
+      vi.advanceTimersByTime(250);
+      const saved = host.save.mock.lastCall![1];
+      expect(saved.position).toEqual(position);
+      host.savedPosition = structuredClone(saved.position);
+    }
+  });
+
+  it.each([null, { x: 1400, y: 200 }])('没有有效保存位置 %j 时首次取景保持默认窗口底边', async (position) => {
+    host.area = { x: 0, y: 0, width: 1440, height: 900 };
+    host.savedPosition = position;
+    await boot();
+    const bottom = host.bounds.y + host.bounds.height;
+    send('pet:framed', { aspect: 1.0175, headTop: 0.1 });
+    expect(host.bounds).toEqual({ x: 1080, y: 546, width: 320, height: 314 });
+    expect(host.bounds.y + host.bounds.height).toBe(bottom);
   });
 });

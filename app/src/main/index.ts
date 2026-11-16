@@ -275,6 +275,9 @@ async function start(): Promise<void> {
     try { config = readConfig(configPath); }
     catch (error) { console.error('配置读取失败，使用默认值', error); }
   }
+  // The temporary window uses the legacy height; validate the saved position only
+  // once the renderer has measured the model's actual dimensions.
+  const startupPosition = config.position;
   if (process.platform === 'darwin') app.dock?.hide();
   win = new BrowserWindow({
     ...currentBounds(), show: false, transparent: true, backgroundColor: '#00000000',
@@ -334,12 +337,17 @@ async function start(): Promise<void> {
     if (!trusted(event) || !win || !value || !Number.isFinite(value.aspect) ||
       value.aspect! < 0.4 || value.aspect! > 2 || !Number.isFinite(value.headTop) || value.headTop! < 0 || value.headTop! > 1) return;
     const previous = win.getBounds();
+    const firstFrame = modelAspect === undefined;
     modelAspect = value.aspect!;
     const dimensions = windowDimensions(config.size, modelAspect);
     const area = screen.getDisplayMatching(previous).workArea;
     const position = { x: previous.x, y: previous.y + previous.height - dimensions.height };
-    if (dimensions.width !== previous.width || dimensions.height !== previous.height)
+    if (firstFrame) {
+      win.setBounds(initialBounds(config.size, startupPosition, screen.getPrimaryDisplay().workArea,
+        screen.getAllDisplays().map(display => display.workArea), modelAspect));
+    } else if (dimensions.width !== previous.width || dimensions.height !== previous.height) {
       win.setBounds(initialBounds(config.size, position, area, [area], modelAspect));
+    }
     ui.bubble.anchor(value.headTop!);
   });
   ipcMain.handle('pet:window-info', (event) => {
@@ -406,7 +414,7 @@ async function start(): Promise<void> {
     }, 1000 / 60);
     win.on('move', () => {
       clearTimeout(moveSaveTimer);
-      if (gesture) return;
+      if (gesture || modelAspect === undefined) return;
       moveSaveTimer = setTimeout(() => {
         if (!win || win.isDestroyed()) return;
         const { x, y } = win.getBounds();
