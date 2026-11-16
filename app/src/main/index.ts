@@ -143,6 +143,19 @@ function updateConfig(value: unknown): void {
   applyHit(); refreshMenu(); ui?.broadcast(); if (!quitting) selfTalk?.restart();
 }
 
+// 菜单里的开关直接写配置：写盘失败时恢复勾选状态并用气泡提示，不让异常冒到主进程
+function updateFromMenu(value: unknown): boolean {
+  try {
+    updateConfig(value);
+    return true;
+  } catch (error) {
+    refreshMenu();
+    const reason = error instanceof Error ? error.message : String(error);
+    void ui?.bubble.showBubble(`设置保存失败：${reason}。请检查磁盘空间和文件权限。`, 4000);
+    return false;
+  }
+}
+
 function petMenu(): Electron.MenuItemConstructorOptions[] {
   const state = menuState(config, win?.isVisible() ?? false);
   return [
@@ -158,13 +171,15 @@ function petMenu(): Electron.MenuItemConstructorOptions[] {
     { label: '和乌萨奇聊天', click: () => { void ui.chat.open(); } },
     { label: '设置…', click: () => { void ui.settings.open(); } },
     { label: '自言自语', type: 'checkbox', checked: state.selfTalk, click: item => {
-      updateConfig({ ...config, selfTalk: { ...config.selfTalk, enabled: item.checked } });
+      updateFromMenu({ ...config, selfTalk: { ...config.selfTalk, enabled: item.checked } });
     } },
     { label: '鼠标穿透', type: 'checkbox', checked: state.mousePassthrough, click: item => {
-      finishDrag(true); updateConfig({ ...config, mousePassthrough: item.checked });
-      if (item.checked) void ui.bubble.showBubble('已开启鼠标穿透，在菜单栏图标里可以关掉哦', 4000);
+      finishDrag(true);
+      if (updateFromMenu({ ...config, mousePassthrough: item.checked }) && item.checked) {
+        void ui.bubble.showBubble('已开启鼠标穿透，在菜单栏图标里可以关掉哦', 4000);
+      }
     } },
-    { label: '始终置顶', type: 'checkbox', checked: state.alwaysOnTop, click: item => updateConfig({ ...config, alwaysOnTop: item.checked }) },
+    { label: '始终置顶', type: 'checkbox', checked: state.alwaysOnTop, click: item => { updateFromMenu({ ...config, alwaysOnTop: item.checked }); } },
     { label: '大小', submenu: (['small', 'medium', 'large'] as const).map((size, index) => ({
       label: ['小', '中', '大'][index]!, type: 'radio' as const,
       checked: state.size === size, click: () => setSize(size),
