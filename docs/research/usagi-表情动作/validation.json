@@ -1,0 +1,1031 @@
+{
+  "status": "PASS",
+  "counts": {
+    "gif_sources": 23,
+    "gif_original_frames": 534,
+    "gif_sheets": 23,
+    "gif_frame_slots": 260,
+    "video_sheets": 55,
+    "video_frame_slots": 494,
+    "voice_sheets": 86,
+    "voice_frame_slots": 344,
+    "voice_in_use": 20,
+    "voice_null": 66,
+    "face_crops": 22,
+    "png_files": 188,
+    "sheet_frame_slots": 1098,
+    "with_face_frame_slots": 1120,
+    "unique_gif_frames_in_outputs": 262,
+    "unique_video_frames_in_outputs": 639
+  },
+  "labels": {
+    "other": 74,
+    "yaha": 6,
+    "pururu": 1,
+    "ura": 4,
+    "ha": 1
+  },
+  "readme_local_links_checked": 386,
+  "source_sha256": {
+    "Material/0f87da8acad01bd192a02bd02d4fc0a307807187.gif": "9fa6542d30e77d5d18ee85436af4fbecd4b72a23354f87b6582b065e7961ab38",
+    "Material/160c479d727476546b1c0c003d15b3f5a6628d9b.gif": "f98ec2ad7e391bde40438408d60a4115bb1ed7ccd49933bcde4cf0d849259b96",
+    "Material/1c2eff26d093dbdb22ce9a237fd153a91942011.gif": "bc763779ad494393d487cd6d8dca7a9a082c2abf52a1307d9b7912c839aa77ef",
+    "Material/2ca57d0da1e611c5284873ecbb0fc8514a9949c6.gif": "2cf69d3558dae5365b4d5134be6986f4a08ae1b716a2b5768373a2d026e7ea9b",
+    "Material/4dc8baf5cd2adcab35297a54cc77d1ea1942011.gif": "8e0f1c293713abc9c7366aa414615becebcaf1cb7ce77be46081c6c4c96e9ea1",
+    "Material/669cf400137587810e16c75b2d69da9774bd2ce3.gif": "130dba5ef58bac1885a662a3ebf20f330c318146d6a2e4a95c0f128a9de4a185",
+    "Material/7d4e64a0e27d910c644628842f13004173d7cc2c.gif": "9dce6c2bff35f56a3854737ed1594a57bf6de5de1b91d0bc2829c6dfb0869f64",
+    "Material/7f1ef01d996e7adba46e30f233abd61f1942011.gif": "0574b4da3704b3effd4fcc40bc037e6b5348aa89cd885f9ae8daafb00996f1ff",
+    "Material/81e28b672ef6ae159bfb6969a079cca21942011.gif": "edcdc87d7afc740dad74313f089da9c922b7ca98f923ef8622461e6bfeb73399",
+    "Material/89f9e11aca7a61f5db2ac315bb0aa3bb1942011.gif": "73cb11e08ceb43fa9e5bb05dbe9e2a99bff83066545bd1508e4a2394ec909e57",
+    "Material/903ac9bb2ae66096154d0ad3c806025bc1c29809.gif": "20ae92b8a8bf2a1acd996860d1a3d77dad0f01295857978d5320a9c976c6df86",
+    "Material/93a784a3d5bd0aaeeed6dba21e9329991942011.gif": "ec23528b86ae688afeaac089689da83139bf74dfc27e5a13f52a90ebbbc1232f",
+    "Material/9bc8323968da2c46c71b4cfbec304ddbba502f55.gif": "09b4bb99d423e62d0eaa9daf4cbdec92524d0b6a06cf51dd41e42e39adc9b580",
+    "Material/a694b860e187ac78192c5f0e502fad2a1942011.gif": "285ea973a1a93d47141dcd9bf309f2adfba182d1733d045b268b02a44e328d8d",
+    "Material/bedb5e52cf6a52ef9b1d11359a6c5c501942011.gif": "a56479dead179ecf0847ee7ab3005ccb5db074e5b0f0e994ddd532831402e8ab",
+    "Material/c78ea0a638d419a6baa3e0e65da34bba497afc15.gif": "21266279358eeb697e820da220cd83f11fbb4fd1ed34ab7ba0cf8c79c675748f",
+    "Material/d1107d90efca3b461825b456abbf5f4b1942011.gif": "b70654ef49befd56c3a916ba47f86e5e203a8411f226d54e82e8ca3202b89a66",
+    "Material/d48dde477eee3a58a5646ea9038dd51b1942011.gif": "10f9f4a5b4e844e0fa5569ee7c12b8691cab09622ccb5e8097cc202f55e5c50a",
+    "Material/d607e8a01175e0cd443fc8df50dbddc01942011.gif": "e3763c4d641a4b8a89b977f099055e5b766f6044db73db489757a1a626e25ca8",
+    "Material/dcb251595f98255a81109cfc47bc01ab1942011.gif": "1fbd4af7101bd800f6e862f4080aac13912271438da735d8978c5135078c01c6",
+    "Material/e92427f9c72831c0d06532dc194b4d471942011.gif": "46dc04e7324fa086094e49f18feb4d1047ae34188b58eb790ac61765003b85e8",
+    "Material/f3581eb5b5da21e320a31327642513681942011.gif": "59676f52a5263668b32957448821ba40b75a302d97c16eced10c551d4aff07c1",
+    "Material/fa5472df8f03bad516b4d1eb7330ae0b1942011.gif": "1c1ddfecf1b5a49cdd005c2e3791244997d47e7f2f5239c1d743329f00bb280e",
+    "Material/Usagi_Voice.mp4": "26c318304725292c3899166b787cefc0b631e964d3111763d2c6168f71e3573f",
+    "assets/sounds/usagi/manifest.json": "660331598f90bbcbb237b1032562d824c309a513d3cc4360f96e8f57c2e691d3",
+    "assets/model/face/atlas_preview.png": "9d87acfe25c4740d32d2bb2f217c6c753bd4c28c4b3a29a2d8a87bead28cdfc5",
+    "app/src/renderer/motion/index.ts": "67361e051db5e0ba83a31c17509831c972c848067aec294b667702207d2d8379",
+    "app/src/renderer/behavior/machine.ts": "597648755261bc2d0e347afff3f16b840c8bb24ea10e47bc1d8edbf9271fd425",
+    "pipeline/face/layout.py": "aade596b46e03984b70725b05f1aa035c41179d94f19aa015912db30cafcd85e",
+    "pipeline/face/draw_atlas.py": "79e0ed8dc3603446bb852a1bedce93e91e8b47a9b03fd7b497af8fc4df13ec52"
+  },
+  "artifacts": {
+    "face/atlas_preview.png": {
+      "bytes": 143347,
+      "sha256": "9d87acfe25c4740d32d2bb2f217c6c753bd4c28c4b3a29a2d8a87bead28cdfc5"
+    },
+    "face/overview.png": {
+      "bytes": 1687792,
+      "sha256": "f7411d36639f890a62be83da08212bb46f4c6d025cbf6b1e2cc0705494a2cbe7"
+    },
+    "face/侧脸凸ω闭口-d48dde47-f000.png": {
+      "bytes": 56217,
+      "sha256": "7980110fad0ca174e7b4db27febb6222f1e61ee89dd1a0b62cc18ea48459d6be"
+    },
+    "face/侧脸竖长开ω-video-059.200s.png": {
+      "bytes": 68830,
+      "sha256": "c16543465426dd6613ce82f8721d4c16dde3f4b3d39921e5c6ebd4c9b735a97c"
+    },
+    "face/侧躺小椭圆口特例-video-111.733s.png": {
+      "bytes": 91500,
+      "sha256": "ab75e607088c0ee4eb521999a44867ca906c7974260f5b16a174d4a39aec3d6d"
+    },
+    "face/俯压闭ω姿态-bedb5e52-f003.png": {
+      "bytes": 81386,
+      "sha256": "95d368f5c668a5a6a56a9400772298e93b6087897088724cac78ec1ff601e01f"
+    },
+    "face/俯压闭ω姿态-video-144.800s.png": {
+      "bytes": 112432,
+      "sha256": "93b4a61552f438ff999bb60b6249efa493f36d69c74bc200d186975d43062c01"
+    },
+    "face/倒立张ω特例-video-084.800s.png": {
+      "bytes": 54894,
+      "sha256": "7c1c062610a0066428180c99d07d92ef5534632597fe82b8cb49a17f7ad10ea5"
+    },
+    "face/咀嚼回ω-d1107d90-f025.png": {
+      "bytes": 83328,
+      "sha256": "58fede79ed30ad6e67a165f596977a5965297c0605b3fc67d83b9e4722eb6ae2"
+    },
+    "face/哈圆眼开ω-video-157.267s.png": {
+      "bytes": 70621,
+      "sha256": "7c6fd445f462fca14eab81623239885f3552cee1dbad3ffa3e74e59f6e20a8d0"
+    },
+    "face/大开ω长叫-video-056.800s.png": {
+      "bytes": 56636,
+      "sha256": "80da15efa7a3b4f3010b7e7d5927573ac3d350fa81b2d7dc96420f67336edcb5"
+    },
+    "face/小开ω搓手-0f87da8a-f000.png": {
+      "bytes": 82905,
+      "sha256": "7beb189a07fa91d62ad415acb39ce0f0e9743e2efc455f24622ea33a2ee6e1e1"
+    },
+    "face/常态圆眼闭ω-2ca57d0d-f000.png": {
+      "bytes": 75955,
+      "sha256": "fbe76edc6083367636472c812a40eb669c622ba44c63bab0e37a796877610464"
+    },
+    "face/常态圆眼闭ω-video-143.200s.png": {
+      "bytes": 42393,
+      "sha256": "9353cb4ba988754c58ffdfaa3b9b1c59c2309802dde67ab26640579de3854730"
+    },
+    "face/旋转圆眼开ω-video-124.267s.png": {
+      "bytes": 71576,
+      "sha256": "c5da80b57c5743b970ca7a4457f31f955140840dac2e8d3d2a500f19fdf223dc"
+    },
+    "face/浅开ω小舌-video-000.800s.png": {
+      "bytes": 39874,
+      "sha256": "b34c2c5a1e2451ad52a5055a5b72a47c027cf3bc1e1f83688ec43844d017e634"
+    },
+    "face/短横闭眼-f3581eb5-f009.png": {
+      "bytes": 56933,
+      "sha256": "2b2654b54fc36d2f551adc1ef006b155c26749ced892d2e294f40eac742b48d3"
+    },
+    "face/短横闭眼对照圆眼-f3581eb5-f010.png": {
+      "bytes": 60708,
+      "sha256": "c8eb526e7d6a8fbee9c8b56ea755ecf915ffc60ae029f5051e9a0baf8b2be165"
+    },
+    "face/竖开ω舌口-d607e8a0-f006.png": {
+      "bytes": 70512,
+      "sha256": "c2944c8186ccd2d0cc21a6aa7cc09a7f85e016387644236aeed5b0e311164e1c"
+    },
+    "face/竖开ω舌口-video-002.133s.png": {
+      "bytes": 40943,
+      "sha256": "1cabc05c07808bb5893495b289f0332a0fbbac1729484f06c21fc94234bc98c0"
+    },
+    "face/连声浅缝ω特例-video-043.733s.png": {
+      "bytes": 41248,
+      "sha256": "130e263ac4b5c66cf8d3102ac10ed504ff1524754329c7c3845fb54f515eb4a1"
+    },
+    "face/闭眼上弧甩水-89f9e11a-f006.png": {
+      "bytes": 116318,
+      "sha256": "bf486346fd107ba003e336872252304f27574239336300c00821f240cac06fe6"
+    },
+    "face/鼓颊紧缩ω-d1107d90-f000.png": {
+      "bytes": 74513,
+      "sha256": "1b0b7b32e91dfaa8a0ee28613ef302f53165894618b9f906f92fe03c95ca3410"
+    },
+    "face/鼓颊缩口-903ac9bb-f016.png": {
+      "bytes": 205517,
+      "sha256": "cad123709a1c4fb374de4cce719e2b3eb365e12cdd55ed54a6aaeb77b867c7dd"
+    },
+    "gif/0f87da8a.png": {
+      "bytes": 157137,
+      "sha256": "caabb93ab16a21662a13eaf8a7bce18f52df1ef4fad54012a43d0a708aa15f1d"
+    },
+    "gif/160c479d.png": {
+      "bytes": 361406,
+      "sha256": "3740be4d9e1541a09a8db21e99e9e16f11043fab12c2ed8be5425494a77619d4"
+    },
+    "gif/1c2eff26.png": {
+      "bytes": 559647,
+      "sha256": "326848f7f4becd485dfc3648377eac4898783e65dae1c65117157b7a3cff592e"
+    },
+    "gif/2ca57d0d.png": {
+      "bytes": 514426,
+      "sha256": "71e7c65e1fc16eaa454e9f047aa989aa547fd60659ff270e4241052ca1004c55"
+    },
+    "gif/4dc8baf5.png": {
+      "bytes": 442370,
+      "sha256": "c5054fc1bc81c1050a047a700185f1190e2d005efc77c959a9db22441656056f"
+    },
+    "gif/669cf400.png": {
+      "bytes": 962104,
+      "sha256": "066de61359c82ddd7f6f800eccc6de2771cc339e5148bf134a23a52a552e8c05"
+    },
+    "gif/7d4e64a0.png": {
+      "bytes": 188678,
+      "sha256": "0b893cc3f9552cc30a5611110544dee02d3100f9a2e3a7613e13eb63e8727f82"
+    },
+    "gif/7f1ef01d.png": {
+      "bytes": 585717,
+      "sha256": "5f8a1561c0dbd75a983e539f206e3caf5c2bc9a0032fe7e790f73054e77c16b0"
+    },
+    "gif/81e28b67.png": {
+      "bytes": 308471,
+      "sha256": "b5298023fe040119f795f8ee39942608cffcac50104f8be6697008d627004008"
+    },
+    "gif/89f9e11a.png": {
+      "bytes": 627215,
+      "sha256": "5675b24e04651c9bae46255b1ab96787c6710c085d51010523a4241312321a28"
+    },
+    "gif/903ac9bb.png": {
+      "bytes": 1183501,
+      "sha256": "3429c125f9f34adfc9b4cc173e5728ee858758afcb22fadd861af8c3daec32f8"
+    },
+    "gif/93a784a3.png": {
+      "bytes": 561125,
+      "sha256": "4bf047f8cf8b1441a1f48cd6111925ff6dbe0a1891b730fc44a7fed6461d4e32"
+    },
+    "gif/9bc83239.png": {
+      "bytes": 710710,
+      "sha256": "44a2df756e3c84460f6017b2c42095a32e0d7e55dc56bc0cb72ed73ce38c5cd4"
+    },
+    "gif/a694b860.png": {
+      "bytes": 269541,
+      "sha256": "523126c7181fd514c1f22038268523140e77b95bec21c6a3c5117aade8213d82"
+    },
+    "gif/bedb5e52.png": {
+      "bytes": 594760,
+      "sha256": "bea47253ce9748b98c2d2867e492496c7927e7864eeaf6f41efbf8e12aabe4c5"
+    },
+    "gif/c78ea0a6.png": {
+      "bytes": 486674,
+      "sha256": "8c6cfc8c09e0cb25194a8e4c2f9a507b22f479ddd6cf0e91178a33eff7fc2770"
+    },
+    "gif/d1107d90.png": {
+      "bytes": 506510,
+      "sha256": "be5c3c04ec58b59b208d17c924300f9669db8b368b48907a0676b70494eadc04"
+    },
+    "gif/d48dde47.png": {
+      "bytes": 189211,
+      "sha256": "ca92e668e4e915be05cfa0fb3ff960b63d9fc31fdb17f5ec7f158eb8963fba84"
+    },
+    "gif/d607e8a0.png": {
+      "bytes": 363380,
+      "sha256": "aff334f22b18202e9f205500d3a789947c689dff3b831432487fcfb1e8c6dd74"
+    },
+    "gif/dcb25159.png": {
+      "bytes": 448856,
+      "sha256": "6318c5e76504eaeeb7d557b6eb598cbb22b0de7db1bcad89a92f74b7cc39e289"
+    },
+    "gif/e92427f9.png": {
+      "bytes": 542431,
+      "sha256": "4d63767a7da0d9af8e152202ad6b8fa92a5f97c42663d42ca26ea12afd922596"
+    },
+    "gif/f3581eb5.png": {
+      "bytes": 294900,
+      "sha256": "daa961feb8b12e12cd5caaafed525eccf8bc1320cb69a745c2576a6827b29667"
+    },
+    "gif/fa5472df.png": {
+      "bytes": 140480,
+      "sha256": "251b439bfb857ad8ad48e5b5645829ceb98299d5663e33f9781cd5e3b6a9d95f"
+    },
+    "video/000.000-000.533s.png": {
+      "bytes": 77266,
+      "sha256": "cfc6e3565a9d72afdcdff93218707b69bb45fcccb9bb8fd0951681a9769b77db"
+    },
+    "video/000.533-002.667s.png": {
+      "bytes": 199154,
+      "sha256": "d40cb9d8770bb54939d03f57b860ac7497bb39f655bdebfe598323aa155b0b68"
+    },
+    "video/002.667-004.533s.png": {
+      "bytes": 179760,
+      "sha256": "c3c95d64770fc4f4dbf9277490bf43cf5805500dd264915b6c07a1c552d92b96"
+    },
+    "video/004.533-006.400s.png": {
+      "bytes": 292235,
+      "sha256": "fc9e2ef31e551d00f9c064e530cb6db8eae1b407b9ad0b4b1df0622cae9f0df5"
+    },
+    "video/006.400-009.600s.png": {
+      "bytes": 512518,
+      "sha256": "6bbf2d17663eabb120c72da1d2173832dbaa5d61976732293e2fa1cceec17630"
+    },
+    "video/009.600-014.133s.png": {
+      "bytes": 377829,
+      "sha256": "8a696a3616da580576ca5c5ab6aa415cac4f002fe2afd4c065b74b09da8d3aaf"
+    },
+    "video/014.133-018.933s.png": {
+      "bytes": 426041,
+      "sha256": "e8915446c89a72fc24a1eb270d9fadf831ff9e983f4b1fc986071e98d8040599"
+    },
+    "video/018.933-024.800s.png": {
+      "bytes": 636356,
+      "sha256": "adcb4711bfad53628d11da4b900c7e4ee4fe6d59318a4a76db76537f0aebc1c0"
+    },
+    "video/028.800-031.733s.png": {
+      "bytes": 707757,
+      "sha256": "8c282085ca59f7b55cac8a8abf42002e7044622254b841ffcfc08df44eed460e"
+    },
+    "video/031.733-036.000s.png": {
+      "bytes": 596457,
+      "sha256": "b41c166b628a3c3893602ad0f22969949e215a6c1b27ce079b4105c258640aaf"
+    },
+    "video/036.000-037.867s.png": {
+      "bytes": 304405,
+      "sha256": "e2b323d3180da8f9145cee4f722a3372e8e73682d17c79a6b40e7579e5db0340"
+    },
+    "video/039.467-043.467s.png": {
+      "bytes": 510812,
+      "sha256": "082787edf9b4a5b00c34e5464d82d9cbbfb15f2b7c5cb120af818e87faa58108"
+    },
+    "video/043.467-044.533s.png": {
+      "bytes": 174429,
+      "sha256": "74b7995042a2bd8c2facb33e14e60b3673fc5e7e180899e4645366b202c3f10f"
+    },
+    "video/044.533-046.667s.png": {
+      "bytes": 568187,
+      "sha256": "817d066a4ebc875ed28e0a0f9817f6640e91d40884ea84f34f05cae274a914ea"
+    },
+    "video/046.667-049.333s.png": {
+      "bytes": 391478,
+      "sha256": "bc00dbd11c4714908e46db9a2e9fcf98875c133c8953a401957ba068bb892b53"
+    },
+    "video/049.333-052.800s.png": {
+      "bytes": 553278,
+      "sha256": "f21e24c36993e9be799faf38b7ab01b6183a9adbdde8678b197c0c090d7f2d98"
+    },
+    "video/052.800-056.000s.png": {
+      "bytes": 576194,
+      "sha256": "e9afa87f6658ac95247602ce8bf070c032223232bc24bb3fc92698911c4a7cd7"
+    },
+    "video/056.000-057.867s.png": {
+      "bytes": 388357,
+      "sha256": "af1f22dd897d59937e6c223ea64f2dc53b3a59a85fb01b647e4341e9d05660af"
+    },
+    "video/057.867-060.533s.png": {
+      "bytes": 493124,
+      "sha256": "276c40b6bdd977daf3b8b1983530135854592ce09f6deda8730d58b35190a039"
+    },
+    "video/062.933-066.933s.png": {
+      "bytes": 471001,
+      "sha256": "545af629c0ed6aa0903c1c813c39445f00dff1a0dd60c44ea884cbde54357449"
+    },
+    "video/070.400-071.733s.png": {
+      "bytes": 212847,
+      "sha256": "8ce8280dfd1f9b8f6e16181b759f425f465d9e4854315f2178bcf90e06af7f81"
+    },
+    "video/071.733-073.600s.png": {
+      "bytes": 388002,
+      "sha256": "b02e7ea30b3dddcd941110b55b83b3ecd27bf9d765e45d411814aacbb9bc1c89"
+    },
+    "video/073.600-076.533s.png": {
+      "bytes": 326196,
+      "sha256": "fd3f1fcfc05f01cc566877b2fe8bd20034a98f6f2d016dcac62238a908786b36"
+    },
+    "video/076.533-082.133s.png": {
+      "bytes": 420139,
+      "sha256": "497072037bacbfafb0238ca2ff767bc315577861d8614140247ebcb0bcc8d869"
+    },
+    "video/082.133-083.733s.png": {
+      "bytes": 233347,
+      "sha256": "b1024533a1bc0d089b51f08d9d674015ed0ec4a1f9ee0a5258ff73bfdd7634aa"
+    },
+    "video/083.733-085.600s.png": {
+      "bytes": 259047,
+      "sha256": "e64b2be100a3a2e8f557b5e2e211d2188682bf8f0942c3390347e04b0a65fa3f"
+    },
+    "video/094.933-096.533s.png": {
+      "bytes": 289419,
+      "sha256": "00229e297ec464f5e3e865ec8427323537a630be8a036851e9dd2389d29f7edb"
+    },
+    "video/096.533-098.133s.png": {
+      "bytes": 296649,
+      "sha256": "da36fa2c9ea064680dd912def33ca758349098ed78a249838f6467b0f63184c9"
+    },
+    "video/098.133-101.600s.png": {
+      "bytes": 554447,
+      "sha256": "f9fe2c5ee9bc86b2e8511f688c05ea52322756faa1bed031ca8cfae0c785f932"
+    },
+    "video/101.600-103.733s.png": {
+      "bytes": 265115,
+      "sha256": "aac9c5c9d0ce47afa554212baa849ce1a70714b70e74f0171b039df9e12428ea"
+    },
+    "video/103.733-106.400s.png": {
+      "bytes": 524088,
+      "sha256": "c766d3d32f94b54247a3f095815715cb83820e6e4c1598e2e60884151e4cd713"
+    },
+    "video/110.133-112.800s.png": {
+      "bytes": 320228,
+      "sha256": "b019b6da38aa8e18555992327376d1604076633b97fa65a6e692c7ab4ec5707c"
+    },
+    "video/112.800-114.933s.png": {
+      "bytes": 306036,
+      "sha256": "52da918c01e14a0cf8223fff34e0c4705b67a4034232fd529d55ee7ca6e8a924"
+    },
+    "video/114.933-117.333s.png": {
+      "bytes": 392486,
+      "sha256": "72258832ccda3dd5af04ecd7e54cc78eb3bffc8ad88baceba4c4e9a98dc10e21"
+    },
+    "video/117.333-119.200s.png": {
+      "bytes": 246771,
+      "sha256": "50fbe0129a267cea8ff1686f56331f7119e4696eb2b0feaca41adee0870f79cb"
+    },
+    "video/119.200-121.867s.png": {
+      "bytes": 306279,
+      "sha256": "79b35e21bc910db31181d7a46c8ab5abc72ec550d189d291900d2fef8639ed08"
+    },
+    "video/121.867-123.733s.png": {
+      "bytes": 237161,
+      "sha256": "692822503bdbe48694e6126a80afbefeac5158d9b31bc2933a245f0f11b98dfe"
+    },
+    "video/123.733-125.600s.png": {
+      "bytes": 286510,
+      "sha256": "e63d402d7a3275ba341e09393393620d3b4fab5e483eacec82f534aa035fe66f"
+    },
+    "video/125.600-126.667s.png": {
+      "bytes": 109292,
+      "sha256": "cea8146a9af765fad7451110e9ab5422dfcf98792b11f90a45ffc89bf3397fa3"
+    },
+    "video/126.667-128.800s.png": {
+      "bytes": 226087,
+      "sha256": "76f762e368b211da1761c1460949aa8ac43f0e2c6ad7e7f9d8fe9379a8fe3f50"
+    },
+    "video/128.800-133.600s.png": {
+      "bytes": 374257,
+      "sha256": "405f2dfdc17f5acb955ff6a2e76c5b7cff5f1911dc331e8db81d0d53af8bfaa9"
+    },
+    "video/136.533-140.800s.png": {
+      "bytes": 588883,
+      "sha256": "abb6800bd2fadb448268cf4eb37b7451806272d981cf7a13d187f1057eb9c30b"
+    },
+    "video/140.800-144.000s.png": {
+      "bytes": 402470,
+      "sha256": "b6d59c9146534b98070431d522aaadc9c55807e3eb53cd30b6a727c2b7142ff5"
+    },
+    "video/144.000-147.200s.png": {
+      "bytes": 479502,
+      "sha256": "f08aa89dccaa1dca4234e95053d8cba5b835212111842c1f6004c60c260f616d"
+    },
+    "video/147.200-149.333s.png": {
+      "bytes": 382645,
+      "sha256": "f4a11a83f18a827945c2e0a9e2a74ce9dae7688a6fda6972edd8ec55b29e407d"
+    },
+    "video/152.000-153.333s.png": {
+      "bytes": 234449,
+      "sha256": "c624135b243d8bdfb1bc62b3d6ca265a56f1d39ade787145c8f9516bbe14bce8"
+    },
+    "video/153.333-156.800s.png": {
+      "bytes": 638081,
+      "sha256": "29983a88fe171c84c47db06432c79d81c565c9821faa19b1df98f95efe245226"
+    },
+    "video/156.800-159.733s.png": {
+      "bytes": 463080,
+      "sha256": "d6a944db8eb35835fb700e50f77264c4c39f150885caeef0b4c926b7f783247e"
+    },
+    "video/159.733-161.600s.png": {
+      "bytes": 122804,
+      "sha256": "613386b08f3adfaa1fd4684bf5c3611933b818627f637d8241e2030949880d2d"
+    },
+    "video/163.200-165.867s.png": {
+      "bytes": 384114,
+      "sha256": "758b79db344830ee073b3812896a6603e0d3a5f866ad99c4aacf040d1ff601cc"
+    },
+    "video/169.333-171.200s.png": {
+      "bytes": 277492,
+      "sha256": "419d6ae60539085aad8c843586ce23744512e99997b390d220d2276b57cd3d15"
+    },
+    "video/171.200-172.267s.png": {
+      "bytes": 131037,
+      "sha256": "d66aef48c665862b5e5bad0fd44145fa959b3a8acdd640c542a30209020c3523"
+    },
+    "video/172.267-178.133s.png": {
+      "bytes": 814765,
+      "sha256": "88271d00a8751d59b2a5f1758da69c07f55bc6560c9823e6b6c23a37ea542961"
+    },
+    "video/178.133-180.533s.png": {
+      "bytes": 280909,
+      "sha256": "0481380e81c25ab6a8827f06acd99e33378fbf303a43a3e740cd7d6b66b378d2"
+    },
+    "video/180.533-184.733s.png": {
+      "bytes": 319310,
+      "sha256": "a05f24cc2a21160be09c7de4d9a456c95275abde9e8c1506a46514454d72caba"
+    },
+    "voice/ha_01.png": {
+      "bytes": 139749,
+      "sha256": "cda7bb27412627a1d650a3e5bab584f79b55ca4d0e7d38dd160fb2f6258bbf31"
+    },
+    "voice/other_01.png": {
+      "bytes": 137917,
+      "sha256": "eceae561fbc16c32ad2cd01cfdc82cd23e6e354bbea9c8059a0d18ad39a63b94"
+    },
+    "voice/other_02.png": {
+      "bytes": 147905,
+      "sha256": "1f90303d538131f8d5ea5bf118230b53a2d64567477d5ba43dd6bb0f2c257d23"
+    },
+    "voice/other_03.png": {
+      "bytes": 232295,
+      "sha256": "c54c0f601d0e2b11dc14111bca48e8180b1be0415fdb25a43566f2ee5fddcddf"
+    },
+    "voice/other_04.png": {
+      "bytes": 131162,
+      "sha256": "681d41ca951986e9cbfc675f3eef186fb7703f756d9b68187ec77f8e96267140"
+    },
+    "voice/other_05.png": {
+      "bytes": 128828,
+      "sha256": "d0a0e347333d927224d527c69f3dfa97e4822bffa97067e4b0b13621123a0586"
+    },
+    "voice/other_06.png": {
+      "bytes": 157428,
+      "sha256": "71903e53845fdcad56d74e73161fd1fe2985ba54a90e0e4de90ce543f62a68e0"
+    },
+    "voice/other_07.png": {
+      "bytes": 180613,
+      "sha256": "7a964b4af26e42284faf4472b1b01b71d02b9dcd78c06f5b045c8db5a2da24d7"
+    },
+    "voice/other_08.png": {
+      "bytes": 121998,
+      "sha256": "81342f3b841bc6afe3cde23e81d6aa0dd8c17688196859d0ad5651e2b311a3dd"
+    },
+    "voice/other_09.png": {
+      "bytes": 218917,
+      "sha256": "f908e43edabbe4ce0ad9e921d55231c8674f76b35daa484990cbf85afca670cd"
+    },
+    "voice/other_10.png": {
+      "bytes": 219785,
+      "sha256": "8a9db87eb59be83f15d21500ca43add13e06c06dd29213003591e4aff586683a"
+    },
+    "voice/other_11.png": {
+      "bytes": 182342,
+      "sha256": "52f76807663909cf669ebc48684e529dfc7ff23f5878bcfb423649abdc7bd8e7"
+    },
+    "voice/other_12.png": {
+      "bytes": 221756,
+      "sha256": "91aaf8a81e812505d2a29e53b42717529d17a6acaa23eba48e767b0bc06e564d"
+    },
+    "voice/other_13.png": {
+      "bytes": 251404,
+      "sha256": "655651fc6e8a0842802167efe23887d821a36de7a5bf95285ad5bdda5131bfa4"
+    },
+    "voice/other_14.png": {
+      "bytes": 283059,
+      "sha256": "40f8af034b4add4ceefb7aea23d7471b6c2b6e4fdd05142599f0b529eb730e6e"
+    },
+    "voice/other_15.png": {
+      "bytes": 131093,
+      "sha256": "2ba140ab89f1aa997d18ace0c09a1623fd315b6d4bddb43b499b6f272498aa3d"
+    },
+    "voice/other_16.png": {
+      "bytes": 204602,
+      "sha256": "9337ab21685df53dea8fca053040430fe508d2b3381294de09eb5a1b8e232ec4"
+    },
+    "voice/other_17.png": {
+      "bytes": 132739,
+      "sha256": "00940a00ace8ce23e308529ccaeb4cbc79e9730256fc3bb1a77a6b6e656b7513"
+    },
+    "voice/other_18.png": {
+      "bytes": 179627,
+      "sha256": "41163c3d53cf5f12b4e16e2b6950ae4243c8a3eabea3b39e9973b5a832951fc0"
+    },
+    "voice/other_19.png": {
+      "bytes": 182059,
+      "sha256": "dccd80d0da374b9f4d91d705e88624ead359a671560331ba504b5641dfdd80cf"
+    },
+    "voice/other_20.png": {
+      "bytes": 251932,
+      "sha256": "00bd2548fe2510076a8a6fbf93d35b6a7a182fbd2e948485d1166d1786bb497f"
+    },
+    "voice/other_21.png": {
+      "bytes": 197307,
+      "sha256": "9fb427a8fe65301b433ca1e1c1a5b2678abfdce57ebfb80c481fea64f47f8007"
+    },
+    "voice/other_22.png": {
+      "bytes": 175804,
+      "sha256": "e157ad5bd2472a74431269f444075054a9a5dc0cf278f089447898ddc27c5076"
+    },
+    "voice/other_23.png": {
+      "bytes": 179107,
+      "sha256": "017ea811c56821de3d3770acbb60f056714f5a49242ddaf62f09f8a32790195f"
+    },
+    "voice/other_24.png": {
+      "bytes": 242489,
+      "sha256": "b335df8b2579ecce8888b94bf9c567699609c961ab075d241909f8585764d0a6"
+    },
+    "voice/other_25.png": {
+      "bytes": 180406,
+      "sha256": "618c25bfa2b093e5bbd8843b079ddcafc35b8901a3e38630cee0000a39fba6df"
+    },
+    "voice/other_26.png": {
+      "bytes": 246163,
+      "sha256": "4e2abfc94aa2c0e252973046418c01d34ee768faf49c002ffd69d5faa0be3f32"
+    },
+    "voice/other_27.png": {
+      "bytes": 212652,
+      "sha256": "aaffc4a40832cdef7083a5377e35e3066d9eee2e8f57b6980ca61ccde24a639a"
+    },
+    "voice/other_28.png": {
+      "bytes": 105772,
+      "sha256": "117c0ce39c47c71f3a2cba357bc0a6a694dac193321fcfbe8f0f8d6d426ebd47"
+    },
+    "voice/other_29.png": {
+      "bytes": 121465,
+      "sha256": "d945b8f40b84765c4dcb5e1c09a9875655a872e88fffdbd3e4d843613b2ec7ee"
+    },
+    "voice/other_30.png": {
+      "bytes": 90380,
+      "sha256": "89199fc0c7e3868e206ecbc8b688ab1a3b5deaa29737190ff99f98d05ac360d8"
+    },
+    "voice/other_31.png": {
+      "bytes": 143042,
+      "sha256": "9d154dfebee26a52c36b3fa804203f186750afa382ad6453d8fd690853fd8ddc"
+    },
+    "voice/other_32.png": {
+      "bytes": 179840,
+      "sha256": "c3f4156d8a84d36c6ba454a4e719c5f99563982a43f271eec372c04daceab97c"
+    },
+    "voice/other_33.png": {
+      "bytes": 66950,
+      "sha256": "dc6f2f8594113c81f51bdb5b30d0dbc945ebe0e6b0d0be0014f819fc4e247004"
+    },
+    "voice/other_34.png": {
+      "bytes": 113225,
+      "sha256": "16d1d7d23eb832d32f6432276f6aa414e64b4b95ce780e109dec1ee760631a61"
+    },
+    "voice/other_35.png": {
+      "bytes": 95332,
+      "sha256": "bcdd9573617b859a8885b678ab18b1bb8b920c6a88b3942dd45664f82840385d"
+    },
+    "voice/other_36.png": {
+      "bytes": 109488,
+      "sha256": "cf6dac40a9585342516eaa9d1b7c9a0add66ba19bcbd7c7ab36c7e1f0f936503"
+    },
+    "voice/other_37.png": {
+      "bytes": 138443,
+      "sha256": "f2bb4f3bc3a75f1c799668ded45a4fff96d06c6fab15f0841bdf1b597ba6870b"
+    },
+    "voice/other_38.png": {
+      "bytes": 168699,
+      "sha256": "3137e4394eaed638eaf8b2c8216852d7214f3ee3434b41edd598f12cde498d0e"
+    },
+    "voice/other_39.png": {
+      "bytes": 175707,
+      "sha256": "f146f057cb574c7789275f3a3c188c9b3bf4001ba11a28d540df5d37206f3b37"
+    },
+    "voice/other_40.png": {
+      "bytes": 155630,
+      "sha256": "eae25dc4dd1a099085634701ec5e24dfa72558d0329428e878d534c3249026d0"
+    },
+    "voice/other_41.png": {
+      "bytes": 117720,
+      "sha256": "d3b00766701a48628a9053f8b129af92253c2f248ceec116f6937e2948dc7658"
+    },
+    "voice/other_42.png": {
+      "bytes": 186968,
+      "sha256": "3abfeb5eb386389edceeadcfb7cc30e21430fd77082b9ead492196f7c8821571"
+    },
+    "voice/other_43.png": {
+      "bytes": 180533,
+      "sha256": "7be618c5c3a1c2e074f709045426fa968832d59a50019969e89ef290048aafb9"
+    },
+    "voice/other_44.png": {
+      "bytes": 233611,
+      "sha256": "8ac8e4680385cb40c34a00faee1159bd513ee3d968c252f58045e06b8b9ac7ac"
+    },
+    "voice/other_45.png": {
+      "bytes": 149956,
+      "sha256": "c622612f76c4bd1a400f3f8a13f12b026e0e3efcbac28a1a0e98444b582f0267"
+    },
+    "voice/other_46.png": {
+      "bytes": 211573,
+      "sha256": "7354713cc2c18f8334f623ce06f104cdec79fc553c4b445b0ca6c8768eaba4cc"
+    },
+    "voice/other_47.png": {
+      "bytes": 164803,
+      "sha256": "aa1fa49749a0d248035412c6bd0adcac82fe7750d8cac1bbd69ad8a1e1af5da0"
+    },
+    "voice/other_48.png": {
+      "bytes": 111274,
+      "sha256": "fd4016b0f9dec4fc73fe7fd7541ed548dc839dcb7163ec4395e97d3ba308ae14"
+    },
+    "voice/other_49.png": {
+      "bytes": 150062,
+      "sha256": "c0369ef22724f60aad4bfc44e11744ae10c43b8fd2bb05aa68297dee612a15cc"
+    },
+    "voice/other_50.png": {
+      "bytes": 151777,
+      "sha256": "7fc5c3ff504e2215db80ba6335d5f8def6c50152884777f5d9c3b4a56b6e0938"
+    },
+    "voice/other_51.png": {
+      "bytes": 167455,
+      "sha256": "c74cbe5f6a6f5622bbb6162d22bbd3fa2ad39124d9806f6496a44baa7281a722"
+    },
+    "voice/other_52.png": {
+      "bytes": 108370,
+      "sha256": "0ac03594b491884ce9760af6de7a0e445846a33d3f34f54dbd3053094513387e"
+    },
+    "voice/other_53.png": {
+      "bytes": 117533,
+      "sha256": "9f6cd1926c1b5698c90028f8f678fb99d202c4965c8d781707b9ecf6511201a5"
+    },
+    "voice/other_54.png": {
+      "bytes": 117906,
+      "sha256": "77a5ea34b72486e61db53d2087e7cac7fbb3d436168c09538e93cb01851b5de9"
+    },
+    "voice/other_55.png": {
+      "bytes": 149600,
+      "sha256": "ec5be787cfd3a28cb4654da8e91bf4aef482cea9f5df46716c972bf92bc75875"
+    },
+    "voice/other_56.png": {
+      "bytes": 161199,
+      "sha256": "039fca6362be5038e9c66d6feee05e3ae87f2e6181a513efc95a5df3f21e93b5"
+    },
+    "voice/other_57.png": {
+      "bytes": 202781,
+      "sha256": "3fc8b3d2b8ba00e78dc66846bf4ca61135835d1cd72c5ed22a515dfcf1f424a9"
+    },
+    "voice/other_58.png": {
+      "bytes": 162677,
+      "sha256": "7059c2c00155af4416efa2d8bde54c81e5a32e8e71cc394b6a2aeab7a91de09c"
+    },
+    "voice/other_59.png": {
+      "bytes": 175260,
+      "sha256": "8ea5c86d03ceadfeccce1c4c4b5c3faf42bce50b4dda200c08375276340a0791"
+    },
+    "voice/other_60.png": {
+      "bytes": 217311,
+      "sha256": "05e34c179ae43cf20ebf751bc3c2f12f6f8bfc60e7716d4d066f9ce6b1a7e368"
+    },
+    "voice/other_61.png": {
+      "bytes": 157668,
+      "sha256": "03f3b30158a4c9424744a0e5cad288fe599139a27e0d57ac4433b21280e99ddd"
+    },
+    "voice/other_62.png": {
+      "bytes": 219663,
+      "sha256": "f9d3a25206aa74e61463e0964b2e3708c9d4f39b71c2c69ebe5be71439ee1761"
+    },
+    "voice/other_63.png": {
+      "bytes": 198996,
+      "sha256": "8def1ccdba90322207da9e0d18ccea6dc9e6d039b2e19296fdaff29dff0edc6c"
+    },
+    "voice/other_64.png": {
+      "bytes": 159223,
+      "sha256": "351bc2516a41a3facd7c9ac487d1e214d45dcee6957f468ce5d3265692562ab4"
+    },
+    "voice/other_65.png": {
+      "bytes": 48354,
+      "sha256": "2ecc0c6a4a27fe9606fb55d1e68902d8e6200121d417ba01e0149811f43be767"
+    },
+    "voice/other_66.png": {
+      "bytes": 111075,
+      "sha256": "79909b831f330cc27d815d54f4445935cbda26e6b7d35959d79e4c239f78d666"
+    },
+    "voice/other_67.png": {
+      "bytes": 183465,
+      "sha256": "eaece8ba24ab33ce9331ccc2f15933208593ff457efa8b8293149a8b006945ad"
+    },
+    "voice/other_68.png": {
+      "bytes": 108917,
+      "sha256": "25484942de14cc1b48d4dee4f22e950f870ea00e308c501d2026d43a5b8eb393"
+    },
+    "voice/other_69.png": {
+      "bytes": 224467,
+      "sha256": "5642fbc75a4ec85f2efae113051802d5053701186867d0582bb938e88e84b46d"
+    },
+    "voice/other_70.png": {
+      "bytes": 267422,
+      "sha256": "52734dcc94c20bf03bd957e8ecdf35f558cae9fa9bd720883513fe9b78a08bdc"
+    },
+    "voice/other_71.png": {
+      "bytes": 284438,
+      "sha256": "b9e4bbb9891c8eea3edc5ca3510578578043976c9c6350b878cad46cae9aa738"
+    },
+    "voice/other_72.png": {
+      "bytes": 270254,
+      "sha256": "dcd0df91d8280fc78e26a6bdd55ba3b81c4ffc137f5ba603095c04beca265764"
+    },
+    "voice/other_73.png": {
+      "bytes": 87810,
+      "sha256": "86da435b936a9e2d0295584f82c8a9632d1bcf39f841ca47446bb7d661df85d8"
+    },
+    "voice/other_74.png": {
+      "bytes": 133355,
+      "sha256": "7edbd28437400d7b08ce064e17e7972148d422bd00f072f7f2cf54c547336fd0"
+    },
+    "voice/pururu_01.png": {
+      "bytes": 185231,
+      "sha256": "d215d4a0dc59a44e10b0fd2eccba7dfc50996619f467c0cd258273a762850531"
+    },
+    "voice/ura_01.png": {
+      "bytes": 71670,
+      "sha256": "b0a45b5ad8cc93a6d2bd028ed1e6627d8d5f7700d8aed11512894eb10794a3ab"
+    },
+    "voice/ura_02.png": {
+      "bytes": 146131,
+      "sha256": "1a74f2e0ee784b003932da7d302e6d099a0339f81e36afa18d6d49c97024fa53"
+    },
+    "voice/ura_03.png": {
+      "bytes": 223577,
+      "sha256": "5b1419d705cfa60f81a94fca532a6743acc2b11167efdd04cb6243dddf95bb4a"
+    },
+    "voice/ura_04.png": {
+      "bytes": 226758,
+      "sha256": "11836fd40c19f75c0c9cdaba3c7130afbbd1bad0c9dcca438f293910c678fbea"
+    },
+    "voice/yaha_01.png": {
+      "bytes": 134578,
+      "sha256": "cea7f2a3bb4da2c516c3419302e16a98b6bbc68c3c844a003810880211852163"
+    },
+    "voice/yaha_02.png": {
+      "bytes": 222692,
+      "sha256": "659fb7931483263c6d4e2017d08511a7541824ea41d309b0e82e2eb474fb2198"
+    },
+    "voice/yaha_03.png": {
+      "bytes": 263941,
+      "sha256": "60701699616afba1b70a6afd3dd87fc6827721205e53e364c239d2d0b0d26a29"
+    },
+    "voice/yaha_04.png": {
+      "bytes": 211774,
+      "sha256": "2072362a6575df7ea0e62230b329795af2acfc3d66b0faad10b7d6af368c9816"
+    },
+    "voice/yaha_05.png": {
+      "bytes": 166753,
+      "sha256": "af760b7ab1f4cab907f3a078a11d281a299649ebdb9fab04cb90a6949e33909f"
+    },
+    "voice/yaha_06.png": {
+      "bytes": 148283,
+      "sha256": "082018daa50c3104db8ea6bbb23c58afb31f678b6dd605c872433606c62fab3d"
+    }
+  },
+  "checks": [
+    "source inventory",
+    "original GIF timings",
+    "frame counts and ranges",
+    "manifest ID/value parity including null",
+    "face bounds/aspect",
+    "all PNG decode",
+    "no stale PNG artifacts",
+    "README local links and complete evidence links",
+    "byte-identical atlas copy",
+    "manual observation coverage",
+    "Python syntax",
+    "git allowed_paths scope",
+    "temporary artifacts removed"
+  ],
+  "changed_paths": [
+    "docs/research/usagi-表情动作/README.md",
+    "docs/research/usagi-表情动作/REPORT.md",
+    "docs/research/usagi-表情动作/build_reference.py",
+    "docs/research/usagi-表情动作/face-index.json",
+    "docs/research/usagi-表情动作/face/atlas_preview.png",
+    "docs/research/usagi-表情动作/face/overview.png",
+    "docs/research/usagi-表情动作/face/侧脸凸ω闭口-d48dde47-f000.png",
+    "docs/research/usagi-表情动作/face/侧脸竖长开ω-video-059.200s.png",
+    "docs/research/usagi-表情动作/face/侧躺小椭圆口特例-video-111.733s.png",
+    "docs/research/usagi-表情动作/face/俯压闭ω姿态-bedb5e52-f003.png",
+    "docs/research/usagi-表情动作/face/俯压闭ω姿态-video-144.800s.png",
+    "docs/research/usagi-表情动作/face/倒立张ω特例-video-084.800s.png",
+    "docs/research/usagi-表情动作/face/咀嚼回ω-d1107d90-f025.png",
+    "docs/research/usagi-表情动作/face/哈圆眼开ω-video-157.267s.png",
+    "docs/research/usagi-表情动作/face/大开ω长叫-video-056.800s.png",
+    "docs/research/usagi-表情动作/face/小开ω搓手-0f87da8a-f000.png",
+    "docs/research/usagi-表情动作/face/常态圆眼闭ω-2ca57d0d-f000.png",
+    "docs/research/usagi-表情动作/face/常态圆眼闭ω-video-143.200s.png",
+    "docs/research/usagi-表情动作/face/旋转圆眼开ω-video-124.267s.png",
+    "docs/research/usagi-表情动作/face/浅开ω小舌-video-000.800s.png",
+    "docs/research/usagi-表情动作/face/短横闭眼-f3581eb5-f009.png",
+    "docs/research/usagi-表情动作/face/短横闭眼对照圆眼-f3581eb5-f010.png",
+    "docs/research/usagi-表情动作/face/竖开ω舌口-d607e8a0-f006.png",
+    "docs/research/usagi-表情动作/face/竖开ω舌口-video-002.133s.png",
+    "docs/research/usagi-表情动作/face/连声浅缝ω特例-video-043.733s.png",
+    "docs/research/usagi-表情动作/face/闭眼上弧甩水-89f9e11a-f006.png",
+    "docs/research/usagi-表情动作/face/鼓颊紧缩ω-d1107d90-f000.png",
+    "docs/research/usagi-表情动作/face/鼓颊缩口-903ac9bb-f016.png",
+    "docs/research/usagi-表情动作/gif-index.json",
+    "docs/research/usagi-表情动作/gif/0f87da8a.png",
+    "docs/research/usagi-表情动作/gif/160c479d.png",
+    "docs/research/usagi-表情动作/gif/1c2eff26.png",
+    "docs/research/usagi-表情动作/gif/2ca57d0d.png",
+    "docs/research/usagi-表情动作/gif/4dc8baf5.png",
+    "docs/research/usagi-表情动作/gif/669cf400.png",
+    "docs/research/usagi-表情动作/gif/7d4e64a0.png",
+    "docs/research/usagi-表情动作/gif/7f1ef01d.png",
+    "docs/research/usagi-表情动作/gif/81e28b67.png",
+    "docs/research/usagi-表情动作/gif/89f9e11a.png",
+    "docs/research/usagi-表情动作/gif/903ac9bb.png",
+    "docs/research/usagi-表情动作/gif/93a784a3.png",
+    "docs/research/usagi-表情动作/gif/9bc83239.png",
+    "docs/research/usagi-表情动作/gif/a694b860.png",
+    "docs/research/usagi-表情动作/gif/bedb5e52.png",
+    "docs/research/usagi-表情动作/gif/c78ea0a6.png",
+    "docs/research/usagi-表情动作/gif/d1107d90.png",
+    "docs/research/usagi-表情动作/gif/d48dde47.png",
+    "docs/research/usagi-表情动作/gif/d607e8a0.png",
+    "docs/research/usagi-表情动作/gif/dcb25159.png",
+    "docs/research/usagi-表情动作/gif/e92427f9.png",
+    "docs/research/usagi-表情动作/gif/f3581eb5.png",
+    "docs/research/usagi-表情动作/gif/fa5472df.png",
+    "docs/research/usagi-表情动作/observations.py",
+    "docs/research/usagi-表情动作/validate_reference.py",
+    "docs/research/usagi-表情动作/validation.json",
+    "docs/research/usagi-表情动作/video-index.json",
+    "docs/research/usagi-表情动作/video/000.000-000.533s.png",
+    "docs/research/usagi-表情动作/video/000.533-002.667s.png",
+    "docs/research/usagi-表情动作/video/002.667-004.533s.png",
+    "docs/research/usagi-表情动作/video/004.533-006.400s.png",
+    "docs/research/usagi-表情动作/video/006.400-009.600s.png",
+    "docs/research/usagi-表情动作/video/009.600-014.133s.png",
+    "docs/research/usagi-表情动作/video/014.133-018.933s.png",
+    "docs/research/usagi-表情动作/video/018.933-024.800s.png",
+    "docs/research/usagi-表情动作/video/028.800-031.733s.png",
+    "docs/research/usagi-表情动作/video/031.733-036.000s.png",
+    "docs/research/usagi-表情动作/video/036.000-037.867s.png",
+    "docs/research/usagi-表情动作/video/039.467-043.467s.png",
+    "docs/research/usagi-表情动作/video/043.467-044.533s.png",
+    "docs/research/usagi-表情动作/video/044.533-046.667s.png",
+    "docs/research/usagi-表情动作/video/046.667-049.333s.png",
+    "docs/research/usagi-表情动作/video/049.333-052.800s.png",
+    "docs/research/usagi-表情动作/video/052.800-056.000s.png",
+    "docs/research/usagi-表情动作/video/056.000-057.867s.png",
+    "docs/research/usagi-表情动作/video/057.867-060.533s.png",
+    "docs/research/usagi-表情动作/video/062.933-066.933s.png",
+    "docs/research/usagi-表情动作/video/070.400-071.733s.png",
+    "docs/research/usagi-表情动作/video/071.733-073.600s.png",
+    "docs/research/usagi-表情动作/video/073.600-076.533s.png",
+    "docs/research/usagi-表情动作/video/076.533-082.133s.png",
+    "docs/research/usagi-表情动作/video/082.133-083.733s.png",
+    "docs/research/usagi-表情动作/video/083.733-085.600s.png",
+    "docs/research/usagi-表情动作/video/094.933-096.533s.png",
+    "docs/research/usagi-表情动作/video/096.533-098.133s.png",
+    "docs/research/usagi-表情动作/video/098.133-101.600s.png",
+    "docs/research/usagi-表情动作/video/101.600-103.733s.png",
+    "docs/research/usagi-表情动作/video/103.733-106.400s.png",
+    "docs/research/usagi-表情动作/video/110.133-112.800s.png",
+    "docs/research/usagi-表情动作/video/112.800-114.933s.png",
+    "docs/research/usagi-表情动作/video/114.933-117.333s.png",
+    "docs/research/usagi-表情动作/video/117.333-119.200s.png",
+    "docs/research/usagi-表情动作/video/119.200-121.867s.png",
+    "docs/research/usagi-表情动作/video/121.867-123.733s.png",
+    "docs/research/usagi-表情动作/video/123.733-125.600s.png",
+    "docs/research/usagi-表情动作/video/125.600-126.667s.png",
+    "docs/research/usagi-表情动作/video/126.667-128.800s.png",
+    "docs/research/usagi-表情动作/video/128.800-133.600s.png",
+    "docs/research/usagi-表情动作/video/136.533-140.800s.png",
+    "docs/research/usagi-表情动作/video/140.800-144.000s.png",
+    "docs/research/usagi-表情动作/video/144.000-147.200s.png",
+    "docs/research/usagi-表情动作/video/147.200-149.333s.png",
+    "docs/research/usagi-表情动作/video/152.000-153.333s.png",
+    "docs/research/usagi-表情动作/video/153.333-156.800s.png",
+    "docs/research/usagi-表情动作/video/156.800-159.733s.png",
+    "docs/research/usagi-表情动作/video/159.733-161.600s.png",
+    "docs/research/usagi-表情动作/video/163.200-165.867s.png",
+    "docs/research/usagi-表情动作/video/169.333-171.200s.png",
+    "docs/research/usagi-表情动作/video/171.200-172.267s.png",
+    "docs/research/usagi-表情动作/video/172.267-178.133s.png",
+    "docs/research/usagi-表情动作/video/178.133-180.533s.png",
+    "docs/research/usagi-表情动作/video/180.533-184.733s.png",
+    "docs/research/usagi-表情动作/voice-index.json",
+    "docs/research/usagi-表情动作/voice/ha_01.png",
+    "docs/research/usagi-表情动作/voice/other_01.png",
+    "docs/research/usagi-表情动作/voice/other_02.png",
+    "docs/research/usagi-表情动作/voice/other_03.png",
+    "docs/research/usagi-表情动作/voice/other_04.png",
+    "docs/research/usagi-表情动作/voice/other_05.png",
+    "docs/research/usagi-表情动作/voice/other_06.png",
+    "docs/research/usagi-表情动作/voice/other_07.png",
+    "docs/research/usagi-表情动作/voice/other_08.png",
+    "docs/research/usagi-表情动作/voice/other_09.png",
+    "docs/research/usagi-表情动作/voice/other_10.png",
+    "docs/research/usagi-表情动作/voice/other_11.png",
+    "docs/research/usagi-表情动作/voice/other_12.png",
+    "docs/research/usagi-表情动作/voice/other_13.png",
+    "docs/research/usagi-表情动作/voice/other_14.png",
+    "docs/research/usagi-表情动作/voice/other_15.png",
+    "docs/research/usagi-表情动作/voice/other_16.png",
+    "docs/research/usagi-表情动作/voice/other_17.png",
+    "docs/research/usagi-表情动作/voice/other_18.png",
+    "docs/research/usagi-表情动作/voice/other_19.png",
+    "docs/research/usagi-表情动作/voice/other_20.png",
+    "docs/research/usagi-表情动作/voice/other_21.png",
+    "docs/research/usagi-表情动作/voice/other_22.png",
+    "docs/research/usagi-表情动作/voice/other_23.png",
+    "docs/research/usagi-表情动作/voice/other_24.png",
+    "docs/research/usagi-表情动作/voice/other_25.png",
+    "docs/research/usagi-表情动作/voice/other_26.png",
+    "docs/research/usagi-表情动作/voice/other_27.png",
+    "docs/research/usagi-表情动作/voice/other_28.png",
+    "docs/research/usagi-表情动作/voice/other_29.png",
+    "docs/research/usagi-表情动作/voice/other_30.png",
+    "docs/research/usagi-表情动作/voice/other_31.png",
+    "docs/research/usagi-表情动作/voice/other_32.png",
+    "docs/research/usagi-表情动作/voice/other_33.png",
+    "docs/research/usagi-表情动作/voice/other_34.png",
+    "docs/research/usagi-表情动作/voice/other_35.png",
+    "docs/research/usagi-表情动作/voice/other_36.png",
+    "docs/research/usagi-表情动作/voice/other_37.png",
+    "docs/research/usagi-表情动作/voice/other_38.png",
+    "docs/research/usagi-表情动作/voice/other_39.png",
+    "docs/research/usagi-表情动作/voice/other_40.png",
+    "docs/research/usagi-表情动作/voice/other_41.png",
+    "docs/research/usagi-表情动作/voice/other_42.png",
+    "docs/research/usagi-表情动作/voice/other_43.png",
+    "docs/research/usagi-表情动作/voice/other_44.png",
+    "docs/research/usagi-表情动作/voice/other_45.png",
+    "docs/research/usagi-表情动作/voice/other_46.png",
+    "docs/research/usagi-表情动作/voice/other_47.png",
+    "docs/research/usagi-表情动作/voice/other_48.png",
+    "docs/research/usagi-表情动作/voice/other_49.png",
+    "docs/research/usagi-表情动作/voice/other_50.png",
+    "docs/research/usagi-表情动作/voice/other_51.png",
+    "docs/research/usagi-表情动作/voice/other_52.png",
+    "docs/research/usagi-表情动作/voice/other_53.png",
+    "docs/research/usagi-表情动作/voice/other_54.png",
+    "docs/research/usagi-表情动作/voice/other_55.png",
+    "docs/research/usagi-表情动作/voice/other_56.png",
+    "docs/research/usagi-表情动作/voice/other_57.png",
+    "docs/research/usagi-表情动作/voice/other_58.png",
+    "docs/research/usagi-表情动作/voice/other_59.png",
+    "docs/research/usagi-表情动作/voice/other_60.png",
+    "docs/research/usagi-表情动作/voice/other_61.png",
+    "docs/research/usagi-表情动作/voice/other_62.png",
+    "docs/research/usagi-表情动作/voice/other_63.png",
+    "docs/research/usagi-表情动作/voice/other_64.png",
+    "docs/research/usagi-表情动作/voice/other_65.png",
+    "docs/research/usagi-表情动作/voice/other_66.png",
+    "docs/research/usagi-表情动作/voice/other_67.png",
+    "docs/research/usagi-表情动作/voice/other_68.png",
+    "docs/research/usagi-表情动作/voice/other_69.png",
+    "docs/research/usagi-表情动作/voice/other_70.png",
+    "docs/research/usagi-表情动作/voice/other_71.png",
+    "docs/research/usagi-表情动作/voice/other_72.png",
+    "docs/research/usagi-表情动作/voice/other_73.png",
+    "docs/research/usagi-表情动作/voice/other_74.png",
+    "docs/research/usagi-表情动作/voice/pururu_01.png",
+    "docs/research/usagi-表情动作/voice/ura_01.png",
+    "docs/research/usagi-表情动作/voice/ura_02.png",
+    "docs/research/usagi-表情动作/voice/ura_03.png",
+    "docs/research/usagi-表情动作/voice/ura_04.png",
+    "docs/research/usagi-表情动作/voice/yaha_01.png",
+    "docs/research/usagi-表情动作/voice/yaha_02.png",
+    "docs/research/usagi-表情动作/voice/yaha_03.png",
+    "docs/research/usagi-表情动作/voice/yaha_04.png",
+    "docs/research/usagi-表情动作/voice/yaha_05.png",
+    "docs/research/usagi-表情动作/voice/yaha_06.png",
+    "docs/research/usagi-表情动作/write_readme.py"
+  ]
+}
