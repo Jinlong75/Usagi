@@ -1,28 +1,35 @@
 """Shared atlas contract. PNG/glTF offsets start at the top left.
 
-Original sculpture bounds, normalized by 009, rotated -90 degrees about Z:
-(x,y,z) -> (y,-x,z). Project onto the landmark face plane before making UVs.
+usagi3d2 sculpture bounds, one metre height, already rotated to Blender front -Y.
+Reproduce with measure_layout.py; regression tolerance is 2 mm.
 """
 EYES = ('neutral', 'blink', 'blinkLeft', 'blinkRight', 'happy', 'angry', 'sad', 'relaxed', 'surprised')
 MOUTHS = ('neutral', 'aa', 'ih', 'ou', 'ee', 'oh', 'happy', 'angry', 'sad', 'surprised')
 EXPRESSIONS = ('neutral', 'blink', 'blinkLeft', 'blinkRight', 'happy', 'angry', 'sad',
                'relaxed', 'surprised', 'aa', 'ih', 'ou', 'ee', 'oh')
 EMOTIONS = ('happy', 'angry', 'sad', 'relaxed', 'surprised')
-FRAMES = {'FaceEyes': (-.3224, .3224, .266, .658),
-          'FaceMouth': (-.0925, .0875, .209, .396)}
-# Physical dimensions on the landmark face plane (metres). Head width ~0.66m.
-LINE_M = .0142  # 2.15% of head width; uniform in projected physical space.
-MOUTH_BOUNDS = (-.055, .050, .24984, .35532)
-CHEEK_CENTERS = ((-.194, .347), (.194, .347))
-CHEEK_SIZE = (.116, .116/1.5)
+FRAMES = {'FaceEyes': (-.310, .310, .300, .660),
+          'FaceMouth': (-.100, .100, .130, .420)}
+HEAD_WIDTH = .656082
+NORMAL = (-.0000274714457, -.996761798859, .080411151052)
+LINE_M = .01065  # 25% thinner than .0142 m, 1.62% of measured head width.
+EYE_CENTERS = ((-.103558, .444379), (.103819, .444379))
+EYE_DIAMETER = .0917  # old horizontal diameter .07054 m * 1.3; now circular.
+BROW_BOUNDS = ((-.211766, -.073515, .500327, .627630),
+               (.077926, .216177, .500327, .627630))
+MOUTH_BOUNDS = (-.052996, .055455, .282696, .385879)
+# TODO(lead): usagi3d2 has no sculpted/colored cheeks. Confirm F01-derived anchors
+# (0.27 head widths sideways, 0.10 below eyes) on the measured source surface.
+CHEEK_CENTERS = ((-.177142, .378770), (.177142, .378770))
+CHEEK_SIZE = (.1312164, .0874776)  # F01 width/head ~0.20; oval aspect 1.5.
 CELL = 512
 MARGIN = 41  # ceil(512 * .08)
 SCULPTURE = {
-    'eyeLeft': ((.241, .064, .419), (.290, .145, .497)),
-    'eyeRight': ((.241, -.145, .419), (.290, -.064, .497)),
-    'browLeft': ((.169, .074, .513), (.212, .216, .640)),
-    'browRight': ((.169, -.216, .513), (.212, -.074, .640)),
-    'mouth': ((.251, -.055, .303), (.286, .050, .404)),
+    'eyeLeft': ((.064729, -.291891, .428432), (.142892, -.248901, .505618)),
+    'eyeRight': ((-.142892, -.291891, .428432), (-.064240, -.248901, .505618)),
+    'browLeft': ((.077919, -.227894, .519785), (.216170, -.185393, .645335)),
+    'browRight': ((-.211773, -.227894, .519785), (-.073522, -.185393, .645335)),
+    'mouth': ((-.053004, -.287005, .304836), (.055447, -.252320, .409380)),
 }
 
 def offset(names, name):

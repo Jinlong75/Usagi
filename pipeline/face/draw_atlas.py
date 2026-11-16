@@ -5,19 +5,14 @@ sys.dont_write_bytecode = True
 from pathlib import Path
 from PIL import Image, ImageChops, ImageDraw, ImageFont
 from layout import (EYES, MOUTHS, CELL, MARGIN, FRAMES, LINE_M,
-                    MOUTH_BOUNDS, CHEEK_CENTERS, CHEEK_SIZE)
+                    MOUTH_BOUNDS, CHEEK_CENTERS, CHEEK_SIZE, EYE_CENTERS,
+                    EYE_DIAMETER, BROW_BOUNDS)
 
-INK = '#2B1A12'
-PINK = '#F5AEBB'
-SCALE = 2
-# The same projected frame is used by face_usagi.py. Positions are expressed in
-# the source sculpture's rotated Blender X/Z coordinates, with depth for projection.
-EYE_FRAME = FRAMES['FaceEyes']
-NORMAL = (0, -.9853762388, .1703930497)
-
-
-def projected(x, z, depth=-.265):
-    return x, z * -NORMAL[1] + depth * NORMAL[2]
+INK = '#2b1a14'
+PINK = '#f5aebb'
+CHEEK_INK = '#cc7d90'
+TONGUE = '#f08aa0'
+SCALE = 3
 
 
 class Pen:
@@ -52,111 +47,123 @@ class Pen:
                          for k in (0, 1)) for t in [i/60 for i in range(61)]], width, color)
 
 
+def bezier(points):
+    a, b, c, d = points
+    return [tuple((1-t)**3*a[k]+3*(1-t)**2*t*b[k]+3*(1-t)*t*t*c[k]+t**3*d[k]
+                  for k in (0, 1)) for t in [i/80 for i in range(81)]]
+
+
+class FacePen:
+    """All artwork is authored in metres on the actual new landmark plane."""
+    def __init__(self, canvas, frame):
+        self.canvas, self.pen, self.frame = canvas, Pen(canvas), frame
+        x0, x1, v0, v1 = frame
+        self.stroke = (LINE_M/(x1-x0)*CELL, LINE_M/(v1-v0)*CELL)
+
+    def pos(self, point):
+        x, v = point
+        x0, x1, v0, v1 = self.frame
+        return ((x-x0)/(x1-x0)*CELL, (v1-v)/(v1-v0)*CELL)
+
+    def curve(self, points, width=1, color=INK):
+        self.pen.curve([self.pos(p) for p in points], tuple(c*width for c in self.stroke), color)
+
+    def line(self, points, width=1, color=INK):
+        self.pen.line([self.pos(p) for p in points], tuple(c*width for c in self.stroke), color)
+
+    def ellipse(self, center, width, height, color):
+        x, v = center
+        self.pen.ellipse((*self.pos((x-width/2, v+height/2)),
+                          *self.pos((x+width/2, v-height/2))), color)
+
+    def fill(self, points, color):
+        self.pen.d.polygon([tuple(c*SCALE for c in self.pos(p)) for p in points], fill=color)
+
+
 def eyes(name):
     canvas = Image.new('RGBA', (CELL*SCALE, CELL*SCALE))
-    p = Pen(canvas)
-    xmin, xmax, vmin, vmax = EYE_FRAME
-    stroke = (LINE_M/(xmax-xmin)*CELL, LINE_M/(vmax-vmin)*CELL)
-    eye_y = .375/(vmax-vmin)  # Preserve approved eyes when expanding the guard band.
-    def pos(x, z, depth=-.265):
-        u, v = projected(x, z, depth)
-        return ((u-xmin)/(xmax-xmin)*CELL, (vmax-v)/(vmax-vmin)*CELL)
-    # Reference has paired forehead arches, small oval eyes, and three cheek marks.
-    for sign, side in ((-1, 'Right'), (1, 'Left')):
-        cx, cy = pos(sign*.1045, .458)
-        brow_outer = pos(sign*.210, .520, -.19)
-        brow_inner = pos(sign*.078, .632, -.19)
-        if name == 'angry':
-            p.curve([pos(sign*.207, .559), pos(sign*.16, .555),
-                     pos(sign*.11, .520), pos(sign*.069, .505)], stroke)
-        elif name == 'sad':
-            p.curve([pos(sign*.211, .532), pos(sign*.17, .531),
-                     pos(sign*.11, .596), pos(sign*.076, .608)], stroke)
-        else:
-            lift = .012 if name == 'surprised' else 0
-            p.curve([(brow_outer[0], brow_outer[1]-lift*CELL/(vmax-vmin)),
-                     pos(sign*.195, .600+lift, -.19), pos(sign*.129, .649+lift, -.19),
-                     (brow_inner[0], brow_inner[1]-lift*CELL/(vmax-vmin))], stroke)
-        closed = name == 'blink' or name == 'blink'+side
-        if closed:
-            p.curve([(cx-22, cy-3*eye_y), (cx-10, cy+12*eye_y),
-                     (cx+10, cy+12*eye_y), (cx+22, cy-3*eye_y)], stroke)
-        elif name == 'happy':
-            p.curve([(cx-23, cy+10*eye_y), (cx-10, cy-19*eye_y),
-                     (cx+10, cy-19*eye_y), (cx+23, cy+10*eye_y)], stroke)
+    p = FacePen(canvas, FRAMES['FaceEyes'])
+    for i, (side, (cx, cv)) in enumerate(zip(('Right', 'Left'), EYE_CENTERS)):
+        left, right, bottom, top = BROW_BOUNDS[i]
+        # Same tall forehead arches in every cell, including angry and sad.
+        r = LINE_M/2
+        outer, inner = (left+r, right-r) if i == 0 else (right-r, left+r)
+        p.curve([(outer, bottom+r), (outer+(inner-outer)*.16, top-r),
+                 (outer+(inner-outer)*.70, top-r), (inner, top-r)])
+        d = EYE_DIAMETER
+        if name == 'blink' or name == 'blink'+side:
+            p.line([(cx-(d-LINE_M)/2, cv), (cx+(d-LINE_M)/2, cv)])
         elif name == 'relaxed':
-            p.ellipse((cx-21, cy-3*eye_y, cx+21, cy+21*eye_y), INK)
-            p.line([(cx-24, cy-3*eye_y), (cx+24, cy-3*eye_y)], stroke)
-            p.ellipse((cx-6, cy+2*eye_y, cx+1, cy+8*eye_y), '#FFFFFF')
+            w = d*1.3-LINE_M
+            p.curve([(cx-w/2, cv-d*.12), (cx-w*.26, cv+d*.34),
+                     (cx+w*.26, cv+d*.34), (cx+w/2, cv-d*.12)])
         else:
-            rx, ry = (28, 51)
-            if name == 'surprised':
-                rx, ry = 34, 60
-            elif name == 'angry':
-                rx, ry = 21, 36
-            ry *= eye_y
-            p.ellipse((cx-rx, cy-ry, cx+rx, cy+ry), INK)
-            p.ellipse((cx-rx*.45, cy-ry*.67, cx+rx*.22, cy-ry*.12), '#FFFFFF')
-            p.curve([(cx-8, cy+ry*.57), (cx-3, cy+ry*.75),
-                     (cx+5, cy+ry*.75), (cx+10, cy+ry*.48)], (2.5, 2.5*eye_y), '#FFFFFF')
-            if name == 'sad':
-                p.ellipse((cx+sign*20-7, cy+24*eye_y, cx+sign*20+7, cy+42*eye_y), '#A8DDEB')
-        bx, bv = CHEEK_CENTERS[0 if sign < 0 else 1]
-        def cheek_pos(x, v):
-            return ((x-xmin)/(xmax-xmin)*CELL, (vmax-v)/(vmax-vmin)*CELL)
+            p.ellipse((cx, cv), d, d, INK)
+            # A single upper-left oval highlight; no lower smile/highlight arc.
+            p.ellipse((cx-d*.14, cv+d*.17), d*.40, d*.34, '#ffffff')
+        bx, bv = CHEEK_CENTERS[i]
         w, h = CHEEK_SIZE
-        p.ellipse((*cheek_pos(bx-w/2, bv+h/2), *cheek_pos(bx+w/2, bv-h/2)), PINK)
-        for shift in (-.030, 0, .030):
-            p.line([cheek_pos(bx+shift+.007, bv+.012),
-                    cheek_pos(bx+shift-.007, bv-.012)], stroke, '#000000')
+        p.ellipse((bx, bv), w, h, PINK)
+        for shift in (-.033, 0, .033):
+            p.line([(bx+shift+.005, bv+.016), (bx+shift-.005, bv-.016)],
+                   .42, CHEEK_INK)
     return canvas.resize((CELL, CELL), Image.Resampling.LANCZOS)
 
 
 def mouth(name):
     canvas = Image.new('RGBA', (CELL*SCALE, CELL*SCALE))
-    p = Pen(canvas)
-    xmin, xmax, vmin, vmax = FRAMES['FaceMouth']
-    stroke = (LINE_M/(xmax-xmin)*CELL, LINE_M/(vmax-vmin)*CELL)
+    p = FacePen(canvas, FRAMES['FaceMouth'])
+    left, right, bottom, top = MOUTH_BOUNDS
+    r = LINE_M/2
+    width, cx = right-left-LINE_M, (left+right)/2
+    if name == 'sad':
+        width *= .70
+    x0, x1, peak = cx-width/2, cx+width/2, top-r
+    # Two lobes meet in an upward central cusp: the shared omega upper edge.
+    omega = [[(x0, peak-width*.18), (x0, peak-width*.52),
+              (cx, peak-width*.52), (cx, peak)],
+             [(cx, peak), (cx, peak-width*.52),
+              (x1, peak-width*.52), (x1, peak-width*.18)]]
+    small = name in ('ih', 'ee', 'ou', 'happy', 'surprised')
+    large = name in ('aa', 'oh', 'angry')
+    if small or large:
+        # The opening grows DOWN from the omega, not from an ellipse's top.
+        # Attach below the lobe troughs; preserve both outer upturned corners.
+        # The visible cavity also includes ~0.10 omega widths between the
+        # central cusp stroke and the lobe joins. Total heights: .60 / 1.40.
+        depth = (right-left)*(.50 if small else 1.30)
+        left_join = bezier(omega[0])[40]
+        right_join = bezier(omega[1])[40]
+        # Cubic U reaches 3/4 of its control-point depth at its midpoint.
+        base = min(left_join[1], right_join[1])-depth*4/3
+        opening = [left_join, (left_join[0]+width*.05, base),
+                   (right_join[0]-width*.05, base), right_join]
+        u = bezier(opening)
+        top_edge = bezier(omega[0])[40:]+bezier(omega[1])[:41]
+        p.fill(top_edge+list(reversed(u)), '#54232b')
+        p.line(u)
+        # Tongue clipped to the same U cavity, occupying its lower third.
+        tongue = Image.new('RGBA', canvas.size)
+        tp = FacePen(tongue, p.frame)
+        lowest = min(v for x, v in u)
+        tp.ellipse((cx, lowest+depth*.12), width*.40, depth*.42, TONGUE)
+        mask = Image.new('RGBA', canvas.size)
+        FacePen(mask, p.frame).fill(top_edge+list(reversed(u)), '#ffffff')
+        tongue.putalpha(ImageChops.multiply(tongue.getchannel('A'), mask.getchannel('A')))
+        canvas.alpha_composite(tongue)
+        p.curve([(cx-width*.16, lowest-.018), (cx-width*.10, lowest-.028),
+                 (cx+width*.05, lowest-.030), (cx+width*.16, lowest-.027)], .65)
+    for curve in omega:
+        p.curve(curve)
     if name == 'neutral':
-        left, right, bottom, top = MOUTH_BOUNDS
-        r = LINE_M/2
-        # Curve endpoints and round caps exactly span the source sculpture's
-        # projected bounds; centre = (-.0025, .30258), not the tile centre.
-        def pos(u, v):
-            x = left+r+u*(right-left-2*r)
-            z = top-r-v*(top-bottom-2*r)
-            return ((x-xmin)/(xmax-xmin)*CELL, (vmax-z)/(vmax-vmin)*CELL)
-        p.curve([pos(0, .22), pos(0, .66), pos(.46, .66), pos(.5, 0)], stroke)
-        p.curve([pos(.5, 0), pos(.54, .66), pos(1, .66), pos(1, .22)], stroke)
-        # 参考图正面：尾巴从左侧弯的底部垂下，末端向右勾（主导 2026-11-16 定）。
-        p.curve([pos(.25, .5), pos(.17, .88), pos(.27, 1), pos(.47, 1)], stroke)
+        # Left downward tail, rounded into a small rightward hook (F01/F02).
+        p.curve([(cx-width*.23, peak-width*.38), (cx-width*.35, bottom+r),
+                 (cx-width*.21, bottom+r), (cx+width*.03, bottom+r)])
     elif name == 'sad':
-        p.curve([(122, 300), (197, 227), (307, 227), (388, 300)], stroke)
-    elif name == 'ee':
-        p.curve([(100, 223), (173, 300), (339, 300), (412, 223)], stroke)
-    else:
-        boxes = {'aa': (137, 100, 375, 422), 'angry': (112, 67, 400, 445),
-                 'happy': (104, 136, 408, 414), 'ih': (98, 207, 414, 323),
-                 'ou': (202, 156, 310, 362), 'oh': (161, 125, 351, 399),
-                 'surprised': (200, 194, 312, 322)}
-        box = boxes[name]
-        # Ellipses use a filled outer/inner pair for the same metre thickness
-        # as line art (Pillow's outline width is isotropic only in pixels).
-        p.ellipse(box, INK)
-        x0, y0, x1, y1 = box
-        sx, sy = stroke
-        p.ellipse((x0+sx, y0+sy, x1-sx, y1-sy), '#642A32')
-        if name in ('aa', 'angry', 'happy'):
-            x0, y0, x1, y1 = box
-            # A tongue wholly inside the outlined cavity.
-            tongue = Image.new('RGBA', canvas.size)
-            Pen(tongue).ellipse((x0+34, y1-97, x1-34, y1-19), '#F58B9B')
-            interior = Image.new('RGBA', canvas.size)
-            Pen(interior).ellipse((x0+sx, y0+sy, x1-sx, y1-sy), '#FFFFFF')
-            tongue.putalpha(ImageChops.multiply(tongue.getchannel('A'), interior.getchannel('A')))
-            canvas.alpha_composite(tongue)
-        if name == 'ih':
-            p.line([(142, 229), (370, 229)], 13, '#FFF9ED')
+        for sign in (-1, 1):
+            x = cx+sign*(right-left)*.46
+            p.curve([(x, peak-width*.12), (x-sign*.012, peak-width*.32),
+                     (x-sign*.012, peak-width*.55), (x, peak-width*.75)], .70)
     return canvas.resize((CELL, CELL), Image.Resampling.LANCZOS)
 
 
@@ -199,6 +206,8 @@ def sheet(source, output):
         result.paste(tile, (x, y))
         pen.text((x+12, y+389), name, font=font, fill=INK)
     result.save(output)
+    from compare_reference import compare
+    compare(source, Path(output).with_name('compare_reference.png'))
 
 
 if __name__ == '__main__':
