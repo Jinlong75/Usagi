@@ -51,7 +51,7 @@
 1. **等用户 Windows 复测**：用户回来后请他按 `docs/guides/03-本轮Windows复测.md` 走 7 项并填结果表。按反馈写新说明修；完成条件：复测反馈逐条处理完。
 2. **待用户确认的主导决定**（暂离期间，详见夜间日志）：022 尾巴整块分区、耳内转角改正面投影 2D、伸懒腰手高放宽到 neck−0.04H（扫描证明原三条无解）；"头和身子之间有线"理解为腰部收进轮廓；024 休息时手动"玩耍"沿用 60 秒清醒期；025 冰淇淋舔用 ih。完成条件：用户逐条确认或要求改（022 回退命令 `ar revert 022-身体形状还原Tripo原始模型-2-2`）。
 3. **复测反馈处理完、没有在跑和排队的任务后**：SendMessage agentrouter-dev 主导"Usagi 已完成"（地址会变，ListAgents 找；本窗口 SendMessage 被权限拒绝过，拒绝就请用户转告）。完成条件：消息送达。
-4. **待转告 AgentRouter-dev**：`scope approve` 发起的重试丢掉上一次手动 `retry --note` 的补充说明（020 第 3/4 次 prompt.md 对比）。绕路：scope approve 后若上次 note 未完成，再 `retry --note` 重给全文。完成条件：用户转告或授权发送。
+4. ~~待转告 AgentRouter-dev：scope approve 丢上次 retry note~~ 已于 11-17 07:1x 经用户授权直接 SendMessage 给 agentrouter-dev-75（已送达）。绕路仍有效：scope approve 后若上次 note 未完成，再 `retry --note` 重给全文。
 5. Windows 待用户验证（旧清单仍有效）：安装/自动启动/托盘、卸载保留数据、Mate Engine 导入 `assets/model/usagi.vrm`。完成条件：用户反馈。
 
 ## 授权与边界
