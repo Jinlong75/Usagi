@@ -1,0 +1,17 @@
+10:06:19 | INFO: Data are loaded, start creating Blender stuff
+10:06:19 | INFO: Blender create Mesh node FaceEyes
+10:06:19 | INFO: Blender create Mesh node FaceMouth
+10:06:19 | INFO: Blender create Mesh node tripo_7f0710d5_2d7f_4ae2_95ba_a3929a66c6cf
+10:06:19 | INFO: Blender create Mesh node BlenderVrmAddonImport567512575224781Temp_3_
+10:06:19 | INFO: Blender create Mesh node BlenderVrmAddonImport567512575224781Temp_6_
+10:06:19 | INFO: glTF import finished in 0.07s
+<PROJECT>/pipeline/blender/render_arm_protection.py:49: DeprecationWarning: 'World.use_nodes' is expected to be removed in Blender 6.0
+  scene.world.use_nodes = True
+Traceback (most recent call last):
+  File "<PROJECT>/pipeline/blender/common.py", line 20, in run
+    main()
+    ~~~~^^
+  File "<PROJECT>/pipeline/blender/render_arm_protection.py", line 85, in main
+    if error > 1e-6: raise RuntimeError('Blender / three-vrm pose mismatch: '+str(error))
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: Blender / three-vrm pose mismatch: 0.09143055230379105

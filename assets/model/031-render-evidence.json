@@ -1,0 +1,20 @@
+{
+  "before_yaw": {
+    "blender_cpu_max_error": 2.413114259525173e-07
+  },
+  "before_arms": {
+    "blender_cpu_max_error": 2.9848851568203827e-07
+  },
+  "before_neutral": {
+    "blender_cpu_max_error": 2.9848851568203827e-07
+  },
+  "after_yaw": {
+    "blender_cpu_max_error": 2.413114259525173e-07
+  },
+  "after_arms": {
+    "blender_cpu_max_error": 2.9848851568203827e-07
+  },
+  "after_neutral": {
+    "blender_cpu_max_error": 2.9848851568203827e-07
+  }
+}

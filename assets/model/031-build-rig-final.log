@@ -1,0 +1,17 @@
+10:02:49 | INFO: Data are loaded, start creating Blender stuff
+10:02:49 | INFO: Blender create Mesh node tripo_7f0710d5_2d7f_4ae2_95ba_a3929a66c6cf
+10:02:49 | INFO: glTF import finished in 0.04s
+Traceback (most recent call last):
+  File "<PROJECT>/pipeline/blender/common.py", line 20, in run
+    main()
+    ~~~~^^
+  File "<PROJECT>/pipeline/blender/rig_usagi.py", line 596, in main
+    rig(args.input, args.landmarks, args.out, args.report, args.blend, args.preview_dir)
+    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<PROJECT>/pipeline/blender/rig_usagi.py", line 557, in rig
+    auto, weights, kinds = bind_weights(obj, arm, lm)
+                           ~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "<PROJECT>/pipeline/blender/rig_usagi.py", line 351, in bind_weights
+    raise RuntimeError("Weight constraints failed: " + json.dumps(report))
+RuntimeError: Weight constraints failed: {"preservation": {"reference": "031-baseline", "position_max_error": 1.8024400477711773e-07, "ear_weight_max_error": 9.841386781772599e-05, "missing_vertices": 736, "valid": false}, "arm_protection": {"head_samples": 2880, "hand_samples": 327, "head_arm_max": 0, "hand_arm_min": 0.9999999701976776, "head_edge_max": 0.21747040748596191, "head_edges_over_05": 0, "hand_head_motion": 0.0, "head_arm_motion": 0.0, "valid": true}, "per_bone_vertex_count": {"Hips": 1216, "Spine": 1367, "Chest": 1708, "Neck": 0, "Head": 7078, "EarL_1": 3125, "EarL_2": 2394, "EarL_3": 2576, "EarL_4": 2430, "EarL_Tip": 0, "EarR_1": 3098, "EarR_2": 2375, "EarR_3": 2584, "EarR_4": 2446, "EarR_Tip": 0, "LeftShoulder": 0, "LeftUpperArm": 560, "LeftLowerArm": 427, "LeftHand": 208, "RightShoulder": 0, "RightUpperArm": 563, "RightLowerArm": 429, "RightHand": 208, "LeftUpperLeg": 316, "LeftLowerLeg": 204, "LeftFoot": 97, "RightUpperLeg": 310, "RightLowerLeg": 200, "RightFoot": 97, "Tail": 353, "TailTip": 0}, "max_influences": 4, "unnormalized_vertices": 0, "zero_weight_vertices": 0, "constraint_failures": {"ear_region": 0, "ear_tip": 0, "tail_region": 0, "limb_isolation": 0, "face_region": 0}, "constraint_samples": {"ear_region": 13208, "ear_tip": 1147, "tail_region": 353, "limb_isolation": 2549, "face_region": 168}, "region_counts": {"arm_l": 863, "arm_r": 866, "ear_l": 6612, "ear_r": 6596, "face": 168, "leg_l": 413, "leg_r": 407, "tail": 353, "trunk": 3417}, "valid": false, "influence_truncation": {"points": 181, "max_discarded": 0.03770416888639161}}
+Warning: Bone Heat Weighting: failed to find solution for one or more bones

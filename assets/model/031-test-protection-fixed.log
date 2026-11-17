@@ -1,0 +1,8 @@
+test_01_frozen_independent_samples (__main__.ArmProtectionTests.test_01_frozen_independent_samples) ... FAIL
+test_02_head_side_protected_from_arm (__main__.ArmProtectionTests.test_02_head_side_protected_from_arm) ... ok
+test_03_hand_core_follows_own_arm (__main__.ArmProtectionTests.test_03_hand_core_follows_own_arm) ... ok
+test_04_candidate_edges_have_continuous_head_weights (__main__.ArmProtectionTests.test_04_candidate_edges_have_continuous_head_weights) ... ok
+test_05_linear_pose_locality (__main__.ArmProtectionTests.test_05_linear_pose_locality) ... ok
+test_06_neutral_positions_topology_and_ears_unchanged (__main__.ArmProtectionTests.test_06_neutral_positions_topology_and_ears_unchanged) ... ok
+test_07_normalized_four_influences_and_deployment (__main__.ArmProtectionTests.test_07_normalized_four_influences_and_deployment) ... ok
+test_08_rig_face_weights_and_rest_frames (__main__.ArmProtectionTests.test_08_rig_face_weights_and_rest_frames) ... 

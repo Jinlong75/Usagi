@@ -18,6 +18,7 @@ from mathutils import Vector, Quaternion
 from common import import_model, reset_scene, run, script_args
 from prep_usagi import linear_color
 from cleanup_mesh import face_islands
+from arm_protection import protection_report, preservation_report
 
 EAR_SPRING = dict(stiffness=1.6, gravity_power=0.15, gravity_dir=(0, 0, -1),
                   drag_force=0.45, hit_radius=0.012)  # Blender Z-up -> VRM (0,-1,0)
@@ -147,7 +148,7 @@ def independent_tail_vertices(obj):
 
 
 def regions(obj, lm):
-    """Disjoint semantic masks; Tail uses preserved 009 region membership."""
+    """Semantic priority masks; arm boxes are only loose blend candidates."""
     tail_group = obj.vertex_groups.get("Tail")
     tail_ids = {v.index for v in obj.data.vertices if tail_group and
                 any(g.group == tail_group.index and g.weight > .5 for g in v.groups)}
@@ -190,6 +191,19 @@ def chain_weights(point, names, arm):
     return {names[nearest]: 1.0}
 
 
+def arm_influence(point, side, lm):
+    """Continuous capsule; identically zero on every candidate-box boundary.
+
+    32mm encloses the measured outer short-arm radius (30.62mm at t>=.7).
+    The independent 80% radius hand core stays rigid to its own arm chain.
+    """
+    root, tip = Vector(lm[f"arm_root_{side}"]), Vector(lm[f"arm_tip_{side}"])
+    distance = segment_projection(point, root, tip)[1]
+    return (smoothstep(abs(root.x)-ARM_ROOT_BLEND, abs(root.x), abs(point.x)) *
+            (1-smoothstep(.032, .052, distance)) *
+            (1-smoothstep(root.z+.027, root.z+.052, point.z)))
+
+
 def geometry_weights(point, kind, arm, lm):
     if kind == "face":
         return {"Head": 1.0}
@@ -206,9 +220,10 @@ def geometry_weights(point, kind, arm, lm):
         side = kind[-1]
         label = "Left" if side == "l" else "Right"
         weights = chain_weights(point, [label+p for p in ("UpperArm", "LowerArm", "Hand")], arm)
-        root_x = abs(lm[f"arm_root_{side}"][0])
-        blend = smoothstep(root_x-ARM_ROOT_BLEND, root_x+ARM_ROOT_BLEND, abs(point.x))
-        return {**{name: w*blend for name, w in weights.items()}, "Chest": 1-blend}
+        blend = arm_influence(point, side, lm)
+        trunk = trunk_weights(point, arm, lm)
+        return {**{name: w*blend for name, w in weights.items()},
+                **{name: w*(1-blend) for name, w in trunk.items()}}
     if kind.startswith("leg_"):
         side = kind[-1]
         label = "Left" if side == "l" else "Right"
@@ -216,6 +231,11 @@ def geometry_weights(point, kind, arm, lm):
         root_z = lm[f"leg_root_{side}"][2]
         blend = 1-smoothstep(root_z-LEG_ROOT_BLEND, root_z+LEG_ROOT_BLEND, point.z)
         return {**{name: w*blend for name, w in weights.items()}, "Hips": 1-blend}
+    return trunk_weights(point, arm, lm)
+
+
+def trunk_weights(point, arm, lm):
+    """Shared, unchanged neck / face-core / D8 torso distribution."""
     # Spread head rotation through a broad height band to avoid a waist crease.
     neck = lm["neck"][2]
     blend = smoothstep(neck-NECK_HALF_WIDTH, neck+NECK_HALF_WIDTH, point.z)
@@ -271,18 +291,21 @@ def weight_report(obj, arm, lm, kinds):
             samples["limb_isolation"] += 1
             label = "Left" if kind[-1] == "l" else "Right"
             parts = ("UpperArm", "LowerArm", "Hand") if kind.startswith("arm") else ("UpperLeg", "LowerLeg", "Foot")
-            allowed = {label+p for p in parts} | ({"Chest"} if kind.startswith("arm") else {"Hips"})
+            allowed = {label+p for p in parts} | ({"Hips", "Spine", "Chest", "Head"} if kind.startswith("arm") else {"Hips"})
             if not names <= allowed:
                 checks["limb_isolation"].append(v.index)
         if kind == "face":
             samples["face_region"] += 1
             if names != {"Head"} or abs(weights.get("Head", 0)-1) > 1e-4:
                 checks["face_region"].append(v.index)
-    return dict(per_bone_vertex_count=counts, max_influences=maximum,
+    protection = protection_report([tuple(v.co) for v in obj.data.vertices], all_weights,
+                                   [tuple(e.vertices) for e in obj.data.edges], lm)
+    preserved = preservation_report([tuple(v.co) for v in obj.data.vertices], all_weights, lm)
+    return dict(preservation=preserved, arm_protection=protection, per_bone_vertex_count=counts, max_influences=maximum,
                 unnormalized_vertices=len(unnormalized), zero_weight_vertices=len(zero),
                 constraint_failures={k: len(v) for k, v in checks.items()},
                 constraint_samples=samples, region_counts={k: kinds.count(k) for k in sorted(set(kinds))},
-                valid=maximum <= 4 and not zero and not unnormalized and not any(checks.values()))
+                valid=maximum <= 4 and not zero and not unnormalized and not any(checks.values()) and protection["valid"] and preserved["valid"])
 
 
 def bind_weights(obj, arm, lm):
@@ -301,11 +324,17 @@ def bind_weights(obj, arm, lm):
         auto["accepted"] = auto["operator_finished"] and auto["quality"]["valid"]
     except RuntimeError as exc:
         auto["error"] = str(exc)
+    truncated_points, max_discarded = 0, 0.0
     if not auto["accepted"]:
         obj.vertex_groups.clear()
         groups = {b.name: obj.vertex_groups.new(name=b.name) for b in arm.data.bones}
         for v, kind in zip(obj.data.vertices, kinds):
             weights = {n: w for n, w in geometry_weights(v.co, kind, arm, lm).items() if w > 1e-7}
+            if len(weights) > 4:
+                ordered = sorted(weights.items(), key=lambda item: item[1], reverse=True)
+                truncated_points += 1
+                max_discarded = max(max_discarded, sum(w for _, w in ordered[4:]))
+                weights = dict(ordered[:4])
             total = sum(weights.values())
             for name, weight in weights.items():
                 groups[name].add([v.index], weight/total, "REPLACE")
@@ -317,6 +346,7 @@ def bind_weights(obj, arm, lm):
     # VRM linear skinning and Blender preview use the same deformation model.
     modifier.use_deform_preserve_volume = False
     report = weight_report(obj, arm, lm, kinds)
+    report["influence_truncation"] = dict(points=truncated_points, max_discarded=max_discarded)
     if not report["valid"]:
         raise RuntimeError("Weight constraints failed: " + json.dumps(report))
     return auto, report, kinds

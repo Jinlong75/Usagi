@@ -6,6 +6,24 @@
     "operator_finished": true,
     "accepted": false,
     "quality": {
+      "preservation": {
+        "reference": "031-baseline",
+        "position_max_error": 1.8024400477711773e-07,
+        "ear_weight_max_error": 1.0,
+        "missing_vertices": 0,
+        "valid": false
+      },
+      "arm_protection": {
+        "head_samples": 2880,
+        "hand_samples": 327,
+        "head_arm_max": 0,
+        "hand_arm_min": 0,
+        "head_edge_max": 0,
+        "head_edges_over_05": 0,
+        "hand_head_motion": 0.0,
+        "head_arm_motion": 0.0,
+        "valid": false
+      },
       "per_bone_vertex_count": {
         "Hips": 0,
         "Spine": 0,
@@ -72,12 +90,30 @@
   },
   "weight_method": "geometry",
   "weights": {
+    "preservation": {
+      "reference": "031-baseline",
+      "position_max_error": 1.8024400477711773e-07,
+      "ear_weight_max_error": 0.0,
+      "missing_vertices": 0,
+      "valid": true
+    },
+    "arm_protection": {
+      "head_samples": 2880,
+      "hand_samples": 327,
+      "head_arm_max": 0,
+      "hand_arm_min": 0.9999999701976776,
+      "head_edge_max": 0.21747040748596191,
+      "head_edges_over_05": 0,
+      "hand_head_motion": 0.0,
+      "head_arm_motion": 0.0,
+      "valid": true
+    },
     "per_bone_vertex_count": {
       "Hips": 1216,
-      "Spine": 717,
-      "Chest": 1486,
+      "Spine": 1367,
+      "Chest": 1708,
       "Neck": 0,
-      "Head": 6408,
+      "Head": 7078,
       "EarL_1": 3125,
       "EarL_2": 2394,
       "EarL_3": 2576,
@@ -89,12 +125,12 @@
       "EarR_4": 2446,
       "EarR_Tip": 0,
       "LeftShoulder": 0,
-      "LeftUpperArm": 655,
-      "LeftLowerArm": 469,
+      "LeftUpperArm": 560,
+      "LeftLowerArm": 427,
       "LeftHand": 208,
       "RightShoulder": 0,
-      "RightUpperArm": 658,
-      "RightLowerArm": 473,
+      "RightUpperArm": 563,
+      "RightLowerArm": 429,
       "RightHand": 208,
       "LeftUpperLeg": 316,
       "LeftLowerLeg": 204,
@@ -105,7 +141,7 @@
       "Tail": 353,
       "TailTip": 0
     },
-    "max_influences": 3,
+    "max_influences": 4,
     "unnormalized_vertices": 0,
     "zero_weight_vertices": 0,
     "constraint_failures": {
@@ -133,7 +169,11 @@
       "tail": 353,
       "trunk": 3417
     },
-    "valid": true
+    "valid": true,
+    "influence_truncation": {
+      "points": 181,
+      "max_discarded": 0.03770416888639161
+    }
   },
   "humanoid_mapping": {
     "hips": "Hips",

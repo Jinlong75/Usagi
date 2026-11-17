@@ -1,0 +1,47 @@
+INFO Draco is available, use library at <USER_HOME>/Applications/Blender.app/Contents/Resources/5.2/scripts/addons_core/io_scene_gltf2/libbf_intern_draco_bridge.dylib
+INFO MeshOptimizer is available, use library at <USER_HOME>/Applications/Blender.app/Contents/Resources/5.2/scripts/addons_core/io_scene_gltf2/libbf_intern_meshopt_bridge.dylib
+10:06:43 | INFO: Starting glTF 2.0 export
+10:06:43 | INFO: Extracting primitive: Sphere
+10:06:43 | INFO: Primitives created: 3
+10:06:43 | INFO: Finished glTF 2.0 export in 0.07349991798400879 s
+
+10:06:44 | INFO: Data are loaded, start creating Blender stuff
+10:06:44 | INFO: Blender create Mesh node Sphere
+10:06:44 | INFO: glTF import finished in 0.09s
+Warning: Bone Heat Weighting: failed to find solution for one or more bones
+10:06:47 | INFO: Starting glTF 2.0 export
+10:06:47 | INFO: Starting glTF 2.0 export
+10:06:47 | INFO: Extracting primitive: Sphere.003
+10:06:47 | INFO: Extracting primitive: Sphere.003
+10:06:47 | INFO: Primitives created: 3
+10:06:47 | INFO: Primitives created: 3
+10:06:47 | INFO: Finished glTF 2.0 export in 0.20058393478393555 s
+10:06:47 | INFO: Finished glTF 2.0 export in 0.20058393478393555 s
+test_01_hierarchy_and_lengths (__main__.RigTests.test_01_hierarchy_and_lengths) ... ok
+test_02_weights_independent_masks (__main__.RigTests.test_02_weights_independent_masks) ... ok
+test_03_checker_detects_wrong_weights (__main__.RigTests.test_03_checker_detects_wrong_weights) ... ok
+test_04_exported_meta_materials_springs (__main__.RigTests.test_04_exported_meta_materials_springs) ... ok
+test_05_pose_deformation_locality (__main__.RigTests.test_05_pose_deformation_locality) ... ok
+test_06_vrm1_simulated_spring_joints (__main__.RigTests.test_06_vrm1_simulated_spring_joints) ... ok
+test_07_neck_transition_spreads_head_turn (__main__.RigTests.test_07_neck_transition_spreads_head_turn) ... ok
+test_08_neck_face_blend_has_no_slope_kink (__main__.RigTests.test_08_neck_face_blend_has_no_slope_kink) ... ok
+test_09_arm_envelope_candidate_boundaries (__main__.RigTests.test_09_arm_envelope_candidate_boundaries) ... ok
+test_99_plugin_round_trip (__main__.RigTests.test_99_plugin_round_trip) ... 
+10:06:48 | INFO: Data are loaded, start creating Blender stuff
+10:06:48 | INFO: Data are loaded, start creating Blender stuff
+10:06:48 | INFO: Blender create Mesh node Sphere.003
+10:06:48 | INFO: Blender create Mesh node Sphere.003
+10:06:49 | INFO: Blender create Mesh node BlenderVrmAddonImport848541274748871Temp_1_
+10:06:49 | INFO: Blender create Mesh node BlenderVrmAddonImport848541274748871Temp_1_
+10:06:49 | INFO: glTF import finished in 0.16s
+10:06:49 | INFO: glTF import finished in 0.16s
+ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 6.672s
+
+OK
+010 全部通过 10 项
+Blender 5.2.3 LTS (hash e13b728c6880 built 2026-10-22 01:31:22)
+
+Blender quit
