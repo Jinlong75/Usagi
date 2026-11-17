@@ -71,8 +71,8 @@ describe('程序化动作与复位', () => {
   it('步态按 45px 一步推进，90px/s 对应平均每秒两步，原生缓动与脚步同相', () => {
     const a = sampleMotion('walk', 0.5, { duration: 3, distance: 22.5 });
     const b = sampleMotion('walk', 0.5, { duration: 3, distance: 67.5 });
-    expect(a.bones.leftUpperLeg![0]).toBeCloseTo(0.16);
-    expect(b.bones.leftUpperLeg![0]).toBeCloseTo(-0.16);
+    expect(a.bones.leftUpperLeg![0]).toBeCloseTo(0.35);
+    expect(b.bones.leftUpperLeg![0]).toBeCloseTo(0);
     expect(a.position[1]).toBeCloseTo(b.position[1]);
     const p = 0.5 / 3;
     const distance = (p * p * (3 - 2 * p)) * 3 * 90;
@@ -249,13 +249,17 @@ it('所有点击/聊天情绪互斥，清掉 relaxed 和口型，不干涉 blink
     }
   }
 });
-it('按模型高度跳 10%，落地 XZ 1.08，短腿摇摆大于手臂，伸展上移 Hips', () => {
+it('按模型高度跳 10%，落地 XZ 1.08，手脚正面可见地交替摆动，伸展上移 Hips', () => {
   expect(sampleMotion('jump', 0.175, { modelHeight: 2 }).position[1]).toBeCloseTo(0.2);
   expect(sampleMotion('happy', 0.46).scale).toEqual([1.08, 0.85, 1.08]);
   const walk = sampleMotion('walk', 0.7, { distance: 22.5 });
   expect(walk.rotation[2]).toBeCloseTo(0.1);
   expect(walk.position[1]).toBeCloseTo(0.028);
-  expect(walk.bones.leftUpperArm![0]).toBeCloseTo(-0.025);
+  expect(walk.bones.leftUpperArm).toEqual([0, 0, -0.25]);
+  expect(walk.bones.rightUpperArm).toEqual([0, 0, -0.25]);
+  expect(walk.bones.leftLowerLeg![0]).toBeCloseTo(0.30);
+  expect(walk.bones.leftFoot![0]).toBeCloseTo(-0.20);
+  expect(walk.bones.rightUpperLeg![0]).toBe(0);
   const stretch = sampleMotion('stretch', 1.1);
   expect(stretch.hipsY).toBeCloseTo(0.025);
   expect(stretch.bones.chest![0]).toBeCloseTo(-0.1);

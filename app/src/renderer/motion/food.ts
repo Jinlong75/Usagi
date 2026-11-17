@@ -11,15 +11,22 @@ export function isFoodMotion(name: string | undefined): name is FoodMotion {
 }
 const smooth = (t: number) => { const p = Math.max(0, Math.min(1, t)); return p * p * (3 - 2 * p); };
 /** Coordinates are fractions of H; +Z is forward. Food floats below the ω mouth
- * (neutral mouth center y≈0.355H). Arms only lift 0.2rad, independent of food. */
-export function sampleFood(pose: Pose, name: FoodMotion, t: number, weight: number, height: number): void {
-  const raised = 0.2 * weight;
+ * (neutral mouth center y≈0.355H). Limb timing never changes prop trajectories. */
+export function sampleFood(pose: Pose, name: FoodMotion, t: number, weight: number, height: number, limb: { rest: number; bite: number; chew: number }): void {
+  const raised = limb.rest * weight;
   pose.bones.leftUpperArm = [0, 0, raised]; pose.bones.rightUpperArm = [0, 0, -raised];
   pose.bones.head = [0, 0, 0];
   pose.props = {};
+  const hands = (age: number, chewSeconds: number) => {
+    const extra = age < 0.25 ? limb.bite * Math.sin(Math.PI * age / 0.25)
+      : limb.chew * Math.sin((age - 0.25) / chewSeconds * Math.PI * 2);
+    const arm = raised + extra * weight;
+    pose.bones.leftUpperArm = [0, 0, arm]; pose.bones.rightUpperArm = [0, 0, -arm];
+  };
   const bite = (start: number, chewSeconds: number, side = 0) => {
     const age = t - start;
     if (age < 0 || age >= 0.25 + chewSeconds) return;
+    hands(age, chewSeconds);
     const biting = age < 0.25;
     pose.expressions[biting ? 'aa' : 'sad'] = 1;
     pose.bones.head = [biting ? 0.08 * Math.sin(Math.PI * age / 0.25) : 0, 0, side * 0.1];
@@ -51,6 +58,7 @@ export function sampleFood(pose: Pose, name: FoodMotion, t: number, weight: numb
     for (const start of ICE_LICKS) {
       const age = t - start;
       if (age >= 0 && age < 0.4) {
+        hands(age, 0.15);
         pose.expressions.ih = 1;
         pose.bones.chest = [0.1 * Math.sin(Math.PI * age / 0.4), 0, 0];
         pose.bones.head = [0.08 * Math.sin(Math.PI * age / 0.4), 0, 0];

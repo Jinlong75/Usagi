@@ -90,11 +90,12 @@ const smokeBehaviors: SmokeBehavior[] = ['idle', 'walk', 'happy', 'surprised', '
 // Focused screenshots share the production smoke renderer, without opening UI pages.
 const smokeOnly = smoke ? process.argv.find(arg => arg.startsWith('--only='))?.slice(7).split(',') : undefined;
 if (smokeOnly) {
-  if (!smokeOnly.length || smokeOnly.some(name => !['jumpRope', 'blowBubbles', 'napPillow', 'eatRiceball', 'eatWatermelon', 'iceCream', 'sneakSnack'].includes(name))) throw new Error('无效的聚焦冒烟动作');
+  if (!smokeOnly.length || smokeOnly.some(name => !['walk', 'jumpRope', 'blowBubbles', 'napPillow', 'eatRiceball', 'eatWatermelon', 'iceCream', 'sneakSnack'].includes(name))) throw new Error('无效的聚焦冒烟动作');
   smokeBehaviors.splice(0, smokeBehaviors.length, ...smokeBehaviors.filter(name => smokeOnly.includes(name)));
 }
 const propOpaqueRatios: Record<string, number> = {};
 const propFraming: Record<string, boolean> = {};
+const limbFrames: string[] = [];
 const behaviorRatios: Partial<Record<SmokeBehavior, number>> = {};
 const behaviorTopTransparent: Partial<Record<SmokeBehavior, boolean>> = {};
 let smokeIndex = -1;
@@ -326,6 +327,10 @@ async function capture(result: RenderResult): Promise<void> {
     }
     if (expected) behaviorRatios[expected] = opaqueRatio;
     else initialRatio = opaqueRatio;
+    if (expected === 'walk' || expected === 'happy' || expected === 'eatRiceball') {
+      const { captureLimbFrames } = await import('../../scripts/smoke-ui');
+      limbFrames.push(...await captureLimbFrames(win, directory, expected));
+    }
     smokeIndex++;
     captureBusy = false;
     const next = smokeBehaviors[smokeIndex];
@@ -334,7 +339,7 @@ async function capture(result: RenderResult): Promise<void> {
       if (smokeOnly) {
         completed = true;
         exitSmoke(0, { ok: true, focused: true, model: modelPath, opaqueRatio: initialRatio, vrmVersion: result.vrmVersion,
-          expressions: result.expressions ?? [], behaviors: smokeBehaviors, behaviorOpaqueRatios: behaviorRatios, propOpaqueRatios, propFraming });
+          expressions: result.expressions ?? [], behaviors: smokeBehaviors, limbFrames, behaviorOpaqueRatios: behaviorRatios, propOpaqueRatios, propFraming });
         return;
       }
       const { captureUi } = await import('../../scripts/smoke-ui');
@@ -352,7 +357,7 @@ async function capture(result: RenderResult): Promise<void> {
       if (decoded !== true) throw new Error('包内音效解码失败');
       completed = true;
       exitSmoke(0, { ok: true, model: modelPath, opaqueRatio: initialRatio, vrmVersion: result.vrmVersion,
-        expressions: result.expressions ?? [], behaviors: smokeBehaviors, behaviorOpaqueRatios: behaviorRatios,
+        expressions: result.expressions ?? [], behaviors: smokeBehaviors, limbFrames, behaviorOpaqueRatios: behaviorRatios,
         propOpaqueRatios, propFraming, behaviorTopTransparent, earDifferenceRatio, happyFaceDifferenceRatio, earDegrees, ui: ['bubble', 'chat', 'settings'],
         chatRounds, sounds: { directory: audio.directory, clips: audio.clips, decoded: true } });
     }
