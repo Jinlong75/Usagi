@@ -1,10 +1,10 @@
 # 接续工作入口
 
-更新时间：2026-11-17 04:5x，主导 Claude Code（Opus 5.5）。本文件覆盖改写，按需写全但不无限增加：150 行以内最好，最多 250 行；历史移到 docs/autonomy/ 下的归档文件，不追加流水账。带 `ar:handoff` 标记的段落由 `ar lead handoff --write` 生成，其余都由主导写，软件不动；写完运行 `ar lead handoff check`。
+更新时间：2026-11-17 07:2x，主导 Claude Code（Opus 5.5）。本文件覆盖改写，按需写全但不无限增加：150 行以内最好，最多 250 行；历史移到 docs/autonomy/ 下的归档文件，不追加流水账。带 `ar:handoff` 标记的段落由 `ar lead handoff --write` 生成，其余都由主导写，软件不动；写完运行 `ar lead handoff check`。
 
 ## 一句话
 
-**暂离中（用户 11-16 23:0x 起 12 小时，截止约 11-17 11:00，日志 docs/autonomy/2026-11-16-夜间.md）**。020 作息、021 天气、022 模型形状、023 五官重画**都已合入**；03:07 全量验收通过（a81dbc3）。剩下串行链 024 道具框架（在跑）→ 025 进食 → 026 吸附窗口；全部合入后全量验收、打 dmg/exe，停在待用户 Windows 复测，再 SendMessage agentrouter-dev 主导"Usagi 已完成"。收尾 `ar push` + `gh release create` 私有仓库 Release 传 dmg/exe（用户已同意）。
+**暂离中，本轮已做完，停在待用户 Windows 复测**（用户 11-16 23:0x 起 12 小时，截止约 11-17 11:00，日志 docs/autonomy/2026-11-16-夜间.md）。020～026 全部合入；全量验收 e29ab71 通过；dmg/exe 已打（app/release/），main 已推送，私有预发布 https://github.com/Jinlong75/Usagi/releases/tag/v0.1.0-test2 。复测文档 docs/guides/03-本轮Windows复测.md。
 
 ## 开工必做
 
@@ -37,11 +37,10 @@
 （软件生成，`ar lead handoff --write` 更新；只改"主导判断"一列；处理完的失败任务删掉那一行）
 
 公共目录：~/.config/agent-router
-任务表生成于：2026-11-16T21:31:40Z
+任务表生成于：2026-11-17T00:05:05Z
 
 | 记录名 | 状态 | 启动方式 | 接回命令 | 主导判断 |
 |---|---|---|---|---|
-| 024-道具框架与跳绳吹泡泡打盹 | 运行中 | 托管 | `ar wait 024-道具框架与跳绳吹泡泡打盹` |  |
 | 001-Tripo建模操作指南 | 已停止 | — | `ar status 001-Tripo建模操作指南` |  |
 | 005-Usagi叫声切片 | 失败 | — | `ar status 005-Usagi叫声切片` |  |
 | 017-五官形态保持不变 | 已停止 | — | `ar status 017-五官形态保持不变` |  |
@@ -49,12 +48,11 @@
 
 ## 下一步
 
-1. **024-道具框架与跳绳吹泡泡打盹 在跑**（托管，`ar wait 024-道具框架与跳绳吹泡泡打盹`）。验收：右键"玩耍"菜单、随机池、接作息 `routine:state` 的 nap/sleep（抱枕打盹 + 闭眼）；冒烟截图看道具是否在桌宠手边、不穿模。合入后 `ar next --dispatch` 派 025。完成条件：accept。
-2. **025 进食**（depends 023、024）→ **026 吸附窗口顶端与全屏检测**（depends 025；koffi 调 EnumWindows/CGWindowList，Windows 效果只能用户复测）。每次任务结束 `ar next --dispatch`。完成条件：025、026 accept。
-3. 全部合入后：`ar verify --detach` 全量验收 → `npm --prefix app run dist`（mac+win 都在本机打，Rosetta 已装）→ 主导核对 exe 图标与装包冒烟 → 写 Windows 复测走查文档（帧率数字、焦点后点击、模型腰线/小手、图标、五官表情、作息问候与天气、道具与吸附）→ 问用户能否 `ar push` 与建 Release → 停在待用户复测。用户复测反馈处理完、没有在跑和排队的任务后，SendMessage agentrouter-dev 主导"Usagi 已完成"（地址会变，ListAgents 找；本窗口 SendMessage 曾被权限拒绝，拒绝就请用户转告）。完成条件：用户复测反馈。
-4. **待用户确认的主导决定**（暂离期间做的，详见夜间日志）：022 尾巴整块分区、耳内转角改正面投影 2D、伸懒腰手高放宽到 neck−0.04H（扫描证明原三条无解）；"头和身子之间有线"按参考四视图理解为腰部收进轮廓（新模型已有），请用户复测确认。完成条件：用户回来后逐条确认或要求回退（回退命令 `ar revert 022-身体形状还原Tripo原始模型-2-2`）。
-5. **待转告 AgentRouter-dev**：`scope approve` 发起的重试丢掉上一次手动 `retry --note` 的补充说明（020 第 3/4 次 prompt.md 对比）。绕路：scope approve 后若上次 note 未完成，再 `retry --note` 重给全文。
-6. Windows 待用户验证（旧清单仍有效）：安装/自动启动/托盘、卸载保留数据、Mate Engine 导入 `assets/model/usagi.vrm`。
+1. **等用户 Windows 复测**：用户回来后请他按 `docs/guides/03-本轮Windows复测.md` 走 7 项并填结果表。按反馈写新说明修；完成条件：复测反馈逐条处理完。
+2. **待用户确认的主导决定**（暂离期间，详见夜间日志）：022 尾巴整块分区、耳内转角改正面投影 2D、伸懒腰手高放宽到 neck−0.04H（扫描证明原三条无解）；"头和身子之间有线"理解为腰部收进轮廓；024 休息时手动"玩耍"沿用 60 秒清醒期；025 冰淇淋舔用 ih。完成条件：用户逐条确认或要求改（022 回退命令 `ar revert 022-身体形状还原Tripo原始模型-2-2`）。
+3. **复测反馈处理完、没有在跑和排队的任务后**：SendMessage agentrouter-dev 主导"Usagi 已完成"（地址会变，ListAgents 找；本窗口 SendMessage 被权限拒绝过，拒绝就请用户转告）。完成条件：消息送达。
+4. **待转告 AgentRouter-dev**：`scope approve` 发起的重试丢掉上一次手动 `retry --note` 的补充说明（020 第 3/4 次 prompt.md 对比）。绕路：scope approve 后若上次 note 未完成，再 `retry --note` 重给全文。完成条件：用户转告或授权发送。
+5. Windows 待用户验证（旧清单仍有效）：安装/自动启动/托盘、卸载保留数据、Mate Engine 导入 `assets/model/usagi.vrm`。完成条件：用户反馈。
 
 ## 授权与边界
 

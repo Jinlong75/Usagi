@@ -16,7 +16,7 @@
 
 ## 1. 安装与图标
 
-1. 下载安装包：RELEASE_LINK（私有仓库 Release，文件名 `Usagi-0.1.0-win-x64.exe`）。
+1. 下载安装包：https://github.com/Jinlong75/Usagi/releases/tag/v0.1.0-test2（私有仓库 Release，文件名 `Usagi-0.1.0-win-x64.exe`）。
 2. 如果装过旧版：右键托盘里的 Usagi 图标点"退出"。新安装包直接覆盖安装，设置和聊天记录会保留。
 3. 双击安装包。出现 SmartScreen 时点"更多信息"→"仍要运行"。装完会自动启动。
 4. 看三处图标：桌面快捷方式、开始菜单、右下角托盘（看不到就点向上的小箭头）。**应该是兔耳头像，不是 Electron 默认图标。**
