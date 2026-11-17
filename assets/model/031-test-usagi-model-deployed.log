@@ -1,0 +1,26 @@
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> usagi-desktop-pet@0.1.0 test
+> vitest run usagi-model
+
+
+ RUN  v5.1.0 <PROJECT>/app
+
+{"ropeSurface":{"phases":48,"phase":0,"centerSamplesPerShell":129,"minimumGapH":0.004113131462235023}}
+{"ropeSurface":{"phases":48,"phase":24,"centerSamplesPerShell":129,"minimumGapH":0.00711903692047183,"overheadClearanceH":0.3392322588808185}}
+{"motion":"stretch","side":0,"lift":0.052216605287995994,"neckClearance":-0.03163163882198658,"silhouette":0.025093586756432973}
+{"motion":"stretch","side":1,"lift":0.05221661450391766,"neckClearance":-0.031631686287445865,"silhouette":0.025093631617225266}
+{"motion":"shout","side":0,"lift":0.052216605287995994,"neckClearance":-0.03163163882198658,"silhouette":0.025093586756432973}
+{"motion":"shout","side":1,"lift":0.05221661450391766,"neckClearance":-0.031631686287445865,"silhouette":0.025093631617225266}
+{"usagiPhysics":{"shakeDegrees":39.87580522398438,"dragDegrees":7.201560027547096,"settledDegrees":0,"aspect":0.9323585617396744,"mediumHeight":343}}
+{"armProtection":{"axis":"yaw","angle":-0.4,"handDisplacementH":0}}
+{"armProtection":{"axis":"yaw","angle":0.4,"handDisplacementH":0}}
+{"armProtection":{"axis":"pitch","angle":-0.25,"handDisplacementH":0}}
+{"armProtection":{"axis":"pitch","angle":0.25,"handDisplacementH":0}}
+{"armProtection":{"headSamples":2880,"handSamples":327,"raisedArmHeadDisplacementH":0}}
+
+ Test Files  1 passed (1)
+      Tests  63 passed (63)
+   Start at  10:10:05
+   Duration  20.46s (tests 99%)
+

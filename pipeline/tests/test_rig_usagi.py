@@ -18,7 +18,7 @@ from rig_usagi import rig, HUMANOID, weight_report, vertex_weights, enable_vrm, 
 
 
 def sphere(center, scale, material):
-    bpy.ops.mesh.primitive_uv_sphere_add(segments=24, ring_count=12, location=center)
+    bpy.ops.mesh.primitive_uv_sphere_add(segments=64, ring_count=64, location=center)
     obj = bpy.context.object
     obj.scale = scale
     bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
@@ -51,7 +51,7 @@ def synthetic(root):
     for side, sign in (("l", 1), ("r", -1)):
         lm[f"arm_root_{side}"] = [sign*.18, 0, .29]
         lm[f"arm_tip_{side}"] = [sign*.32, 0, .29]
-        cylinder(lm[f"arm_root_{side}"], lm[f"arm_tip_{side}"], .027, mats["Body"])
+        cylinder(lm[f"arm_root_{side}"], lm[f"arm_tip_{side}"], .024, mats["Body"])
         lm[f"leg_root_{side}"] = [sign*.07, 0, .10]
         lm[f"foot_{side}"] = [sign*.07, -.018, .015]
         cylinder([sign*.07, 0, .012], [sign*.07, 0, .10], .035, mats["Body"])
@@ -255,6 +255,37 @@ class RigTests(unittest.TestCase):
         left_slope = (weights[1]-weights[0])/dz
         right_slope = (weights[2]-weights[1])/dz
         self.assertLess(abs(left_slope-right_slope), .05)
+
+    def test_09_arm_envelope_candidate_boundaries(self):
+        from rig_usagi import arm_influence, ARM_ROOT_BLEND
+        for side in ('l', 'r'):
+            root = Vector(self.lm['arm_root_'+side])
+            sign = 1 if side == 'l' else -1
+            boundary = [Vector((sign*(abs(root.x)-ARM_ROOT_BLEND), root.y, root.z)),
+                        Vector((root.x, root.y+.10, root.z)),
+                        Vector((root.x, root.y-.10, root.z)),
+                        Vector((root.x, root.y, root.z+.055)),
+                        Vector((root.x, root.y, root.z-.055))]
+            for p in boundary:
+                self.assertLessEqual(arm_influence(p, side, self.lm), 1e-10)
+            self.assertAlmostEqual(arm_influence(root, side, self.lm), 1, delta=1e-10)
+        self.assertTrue(self.report['weights']['arm_protection']['valid'])
+        # A hand driven by Head must invalidate the checker, independently of kinds.
+        from arm_protection import sample_indices
+        _, hands = sample_indices(self.points, self.lm)
+        index = hands[0]
+        old = self.weights[index]
+        for group in self.obj.vertex_groups:
+            group.remove([index])
+        self.obj.vertex_groups['Head'].add([index], 1, 'REPLACE')
+        try:
+            report = weight_report(self.obj, self.arm, self.lm, self.kinds)
+            self.assertFalse(report['valid'])
+            self.assertGreater(report['arm_protection']['hand_head_motion'], 1e-4)
+        finally:
+            self.obj.vertex_groups['Head'].remove([index])
+            for name, weight in old.items():
+                self.obj.vertex_groups[name].add([index], weight, 'REPLACE')
 
     def test_99_plugin_round_trip(self):
         expected = self.report["humanoid_mapping"]

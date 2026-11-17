@@ -1,0 +1,38 @@
+test_01_frozen_independent_samples (__main__.ArmProtectionTests.test_01_frozen_independent_samples) ... FAIL
+test_02_head_side_protected_from_arm (__main__.ArmProtectionTests.test_02_head_side_protected_from_arm) ... ok
+test_03_hand_core_follows_own_arm (__main__.ArmProtectionTests.test_03_hand_core_follows_own_arm) ... ok
+test_04_candidate_edges_have_continuous_head_weights (__main__.ArmProtectionTests.test_04_candidate_edges_have_continuous_head_weights) ... ok
+test_05_linear_pose_locality (__main__.ArmProtectionTests.test_05_linear_pose_locality) ... ok
+test_06_neutral_positions_topology_and_ears_unchanged (__main__.ArmProtectionTests.test_06_neutral_positions_topology_and_ears_unchanged) ... ok
+test_07_normalized_four_influences_and_deployment (__main__.ArmProtectionTests.test_07_normalized_four_influences_and_deployment) ... ok
+test_08_rig_face_weights_and_rest_frames (__main__.ArmProtectionTests.test_08_rig_face_weights_and_rest_frames) ... FAIL
+
+======================================================================
+FAIL: test_01_frozen_independent_samples (__main__.ArmProtectionTests.test_01_frozen_independent_samples)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<PROJECT>/pipeline/tests/test_arm_protection.py", line 29, in test_01_frozen_independent_samples
+    self.assertEqual([list(self.points[i]) for i in head], self.frozen['head'])
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Lists differ: [[-0.2738153338432312, -0.061309222131967545, 0.29262[187168 chars]489]] != [[-0.2738153636455536, -0.061309222131967545, 0.29262[187184 chars]489]]
+
+First differing element 0:
+[-0.2738153338432312, -0.061309222131967545, 0.2926233410835266]
+[-0.2738153636455536, -0.061309222131967545, 0.292623370885849]
+
+Diff is 214326 characters long. Set self.maxDiff to None to see it.
+
+======================================================================
+FAIL: test_08_rig_face_weights_and_rest_frames (__main__.ArmProtectionTests.test_08_rig_face_weights_and_rest_frames)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<PROJECT>/pipeline/tests/test_arm_protection.py", line 68, in test_08_rig_face_weights_and_rest_frames
+    self.assertEqual(len(before), len(self.points))
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 19696 != 19697
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.614s
+
+FAILED (failures=2)
+Blender 5.2.3 LTS (hash e13b728c6880 built 2026-10-22 01:31:22)
