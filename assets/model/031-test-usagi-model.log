@@ -1,0 +1,74 @@
+npm warn Unknown project config "electron_mirror". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+> usagi-desktop-pet@0.1.0 test
+> vitest run usagi-model
+
+
+ RUN  v5.1.0 <PROJECT>/app
+
+{"ropeSurface":{"phases":48,"phase":0,"centerSamplesPerShell":129,"minimumGapH":0.004113131462235023}}
+{"ropeSurface":{"phases":48,"phase":24,"centerSamplesPerShell":129,"minimumGapH":0.00711903692047183,"overheadClearanceH":0.3392322588808185}}
+{"motion":"stretch","side":0,"lift":0.052216605287995994,"neckClearance":-0.03163163882198658,"silhouette":0.025093586756432973}
+{"motion":"stretch","side":1,"lift":0.05221661450391766,"neckClearance":-0.031631686287445865,"silhouette":0.025093631617225266}
+{"motion":"shout","side":0,"lift":0.052216605287995994,"neckClearance":-0.03163163882198658,"silhouette":0.025093586756432973}
+{"motion":"shout","side":1,"lift":0.05221661450391766,"neckClearance":-0.031631686287445865,"silhouette":0.025093631617225266}
+{"usagiPhysics":{"shakeDegrees":39.87580522398438,"dragDegrees":7.201560027547096,"settledDegrees":0,"aspect":0.9323585617396744,"mediumHeight":343}}
+ ❯ tests/usagi-model.test.ts (63 tests | 5 failed) 8395ms
+   ❯ 031 真实产物臂根保护 (5)
+     × Head yaw -0.4 时小手末端保持原位 14ms
+     × Head yaw 0.4 时小手末端保持原位 11ms
+     × Head pitch -0.25 时小手末端保持原位 12ms
+     × Head pitch 0.25 时小手末端保持原位 13ms
+     × 最大抬臂保护头侧，独立头侧和手样本满足臂链权重阈值 11ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/usagi-model.test.ts > 031 真实产物臂根保护 > Head yaw -0.4 时小手末端保持原位
+ FAIL  tests/usagi-model.test.ts > 031 真实产物臂根保护 > Head yaw 0.4 时小手末端保持原位
+ FAIL  tests/usagi-model.test.ts > 031 真实产物臂根保护 > Head pitch -0.25 时小手末端保持原位
+ FAIL  tests/usagi-model.test.ts > 031 真实产物臂根保护 > Head pitch 0.25 时小手末端保持原位
+AssertionError: expected [ { …(3) }, { …(3) }, …(2872) ] to have a length of 2880 but got 2874
+
+- Expected
++ Received
+
+- 2880
++ 2874
+
+ ❯ protectedSkin tests/usagi-model.test.ts:440:16
+    438|     }
+    439|   });
+    440|   expect(head).toHaveLength(protectedSamples.head.length);
+       |                ^
+    441|   expect(hands).toHaveLength(protectedSamples.hands.length);
+    442|   return { vrm, head, hands };
+ ❯ tests/usagi-model.test.ts:447:28
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ FAIL  tests/usagi-model.test.ts > 031 真实产物臂根保护 > 最大抬臂保护头侧，独立头侧和手样本满足臂链权重阈值
+AssertionError: expected [ { …(3) }, { …(3) }, …(2872) ] to have a length of 2880 but got 2874
+
+- Expected
++ Received
+
+- 2880
++ 2874
+
+ ❯ protectedSkin tests/usagi-model.test.ts:440:16
+    438|     }
+    439|   });
+    440|   expect(head).toHaveLength(protectedSamples.head.length);
+       |                ^
+    441|   expect(hands).toHaveLength(protectedSamples.hands.length);
+    442|   return { vrm, head, hands };
+ ❯ tests/usagi-model.test.ts:457:34
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  5 failed | 58 passed (63)
+   Start at  09:59:44
+   Duration  8.54s (tests 99%, transform 1%)
+

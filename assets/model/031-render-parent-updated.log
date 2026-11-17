@@ -1,0 +1,31 @@
+10:07:12 | INFO: Data are loaded, start creating Blender stuff
+10:07:12 | INFO: Blender create Mesh node FaceEyes
+10:07:12 | INFO: Blender create Mesh node FaceMouth
+10:07:12 | INFO: Blender create Mesh node tripo_7f0710d5_2d7f_4ae2_95ba_a3929a66c6cf
+10:07:12 | INFO: Blender create Mesh node BlenderVrmAddonImport926939143387862Temp_3_
+10:07:12 | INFO: Blender create Mesh node BlenderVrmAddonImport926939143387862Temp_6_
+10:07:12 | INFO: glTF import finished in 0.10s
+<PROJECT>/pipeline/blender/render_arm_protection.py:49: DeprecationWarning: 'World.use_nodes' is expected to be removed in Blender 6.0
+  scene.world.use_nodes = True
+00:07.207  render           | Saved: '/tmp/usagi-031-frames/before-yaw-front.png'
+00:09.912  render           | Saved: '/tmp/usagi-031-frames/before-yaw-45.png'
+00:12.993  render           | Saved: '/tmp/usagi-031-frames/before-arms-front.png'
+00:14.921  render           | Saved: '/tmp/usagi-031-frames/before-arms-45.png'
+10:07:27 | INFO: Data are loaded, start creating Blender stuff
+10:07:27 | INFO: Blender create Mesh node FaceEyes
+10:07:27 | INFO: Blender create Mesh node FaceMouth
+10:07:27 | INFO: Blender create Mesh node tripo_7f0710d5_2d7f_4ae2_95ba_a3929a66c6cf
+10:07:27 | INFO: Blender create Mesh node BlenderVrmAddonImport234514562599635Temp_3_
+10:07:27 | INFO: Blender create Mesh node BlenderVrmAddonImport234514562599635Temp_6_
+10:07:27 | INFO: glTF import finished in 0.10s
+00:21.333  render           | Saved: '/tmp/usagi-031-frames/after-yaw-front.png'
+00:23.870  render           | Saved: '/tmp/usagi-031-frames/after-yaw-45.png'
+00:27.226  render           | Saved: '/tmp/usagi-031-frames/after-arms-front.png'
+00:30.260  render           | Saved: '/tmp/usagi-031-frames/after-arms-45.png'
+<PROJECT>/pipeline/blender/render_arm_protection.py:97: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  mat.use_nodes = True
+00:33.375  render           | Saved: '/tmp/usagi-031-frames/after-neutral-front.png'
+00:35.961  render           | Saved: '/tmp/usagi-031-frames/after-neutral-45.png'
+Blender 5.2.3 LTS (hash e13b728c6880 built 2026-10-22 01:31:22)
+
+Blender quit

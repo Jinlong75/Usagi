@@ -1,0 +1,22 @@
+test_01_frozen_independent_samples (__main__.ArmProtectionTests.test_01_frozen_independent_samples) ... ok
+test_02_head_side_protected_from_arm (__main__.ArmProtectionTests.test_02_head_side_protected_from_arm) ... ok
+test_03_hand_core_follows_own_arm (__main__.ArmProtectionTests.test_03_hand_core_follows_own_arm) ... ok
+test_04_candidate_edges_have_continuous_head_weights (__main__.ArmProtectionTests.test_04_candidate_edges_have_continuous_head_weights) ... ok
+test_05_linear_pose_locality (__main__.ArmProtectionTests.test_05_linear_pose_locality) ... ok
+test_06_neutral_positions_topology_and_ears_unchanged (__main__.ArmProtectionTests.test_06_neutral_positions_topology_and_ears_unchanged) ... ok
+test_07_normalized_four_influences_and_deployment (__main__.ArmProtectionTests.test_07_normalized_four_influences_and_deployment) ... ok
+test_08_rig_face_weights_and_rest_frames (__main__.ArmProtectionTests.test_08_rig_face_weights_and_rest_frames) ... FAIL
+
+======================================================================
+FAIL: test_08_rig_face_weights_and_rest_frames (__main__.ArmProtectionTests.test_08_rig_face_weights_and_rest_frames)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<PROJECT>/pipeline/tests/test_arm_protection.py", line 79, in test_08_rig_face_weights_and_rest_frames
+    self.assertLessEqual(math.dist(pa, pb), 1e-6)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 0.9084285756295111 not less than or equal to 1e-06
+
+----------------------------------------------------------------------
+Ran 8 tests in 1.735s
+
+FAILED (failures=1)

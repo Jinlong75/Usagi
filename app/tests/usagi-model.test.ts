@@ -410,3 +410,90 @@ it('真实模型坐姿小腿朝前，臀部底沿从皮肤测量，复位后上�
   expect(vrm.humanoid.getRawBoneNode('leftLowerLeg')!.getWorldPosition(new Vector3()).z).toBeGreaterThan(knee.z + height * 0.01);
   expect(sampleMotion('sit', 100).bones.head).toBeUndefined();
 });
+
+// 031: frozen geometry samples are independent of the production weight regions.
+const protectedSamples = JSON.parse(readFileSync(new URL('../../pipeline/tests/data/031-protect.json', import.meta.url), 'utf8')) as {
+  head: number[][]; hands: number[][]; height: number;
+};
+const sampleKey = (p: number[]) => p.map(v => Math.round(v * 1e6)).join(',');
+async function protectedSkin() {
+  const vrm = await load();
+  const wantedHead = new Map(protectedSamples.head.map(p => [sampleKey(p), p]));
+  const wantedHands = new Map(protectedSamples.hands.map(p => [sampleKey(p), p]));
+  // three-vrm applies a Float32 bind transform at load (observed <7e-8H).
+  // Check neighboring spatial buckets and actual distance, so rounding at a
+  // bucket boundary cannot silently omit a frozen sample.
+  const matches = (samples: Map<string, number[]>, p: number[]) => {
+    const center = p.map(v => Math.round(v * 1e6));
+    for (let x = -1; x <= 1; x++) for (let y = -1; y <= 1; y++) for (let z = -1; z <= 1; z++) {
+      const q = samples.get([center[0]! + x, center[1]! + y, center[2]! + z].join(','));
+      if (q && Math.hypot(...q.map((v, i) => v - p[i]!)) <= 1e-6) return true;
+    }
+    return false;
+  };
+  const head: { mesh: import('three').SkinnedMesh; index: number; rest: Vector3 }[] = [];
+  const hands: typeof head = [];
+  vrm.scene.traverse(object => {
+    const mesh = object as import('three').SkinnedMesh;
+    if (!mesh.isSkinnedMesh) return;
+    let body = false;
+    for (let node: import('three').Object3D | null = object; node; node = node.parent) body ||= node.name.startsWith('Usagi_Body');
+    if (!body) return;
+    const position = mesh.geometry.attributes.position!;
+    for (let i = 0; i < position.count; i++) {
+      const p = new Vector3().fromBufferAttribute(position, i);
+      const coordinates = [p.x, -p.z, p.y];
+      const sample = { mesh, index: i, rest: mesh.getVertexPosition(i, new Vector3()).applyMatrix4(mesh.matrixWorld) };
+      if (matches(wantedHead, coordinates)) head.push(sample);
+      if (matches(wantedHands, coordinates)) hands.push(sample);
+    }
+  });
+  expect(head).toHaveLength(protectedSamples.head.length);
+  expect(hands).toHaveLength(protectedSamples.hands.length);
+  return { vrm, head, hands };
+}
+
+describe('031 真实产物臂根保护', () => {
+  it.each([['yaw', -.4], ['yaw', .4], ['pitch', -.25], ['pitch', .25]] as const)('Head %s %s 时小手末端保持原位', async (axis, angle) => {
+    const { vrm, hands } = await protectedSkin();
+    const head = vrm.humanoid.getNormalizedBoneNode('head')!;
+    if (axis === 'yaw') head.rotation.y = angle;
+    else head.rotation.x = angle;
+    vrm.humanoid.update(); vrm.scene.updateMatrixWorld(true);
+    const maximum = Math.max(...hands.map(({ mesh, index, rest }) => rest.distanceTo(mesh.getVertexPosition(index, new Vector3()).applyMatrix4(mesh.matrixWorld))));
+    expect(maximum / protectedSamples.height).toBeLessThanOrEqual(1e-4);
+    process.stdout.write(JSON.stringify({ armProtection: { axis, angle, handDisplacementH: maximum / protectedSamples.height } }) + '\n');
+  });
+  it('最大抬臂保护头侧，独立头侧和手样本满足臂链权重阈值', async () => {
+    const { vrm, head, hands } = await protectedSkin();
+    const armWeight = ({ mesh, index }: typeof head[number]) => {
+      const indices = mesh.geometry.attributes.skinIndex!, weights = mesh.geometry.attributes.skinWeight!;
+      let own = 0, opposite = 0;
+      const side = mesh.geometry.attributes.position!.getX(index) >= 0 ? 'Left' : 'Right';
+      for (let i = 0; i < 4; i++) {
+        const name = mesh.skeleton.bones[indices.getComponent(index, i)]!.name;
+        if (/^(Left|Right)(Shoulder|UpperArm|LowerArm|Hand)$/.test(name)) {
+          if (name.startsWith(side)) own += weights.getComponent(index, i);
+          else opposite += weights.getComponent(index, i);
+        }
+      }
+      return { own, opposite };
+    };
+    for (const sample of head) {
+      const w = armWeight(sample);
+      expect(w.own + w.opposite).toBeLessThanOrEqual(.05);
+    }
+    for (const sample of hands) {
+      const w = armWeight(sample);
+      expect(w.own).toBeGreaterThanOrEqual(.9);
+      expect(w.opposite).toBe(0);
+    }
+    for (const [name, angle] of [['leftUpperArm', .43], ['rightUpperArm', -.43], ['leftLowerArm', -.10], ['rightLowerArm', .10]] as const) {
+      vrm.humanoid.getNormalizedBoneNode(name)!.rotation.z = angle;
+    }
+    vrm.humanoid.update(); vrm.scene.updateMatrixWorld(true);
+    const maximum = Math.max(...head.map(({ mesh, index, rest }) => rest.distanceTo(mesh.getVertexPosition(index, new Vector3()).applyMatrix4(mesh.matrixWorld))));
+    expect(maximum / protectedSamples.height).toBeLessThanOrEqual(.003);
+    process.stdout.write(JSON.stringify({ armProtection: { headSamples: head.length, handSamples: hands.length, raisedArmHeadDisplacementH: maximum / protectedSamples.height } }) + '\n');
+  });
+});

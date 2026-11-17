@@ -1,0 +1,34 @@
+INFO Draco is available, use library at <USER_HOME>/Applications/Blender.app/Contents/Resources/5.2/scripts/addons_core/io_scene_gltf2/libbf_intern_draco_bridge.dylib
+INFO MeshOptimizer is available, use library at <USER_HOME>/Applications/Blender.app/Contents/Resources/5.2/scripts/addons_core/io_scene_gltf2/libbf_intern_meshopt_bridge.dylib
+10:11:33 | INFO: Starting glTF 2.0 export
+10:11:33 | INFO: Extracting primitive: Sphere
+10:11:33 | INFO: Primitives created: 3
+10:11:33 | INFO: Finished glTF 2.0 export in 0.06789588928222656 s
+
+10:11:33 | INFO: Data are loaded, start creating Blender stuff
+10:11:33 | INFO: Blender create Mesh node Sphere
+10:11:33 | INFO: glTF import finished in 0.10s
+setUpClass (__main__.RigTests) ... ERROR
+
+======================================================================
+ERROR: setUpClass (__main__.RigTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<PROJECT>/pipeline/tests/test_rig_usagi.py", line 82, in setUpClass
+    cls.obj, cls.arm, cls.report, cls.kinds = rig(cls.root/"synthetic.glb", cls.root/"landmarks.json",
+                                              ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                               cls.root/"synthetic.vrm", cls.root/"report.json")
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<PROJECT>/pipeline/blender/rig_usagi.py", line 556, in rig
+    auto, weights, kinds = bind_weights(obj, arm, lm)
+                           ~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "<PROJECT>/pipeline/blender/rig_usagi.py", line 350, in bind_weights
+    raise RuntimeError("Weight constraints failed: " + json.dumps(report))
+RuntimeError: Weight constraints failed: {"preservation": {"reference": "synthetic", "valid": true}, "arm_protection": {"head_samples": 17888, "hand_samples": 240, "head_arm_max": 0.6695317029953003, "hand_arm_min": 0.5000002384185791, "head_edge_max": 0.7765349745750427, "head_edges_over_05": 86, "hand_head_motion": 0.0, "head_arm_motion": 0.01553294093683798, "valid": false}, "per_bone_vertex_count": {"Hips": 6832, "Spine": 8552, "Chest": 12744, "Neck": 0, "Head": 20020, "EarL_1": 60, "EarL_2": 60, "EarL_3": 0, "EarL_4": 120, "EarL_Tip": 0, "EarR_1": 60, "EarR_2": 60, "EarR_3": 0, "EarR_4": 120, "EarR_Tip": 0, "LeftShoulder": 0, "LeftUpperArm": 568, "LeftLowerArm": 0, "LeftHand": 60, "RightShoulder": 0, "RightUpperArm": 568, "RightLowerArm": 0, "RightHand": 60, "LeftUpperLeg": 2184, "LeftLowerLeg": 1628, "LeftFoot": 460, "RightUpperLeg": 2184, "RightLowerLeg": 1628, "RightFoot": 460, "Tail": 16256, "TailTip": 0}, "max_influences": 3, "unnormalized_vertices": 0, "zero_weight_vertices": 0, "constraint_failures": {"ear_region": 0, "ear_tip": 0, "tail_region": 0, "limb_isolation": 0, "face_region": 0}, "constraint_samples": {"ear_region": 544, "ear_tip": 120, "tail_region": 16256, "limb_isolation": 6544, "face_region": 868}, "region_counts": {"arm_l": 628, "arm_r": 628, "ear_l": 304, "ear_r": 240, "face": 868, "leg_l": 2644, "leg_r": 2644, "tail": 16256, "trunk": 25516}, "valid": false, "influence_truncation": {"points": 0, "max_discarded": 0.0}}
+
+----------------------------------------------------------------------
+Ran 0 tests in 2.075s
+
+FAILED (errors=1)
+Warning: Bone Heat Weighting: failed to find solution for one or more bones
+010 失败现场：<TEMP>

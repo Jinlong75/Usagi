@@ -14,6 +14,7 @@ export BLENDER
 "$BLENDER" -b --factory-startup --python-exit-code 1 --python "$PIPELINE_DIR/tests/test_shape_consistency.py"
 # VRM 扩展依赖用户启动配置，rig 测试不使用 --factory-startup。
 "$BLENDER" -b --python-exit-code 1 --python "$PIPELINE_DIR/tests/test_rig_usagi.py"
+"$BLENDER" -b --python-exit-code 1 --python "$PIPELINE_DIR/tests/test_arm_protection.py"
 # 011: external temporary Pillow, then synthetic face and real three-vrm mixing.
 . "$PIPELINE_DIR/face/python_env.sh"
 "$FACE_PYTHON" "$PIPELINE_DIR/tests/test_face_atlas.py"

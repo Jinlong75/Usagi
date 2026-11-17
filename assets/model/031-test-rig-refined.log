@@ -1,0 +1,46 @@
+INFO Draco is available, use library at <USER_HOME>/Applications/Blender.app/Contents/Resources/5.2/scripts/addons_core/io_scene_gltf2/libbf_intern_draco_bridge.dylib
+INFO MeshOptimizer is available, use library at <USER_HOME>/Applications/Blender.app/Contents/Resources/5.2/scripts/addons_core/io_scene_gltf2/libbf_intern_meshopt_bridge.dylib
+09:56:25 | INFO: Starting glTF 2.0 export
+09:56:25 | INFO: Extracting primitive: Sphere
+09:56:25 | INFO: Primitives created: 3
+09:56:25 | INFO: Finished glTF 2.0 export in 0.054705142974853516 s
+
+09:56:25 | INFO: Data are loaded, start creating Blender stuff
+09:56:25 | INFO: Blender create Mesh node Sphere
+09:56:25 | INFO: glTF import finished in 0.08s
+Warning: Bone Heat Weighting: failed to find solution for one or more bones
+09:56:27 | INFO: Starting glTF 2.0 export
+09:56:27 | INFO: Starting glTF 2.0 export
+09:56:27 | INFO: Extracting primitive: Sphere.003
+09:56:27 | INFO: Extracting primitive: Sphere.003
+09:56:27 | INFO: Primitives created: 3
+09:56:27 | INFO: Primitives created: 3
+09:56:27 | INFO: Finished glTF 2.0 export in 0.13802790641784668 s
+09:56:27 | INFO: Finished glTF 2.0 export in 0.13802790641784668 s
+test_01_hierarchy_and_lengths (__main__.RigTests.test_01_hierarchy_and_lengths) ... ok
+test_02_weights_independent_masks (__main__.RigTests.test_02_weights_independent_masks) ... ok
+test_03_checker_detects_wrong_weights (__main__.RigTests.test_03_checker_detects_wrong_weights) ... ok
+test_04_exported_meta_materials_springs (__main__.RigTests.test_04_exported_meta_materials_springs) ... ok
+test_05_pose_deformation_locality (__main__.RigTests.test_05_pose_deformation_locality) ... ok
+test_06_vrm1_simulated_spring_joints (__main__.RigTests.test_06_vrm1_simulated_spring_joints) ... ok
+test_07_neck_transition_spreads_head_turn (__main__.RigTests.test_07_neck_transition_spreads_head_turn) ... ok
+test_08_neck_face_blend_has_no_slope_kink (__main__.RigTests.test_08_neck_face_blend_has_no_slope_kink) ... ok
+test_99_plugin_round_trip (__main__.RigTests.test_99_plugin_round_trip) ... 
+09:56:28 | INFO: Data are loaded, start creating Blender stuff
+09:56:28 | INFO: Data are loaded, start creating Blender stuff
+09:56:28 | INFO: Blender create Mesh node Sphere.003
+09:56:28 | INFO: Blender create Mesh node Sphere.003
+09:56:28 | INFO: Blender create Mesh node BlenderVrmAddonImport261158068743071Temp_1_
+09:56:28 | INFO: Blender create Mesh node BlenderVrmAddonImport261158068743071Temp_1_
+09:56:28 | INFO: glTF import finished in 0.13s
+09:56:28 | INFO: glTF import finished in 0.13s
+ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 4.194s
+
+OK
+010 全部通过 9 项
+Blender 5.2.3 LTS (hash e13b728c6880 built 2026-10-22 01:31:22)
+
+Blender quit
