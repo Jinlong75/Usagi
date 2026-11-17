@@ -1,10 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fileURLToPath } from 'node:url';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { BehaviorMachine } from '../src/renderer/behavior/machine';
 import type { FeedRequest, MoveRequest, MoveResult, Point, Rect } from '../src/shared/types';
 
 // Exercise the real main-process handlers with a native-window double, without Electron/GUI.
 const host = vi.hoisted(() => ({
+  directory: '',
+  appEvents: new Map<string, (...args: any[]) => any>(),
   nativeWindows: [] as import('../src/main/perch/logic').WindowInfo[],
   nativeReads: 0, fullscreenReads: 0, fullscreen: false, cursor: { x: 400, y: 100 },
   clampY: false, positionErrorY: 0, positionReads: 0,
@@ -64,7 +69,10 @@ vi.mock('electron', () => {
     powerMonitor: { on: vi.fn(), getSystemIdleTime: () => 0 },
     app: { commandLine: host.commandLine, whenReady: () => ({ then: (start: () => Promise<void>) => {
       host.start = start; return { catch: vi.fn() };
-    } }), on: vi.fn(), getPath: () => '/unused-fixture', dock: { hide: vi.fn() } },
+    } }), on: (name: string, callback: (...args: any[]) => any) => host.appEvents.set(name, callback),
+    removeListener: (name: string, callback: (...args: any[]) => any) => {
+      if (host.appEvents.get(name) === callback) host.appEvents.delete(name);
+    }, getPath: () => host.directory, getVersion: () => '0.1.0', isPackaged: false, dock: { hide: vi.fn() } },
     ipcMain: { on: (name: string, callback: (...args: any[]) => any) => host.handlers.set(name, callback),
       handle: (name: string, callback: (...args: any[]) => any) => host.invokes.set(name, callback) },
     Menu: { buildFromTemplate: (menu: any[]) => menu },
@@ -101,6 +109,8 @@ function latestFeed(): FeedRequest {
 const request: MoveRequest = { x: 520, y: 90, durationMs: 2000 };
 
 async function boot(): Promise<void> {
+  // A simulated restart must dispose the previous process's log subscriptions.
+  host.appEvents.get('will-quit')?.(); host.appEvents.clear();
   vi.clearAllTimers(); vi.resetModules();
   host.nativeWindows = []; host.nativeReads = 0; host.fullscreenReads = 0; host.fullscreen = false; host.cursor = { x: 400, y: 100 };
   host.clampY = false; host.positionErrorY = 0; host.positionReads = 0;
@@ -114,13 +124,35 @@ describe('可见性与移动 IPC（原生窗口替身，无 GUI）', () => {
   const platform = Object.getOwnPropertyDescriptor(process, 'platform')!;
   beforeEach(async () => {
     vi.useFakeTimers();
+    host.directory = mkdtempSync(join(tmpdir(), 'usagi-behavior-ipc-'));
     vi.stubGlobal('__dirname', fileURLToPath(new URL('../out', import.meta.url)));
     host.area = { x: 0, y: 0, width: 1000, height: 800 };
     host.savedPosition = { x: 340, y: 90 };
     host.visible = false; host.bounds = { x: 340, y: 90, width: 320, height: 420 };
     await boot();
   });
-  afterEach(() => { Object.defineProperty(process, 'platform', platform); host.send.mockReset(); vi.clearAllTimers(); vi.useRealTimers(); vi.unstubAllGlobals(); });
+  afterEach(() => {
+    host.appEvents.get('will-quit')?.(); host.appEvents.clear();
+    rmSync(host.directory, { recursive: true, force: true });
+    Object.defineProperty(process, 'platform', platform); host.send.mockReset(); vi.clearAllTimers(); vi.useRealTimers(); vi.unstubAllGlobals();
+  });
+
+  it('启动写入真实崩溃日志，重复启动替身不累积进程异常监听器', async () => {
+    const exceptions = process.listeners('uncaughtExceptionMonitor');
+    const rejections = process.listeners('unhandledRejection');
+    for (let restart = 0; restart < 2; restart++) {
+      await boot();
+      expect(process.listenerCount('uncaughtExceptionMonitor')).toBe(exceptions.length);
+      expect(process.listenerCount('unhandledRejection')).toBe(rejections.length);
+    }
+    const starts = readFileSync(join(host.directory, 'crash.log'), 'utf8').trim().split('\n')
+      .filter(line => /^\S+ start /.test(line)).map(line => JSON.parse(line.slice(line.indexOf(' start ') + 7)));
+    expect(starts).toHaveLength(3);
+    expect(starts).toEqual(Array.from({ length: 3 }, () => expect.objectContaining({ version: '0.1.0', packaged: false, userData: host.directory })));
+    host.appEvents.get('will-quit')!();
+    expect(process.listeners('uncaughtExceptionMonitor')).toEqual(exceptions.slice(0, -1));
+    expect(process.listeners('unhandledRejection')).toEqual(rejections.slice(0, -1));
+  });
 
   it('preload 的 onActivity 订阅并正确解除 pet:activity，不传出 Electron event', async () => {
     await import('../src/preload/index');
