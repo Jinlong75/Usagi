@@ -9,9 +9,6 @@ const key = value('key'), warning = field('key-warning'), status = field('save-s
 const ranges = ['morning', 'lunch', 'nap', 'dinner', 'sleep'] as const;
 // Keep the routine controls in the settings renderer, alongside the existing cards.
 field('self-talk').closest('section')!.insertAdjacentHTML('beforebegin', `
-  <fieldset><legend>窗口吸附</legend>
-  <label class="check"><input id="perch-enabled" type="checkbox">可以坐到窗口上</label>
-  <label class="check"><input id="perch-auto" type="checkbox">自己跳到窗口上</label></fieldset>
   <fieldset id="routine"><legend>作息</legend>
   <label class="check"><input id="routine-enabled" type="checkbox">按作息问候</label>
   <label class="check"><input id="routine-quiet" type="checkbox">免打扰</label>
@@ -32,7 +29,6 @@ let saveQueue: Promise<unknown> = Promise.resolve();
 function syncCustom(): void { field('custom-label').hidden = value('model').value !== 'custom'; }
 function display(next: Config): void {
   config = next;
-  value('perch-enabled').checked = next.perch.enabled; value('perch-auto').checked = next.perch.auto;
   value('model').value = ['deepseek-flash', 'deepseek-v4-pro'].includes(next.chat.model) ? next.chat.model : 'custom';
   value('custom-model').value = next.chat.model; value('base-url').value = next.chat.baseUrl;
   value('temperature').value = String(next.chat.temperature); value('thinking').checked = next.chat.thinking === 'enabled';
@@ -54,7 +50,7 @@ function collect(): Config {
   const routine = { ...config.routine, enabled: value('routine-enabled').checked, quiet: value('routine-quiet').checked, weather: value('routine-weather').checked,
     bedtime: value('routine-bedtime').value };
   for (const key of ranges) routine[key] = [value(`routine-${key}-start`).value, value(`routine-${key}-end`).value];
-  return { ...config, routine, perch: { enabled: value('perch-enabled').checked, auto: value('perch-auto').checked }, chat: { ...config.chat,
+  return { ...config, routine, chat: { ...config.chat,
     model: value('model').value === 'custom' ? value('custom-model').value.trim() : value('model').value,
     baseUrl: value('base-url').value.trim(), temperature: Number(value('temperature').value),
     thinking: value('thinking').checked ? 'enabled' : 'disabled' },

@@ -1,6 +1,5 @@
 import { installCrashLog, logCrash, watchRenderer, crashCounts } from './crashLog';
-import { createWindowReader } from './perch/windows';
-import { PerchController } from './perch/controller';
+import { createWindowReader } from './fullscreen';
 import { app, BrowserWindow, ipcMain, Menu, nativeImage, screen, Tray, safeStorage, powerMonitor, net } from 'electron';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { mkdtempSync } from 'node:fs';
@@ -82,19 +81,16 @@ let dragOrigin: Point | null = null;
 let hit = false;
 let completed = false;
 let motion: WindowMotion | undefined;
-let perch: PerchController | undefined;
-let seatAnchor: Point | undefined;
-let stopPerch: ReturnType<typeof setInterval> | undefined;
-let refreshPerch: (() => void) | undefined;
+let stopFullscreen: ReturnType<typeof setInterval> | undefined;
 let lastDragEndedAt = -Infinity;
 let dragSample = { point: { x: 0, y: 0 }, time: 0 };
 const runtime = { isPackaged: app.isPackaged, resourcesPath: process.resourcesPath };
 const sounds = SoundLibrary.fromRuntime(root, runtime);
-const smokeBehaviors: SmokeBehavior[] = ['idle', 'walk', 'happy', 'surprised', 'shout', 'stretch', 'drag', 'ear-shake', 'jumpRope', 'blowBubbles', 'napPillow', 'eatRiceball', 'eatWatermelon', 'iceCream', 'sneakSnack', 'sit'];
+const smokeBehaviors: SmokeBehavior[] = ['idle', 'walk', 'happy', 'surprised', 'shout', 'stretch', 'drag', 'ear-shake', 'jumpRope', 'blowBubbles', 'napPillow', 'eatRiceball', 'eatWatermelon', 'iceCream', 'sneakSnack'];
 // Focused screenshots share the production smoke renderer, without opening UI pages.
 const smokeOnly = smoke ? process.argv.find(arg => arg.startsWith('--only='))?.slice(7).split(',') : undefined;
 if (smokeOnly) {
-  if (!smokeOnly.length || smokeOnly.some(name => !['jumpRope', 'blowBubbles', 'napPillow', 'eatRiceball', 'eatWatermelon', 'iceCream', 'sneakSnack', 'sit'].includes(name))) throw new Error('无效的聚焦冒烟动作');
+  if (!smokeOnly.length || smokeOnly.some(name => !['jumpRope', 'blowBubbles', 'napPillow', 'eatRiceball', 'eatWatermelon', 'iceCream', 'sneakSnack'].includes(name))) throw new Error('无效的聚焦冒烟动作');
   smokeBehaviors.splice(0, smokeBehaviors.length, ...smokeBehaviors.filter(name => smokeOnly.includes(name)));
 }
 const propOpaqueRatios: Record<string, number> = {};
@@ -142,7 +138,6 @@ function currentBounds(size = config.size) {
 function setSize(size: Size): void {
   if (!win) return;
   motion?.cancel();
-  perch?.detach();
   win.webContents.send('pet:press', false);
   config.size = size;
   const { x, y } = win.getBounds();
@@ -166,7 +161,7 @@ function dragPosition(point: Point, now: number): void {
   const wasDragged = gesture.dragged;
   updateGesture(gesture, point);
   if (!gesture.dragged) return;
-  if (!wasDragged) { motion?.cancel(); perch?.detach(); }
+  if (!wasDragged) motion?.cancel();
   win.setPosition(Math.round(dragOrigin.x + point.x - gesture.start.x),
     Math.round(dragOrigin.y + point.y - gesture.start.y));
   const bounds = win.getBounds();
@@ -181,7 +176,6 @@ function finishDrag(cancelled: boolean): void {
   const now = performance.now();
   const point = screen.getCursorScreenPoint();
   if (!cancelled) dragPosition(point, now);
-  const wasDragged = gesture.dragged;
   const clicked = !cancelled && isClick(gesture, point, now, lastDragEndedAt);
   if (gesture.dragged) {
     lastDragEndedAt = now;
@@ -195,7 +189,6 @@ function finishDrag(cancelled: boolean): void {
   save();
   applyHit();
   if (clicked) win.webContents.send('pet:click');
-  if (wasDragged && !cancelled) { refreshPerch?.(); perch?.drop(); }
 }
 
 function updateConfig(value: unknown): void {
@@ -206,8 +199,6 @@ function updateConfig(value: unknown): void {
   if (!saved.ok) throw new Error(saved.reason);
   const routineWasEnabled = config.routine.enabled;
   config = candidate;
-  if (!config.perch.enabled) perch?.down();
-  refreshPerch?.();
   win?.setAlwaysOnTop(config.alwaysOnTop, 'floating');
   applyHit(); refreshMenu(); ui?.broadcast(); if (!quitting) { selfTalk?.restart(); routine?.start(); }
   // Routine only emits changes to its cached state. Re-enabling needs a fresh
@@ -234,10 +225,9 @@ function updateFromMenu(value: unknown): boolean {
 function petMenu(): Electron.MenuItemConstructorOptions[] {
   const state = menuState(config, win?.isVisible() ?? false);
   return [
-    ...(perch?.sitting ? [{ label: '下来', click: () => perch?.down() }] : []),
     { label: state.visibility, click: () => {
       if (win?.isVisible()) {
-        finishDrag(true); motion?.cancel(); perch?.detach(); win.webContents.send('pet:press', false);
+        finishDrag(true); motion?.cancel(); win.webContents.send('pet:press', false);
         win.hide(); win.webContents.send('pet:visibility', { visible: false });
       } else if (win) {
         win.showInactive(); win.webContents.send('pet:visibility', { visible: true });
@@ -397,31 +387,13 @@ async function start(): Promise<void> {
   });
   if (!smoke) {
     // TODO(lead): Windows 用户用新日志复测第 6 轮退出；无 JS 日志的原生崩溃仍需系统转储。
-    const reader = createWindowReader({ log: reason => logCrash('perch-disabled', { reason }), toDip: rect => screen.screenToDipRect(null, rect) });
-    perch = new PerchController({
-      bounds: () => win!.getBounds(), area: () => screen.getDisplayMatching(win!.getBounds()).workArea,
-      enabled: () => config.perch.enabled && reader.available, auto: () => config.perch.auto,
-      visible: () => !!win?.isVisible(), seat: () => seatAnchor,
-      ground: () => { const b = win!.getBounds(), area = screen.getDisplayMatching(b).workArea; return Math.max(area.y, area.y + area.height - b.height - 40); },
-      move: point => win?.setPosition(point.x, point.y),
-      position: () => { const [x, y] = win!.getPosition(); return { x: x!, y: y! }; },
-      cancelWalk: () => motion?.cancel(),
-      notify: status => { win?.webContents.send('pet:perch', status); refreshMenu(); },
-    });
-    let lastRead = -Infinity, lastFullscreen = -Infinity;
-    const poll = (force = false) => {
+    const reader = createWindowReader({ log: reason => logCrash('fullscreen-disabled', { reason }), toDip: rect => screen.screenToDipRect(null, rect) });
+    const poll = () => {
       if (!win || win.isDestroyed()) return;
-      const now = performance.now();
-      if (!force && !perch?.polling && now - lastRead < 2000 && now - lastFullscreen < 2000) return;
-      const windows = reader.list(); lastRead = now;
-      if (now - lastFullscreen >= 2000 || !reader.available) {
-        cacheForegroundFullscreen(reader.fullscreen(windows, bounds => screen.getDisplayMatching(bounds).bounds));
-        lastFullscreen = now;
-      }
-      perch?.update(windows, isForegroundFullscreen());
+      cacheForegroundFullscreen(reader.fullscreen(reader.list(), bounds => screen.getDisplayMatching(bounds).bounds));
     };
-    refreshPerch = () => poll(true);
-    stopPerch = setInterval(poll, 100);
+    poll();
+    stopFullscreen = setInterval(poll, 2000);
   }
   win.setAlwaysOnTop(config.alwaysOnTop, 'floating');
   if (process.platform === 'darwin') win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
@@ -494,10 +466,9 @@ async function start(): Promise<void> {
     modelPath = resolveModel(root, config.modelPath, smoke, runtime);
     return { bytes: new Uint8Array(await readFile(modelPath)), path: modelPath, smoke };
   });
-  ipcMain.on('pet:framed', (event, value: { aspect?: number; headTop?: number; seat?: Point }) => {
+  ipcMain.on('pet:framed', (event, value: { aspect?: number; headTop?: number }) => {
     if (!trusted(event) || !win || !value || !Number.isFinite(value.aspect) ||
       value.aspect! < 0.4 || value.aspect! > 2 || !Number.isFinite(value.headTop) || value.headTop! < 0 || value.headTop! > 1) return;
-    if (value.seat && [value.seat.x, value.seat.y].every(v => Number.isFinite(v) && v >= 0 && v <= 1)) seatAnchor = { ...value.seat };
     const previous = win.getBounds();
     const firstFrame = modelAspect === undefined;
     modelAspect = value.aspect!;
@@ -527,13 +498,11 @@ async function start(): Promise<void> {
       (gesture?.dragged && use !== 'drag')) return null;
     return sounds.load(use).then((bytes) => bytes ? new Uint8Array(bytes).buffer : null);
   });
-  ipcMain.on('pet:perch-hop', event => { if (trusted(event) && !smoke && !gesture) perch?.hop(); });
   ipcMain.on('pet:move-to', (event, request: MoveRequest) => {
     if (!trusted(event)) return;
     const refuse = (reason: string) => win?.webContents.send('pet:move-done', { ok: false, reason });
     if (smoke) return refuse('smoke');
     if (gesture) return refuse('dragging');
-    if (perch?.active) return refuse('perched');
     if (!win?.isVisible()) return refuse('hidden');
     if (!motion) return refuse('unavailable');
     const bounds = win.getBounds();
@@ -579,7 +548,6 @@ async function start(): Promise<void> {
     stopCursor = startTickLoop(() => {
       if (!win || win.isDestroyed() || !win.isVisible()) return;
       const now = performance.now();
-      perch?.tick();
       const point = screen.getCursorScreenPoint();
       dragPosition(point, now);
       const bounds = win.getBounds();
@@ -652,7 +620,7 @@ app.on('before-quit', event => {
   stopWeatherPrefetch?.(); selfTalk?.stop(); routine?.stop();
   clearTimeout(watchdog);
   stopCursor?.();
-  clearInterval(stopPerch);
+  clearInterval(stopFullscreen);
   motion?.cancel();
   clearTimeout(moveSaveTimer);
   if (!smoke) { finishDrag(true); save(); }

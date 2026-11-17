@@ -57,7 +57,7 @@ describe('真实渲染入口接线，无 Electron/DOM/WebGL 宿主', () => {
     const listen = (name: string) => (callback: (value?: any) => void) => { host.callbacks.set(name, callback); return () => {}; };
     bridge = {
       platform: 'win32', activityDone: vi.fn(), reportFps: vi.fn(), getConfig: async () => structuredClone(DEFAULT_CONFIG),
-      onPerch: listen('perch'), perchHop: vi.fn(), onActivity: listen('activity'), onRoutine: listen('routine'), onConfig: listen('config'), onCursor: listen('cursor'), onPress: listen('press'), onClick: listen('click'),
+      onActivity: listen('activity'), onRoutine: listen('routine'), onConfig: listen('config'), onCursor: listen('cursor'), onPress: listen('press'), onClick: listen('click'),
       onDrag: listen('drag'), onMoveDone: listen('done'), onVisibility: listen('visibility'), onSmokePose: listen('smoke'),
       onExpression: listen('expression'), onSound: listen('sound'), onReload: listen('reload'),
       loadModel: async () => ({ bytes: new Uint8Array(), path: '', smoke: false }),
@@ -75,16 +75,7 @@ describe('真实渲染入口接线，无 Electron/DOM/WebGL 宿主', () => {
   });
   afterEach(() => { vi.clearAllTimers(); vi.useRealTimers(); vi.unstubAllGlobals(); });
 
-  it.each(['sit', 'snap'] as const)('%s保留MotionRig保存的VRM0基准朝向Math.PI', async phase => {
-    host.model.scene.rotation.y = Math.PI;
-    host.callbacks.get('reload')!();
-    await vi.waitFor(() => expect(bridge.framed).toHaveBeenCalledTimes(2));
-    draw(); expect(host.model.scene.rotation.y).toBe(Math.PI);
-    host.callbacks.get('perch')!({ phase, canHop: false });
-    for (const delta of [20, 750, 3500]) {
-      draw(delta); expect(host.model.scene.rotation.y).toBe(Math.PI);
-    }
-  });
+
 
   it('只有 pet:cursor 没有 DOM mousemove，也能从穿透恢复命中；坐标使用原生窗口偏移', () => {
     expect(host.ratio).toHaveBeenCalledWith(1.25);

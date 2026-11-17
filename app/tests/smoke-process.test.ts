@@ -1,12 +1,13 @@
 import { validChatRounds } from '../scripts/smoke-chat-report.mjs';
+import { spawnSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 // @ts-expect-error The allowed smoke entry is JavaScript; its validation is tested directly.
 import { BEHAVIORS, validBehaviorReport, validFocusedReport, validUiReport, validSoundReport, shouldRetryFreshElectron } from '../scripts/smoke.mjs';
 import { runSmokeProcess } from '../scripts/smoke-process.mjs';
 
 const success = { ok: true, ui: ['bubble', 'chat', 'settings'], model: '/repo/assets/models/usagi.vrm', earDifferenceRatio: 0.06, happyFaceDifferenceRatio: 0.1, opaqueRatio: 0.21, vrmVersion: '1', expressions: ['blink', 'happy'],
-  behaviors: ['idle', 'walk', 'happy', 'surprised', 'shout', 'stretch', 'drag', 'ear-shake', 'jumpRope', 'blowBubbles', 'napPillow', 'eatRiceball', 'eatWatermelon', 'iceCream', 'sneakSnack', 'sit'],
-  behaviorOpaqueRatios: { idle: 0.21, walk: 0.2, happy: 0.23, surprised: 0.19, shout: 0.25, stretch: 0.24, drag: 0.2, 'ear-shake': 0.2, jumpRope: 0.22, blowBubbles: 0.22, napPillow: 0.22, eatRiceball: 0.22, eatWatermelon: 0.22, iceCream: 0.22, sneakSnack: 0.22, sit: 0.22 },
+  behaviors: ['idle', 'walk', 'happy', 'surprised', 'shout', 'stretch', 'drag', 'ear-shake', 'jumpRope', 'blowBubbles', 'napPillow', 'eatRiceball', 'eatWatermelon', 'iceCream', 'sneakSnack'],
+  behaviorOpaqueRatios: { idle: 0.21, walk: 0.2, happy: 0.23, surprised: 0.19, shout: 0.25, stretch: 0.24, drag: 0.2, 'ear-shake': 0.2, jumpRope: 0.22, blowBubbles: 0.22, napPillow: 0.22, eatRiceball: 0.22, eatWatermelon: 0.22, iceCream: 0.22, sneakSnack: 0.22 },
   propOpaqueRatios: { handles: 0.001, rope: 0.003, wand: 0.002, bubble: 0.002, pillow: 0.01, riceball: 0.002, watermelon: 0.002, iceCream: 0.002, cookie: 0.001 },
   propFraming: { jumpRope: true, blowBubbles: true, napPillow: true, eatRiceball: true, eatWatermelon: true, iceCream: true, sneakSnack: true },
   behaviorTopTransparent: { happy: true, shout: true, stretch: true } };
@@ -84,7 +85,7 @@ describe('冒烟子进程结果与诊断（Node fixture，不启动 GUI）', () 
   });
 });
 
-describe('十六种行为冒烟报告', () => {
+describe('十五种行为冒烟报告', () => {
   it('必须依序包含原有全部行为及甩耳朵，每张图的 alpha 占比有效', () => {
     expect(success.behaviors).toEqual(BEHAVIORS);
     expect(validBehaviorReport(success)).toBe(true);
@@ -193,4 +194,40 @@ it('聚焦聊天报告也必须经子进程入口校验，不能静默省略 12 
   expect(result.code).toBe(0);
   const missing = await run(`console.log(JSON.stringify({ ok: true, chatRoundsOnly: true }))`);
   expect(missing.code).toBe(1); expect(JSON.parse(missing.stdout).reason).toBe('12 轮聊天冒烟结果无效');
+});
+
+it('null采样及嵌套非对象结构返回false', () => {
+  expect(validChatRounds(Array(12).fill(null))).toBe(false);
+  expect(validChatRounds(Array(12))).toBe(false);
+  for (const change of [null, [], 1, { ipc: [] }, { memory: null }, { webContents: [null, null, null] },
+    { webContents: [1, 2, 3].map(id => ({ id, listeners: [] })) }]) {
+    const rounds: unknown[] = chatRounds();
+    rounds[0] = change === null || typeof change !== 'object' || Array.isArray(change)
+      ? change : { ...chatRounds()[0], ...change };
+    expect(validChatRounds(rounds)).toBe(false);
+  }
+});
+it('完整冒烟入口校验异常必须非零退出', async () => {
+  const loader = `export async function resolve(specifier, context, next) {
+    if (specifier === './smoke-chat-report.mjs' && context.parentURL.endsWith('/smoke.mjs'))
+      return { shortCircuit: true, url: 'data:text/javascript,' + encodeURIComponent(
+        'export function validChatRounds() { throw new Error("validator fixture"); }') };
+    return next(specifier, context);
+  }`;
+  // Use a complete report so the inner process monitor succeeds before the
+  // smoke.mjs-only validator throws. Read the raw exit status: run() would
+  // independently turn ok:false into failure and mask a broken entry exit code.
+  const report = { ...success, sounds: { directory: '/resources/sounds/usagi', clips: 20, decoded: true }, chatRounds: chatRounds() };
+  const result = spawnSync(process.execPath, ['--input-type=module', '-e', `
+    import { register } from 'node:module';
+    register('data:text/javascript,' + encodeURIComponent(${JSON.stringify(loader)}), import.meta.url);
+    const { smokeMain } = await import(${JSON.stringify(new URL('../scripts/smoke.mjs', import.meta.url).href)});
+    await smokeMain(process.execPath, ['--input-type=module', '-e',
+      ${JSON.stringify('console.log(' + JSON.stringify(JSON.stringify(report)) + ')')}]);
+  `], { encoding: 'utf8', timeout: 5_000 });
+  expect(result.error).toBeUndefined();
+  expect(result.signal).toBeNull();
+  expect(result.status).toBe(1);
+  expect(JSON.parse(result.stdout).ok).toBe(false);
+  expect(result.stdout).toContain('冒烟校验异常：Error: validator fixture');
 });

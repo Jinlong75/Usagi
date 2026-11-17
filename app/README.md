@@ -231,26 +231,11 @@ R2-1 聚焦自测（从 `app/` 目录运行）：`npm exec -- vitest run tests/p
 
 聚焦复查：先运行 ar gui check Electron --headless，通过后 npm --prefix app run build，再 node app/scripts/smoke.mjs --only=eatRiceball,eatWatermelon,iceCream,sneakSnack。只生成初始模型与四个指定动作，不打开其他界面。执行者自测使用 typecheck 和相关无 GUI 测试；完整 test/smoke 交门禁。
 
-### 窗口吸附与全屏检测（026）
+### 全屏检测
 
-`src/main/perch/windows.ts` 使用固定版本 `koffi@2.15.1`，运行时通过 `createRequire` 加载，避免 esbuild 把本机 native 二进制内联进主进程。Windows：EnumWindows 按前到后枚举，IsWindowVisible、IsIconic、GetWindowThreadProcessId、GetWindowTextLengthW（仅有无标题）、GetClassNameW、GetWindowLongPtrW，以及 DwmGetWindowAttribute 的 EXTENDED_FRAME_BOUNDS / CLOAKED 过滤；screen.screenToDipRect(null, rect) 把物理像素转为 DIP；GetForegroundWindow 定位前台普通窗口。macOS：CGWindowListCopyWindowInfo(1 | 16, 0)，CFArrayGetCount / CFArrayGetValueAtIndex、CFDictionaryGetValue、CFNumberGetValue、CGRectMakeWithDictionaryRepresentation，最后 CFRelease；只保留 layer=0，读取 Bounds / Layer / OwnerPID / Number，使用左上原点的点，无需标题或屏幕录制权限。两端都排除本进程。
+`src/main/fullscreen.ts` 使用固定版本 `koffi@2.15.1`，运行时通过 `createRequire` 加载，避免 esbuild 内联本机 native 二进制。Windows 读取普通可见窗口边框、过滤桌面/任务栏/工具窗口/隐藏 UWP/小窗口，并用 `GetForegroundWindow` 匹配前台窗口；物理坐标通过 `screen.screenToDipRect` 转为 DIP。macOS 使用 CGWindowListCopyWindowInfo，只保留 layer=0，读取边框、层级和进程编号，释放系统列表。两端排除本进程，不读取标题或窗口内容。
 
-系统库加载或调用失败只日志一次并永久关闭本次运行的吸附与全屏检测。完整显示器 bounds 四边容差 2 DIP 判全屏，工作区不算；主进程每 2 秒更新 routine 的布尔缓存，Routine / SelfTalk 的每次检查不再调用系统接口。坐着每 100ms 更新窗口列表，空闲时复用 2 秒采样；拖放松手强制刷新一次。
-
-`logic.ts` 为注入窗口列表、时间和工作区的纯判定，`controller.ts` 管理原生窗口移动：
-
-| 当前状态 | 事件 | 下一状态 / 行为 |
-| --- | --- | --- |
-| free | 拖放命中上沿 | snap：180ms平滑对齐 |
-| free | 随机perchHop，目标存在且开关/冷却/全屏通过 | hop：120ms蹲伏 + 700ms抛物线 + 220ms压扁 |
-| snap / hop | 动画完成 | sit：保持座位相对水平位置 |
-| sit | 目标移动且座位仍可用 | sit：每100ms跟随 |
-| sit / snap / hop | 最小化、关闭、遮住、贴顶、离开可坐范围 | down：500ms抛物线 + 220ms压扁 |
-| sit | 菜单“下来” / 禁用吸附 | down |
-| down | 落地完成 | free：当前工作区底部，沿用窗口底部40DIP间距 |
-| 任意吸附状态 | 开始实际拖动 / 隐藏 / 调整大小 | free：交还普通交互 |
-
-座位点由 `measureSeat` 在坐姿下采样臀部蒙皮（hips权重至少0.5的顶点最下沿），用相同正交相机投影为窗口内比例，随 `pet:framed` 的 seat 上报；非蒙皮自定义模型退回已测得的脚底。负X约1.2rad把沿-Y的小腿抬向模型正面+Z，真实Usagi骨架测试核实了方向；坐姿髋部下降0.035H，下腿±0.15rad/3秒摆动。坐姿持续叠加，其他动作仅保留上半身与道具，不移动臀部。
+完整显示器 bounds 四边容差 2 DIP 判全屏，工作区不算。主进程启动时采样一次，此后每 2 秒刷新 routine 的布尔缓存；作息和自言自语直接读缓存。koffi 加载或系统调用失败后，本次运行恒返回 false，并在 crash.log 记录一条 `fullscreen-disabled`，不弹错。旧 config.json 的吸附字段读取时忽略，保存时不写回。
 
 安装包内 koffi JavaScript 为 `resources/app.asar/node_modules/koffi/index.js`，`asarUnpack` 保留原目录并解出 `.node`：
 
@@ -258,8 +243,6 @@ R2-1 聚焦自测（从 `app/` 目录运行）：`npm exec -- vitest run tests/p
 - `resources/app.asar.unpacked/node_modules/koffi/build/koffi/darwin_arm64/koffi.node`
 
 npm 包实含这两个预编译文件，已用 electron-builder 的 NodeModuleCopyHelper 只读收集核实两项均包含；作为 production 依赖收集，未设置架构排除；N-API 不需本机重编译。macOS 的 resources 实际位于 `Usagi.app/Contents/Resources`。本任务没有运行 dist，最终安装包启动检查仍需门禁/平台实机完成。
-
-聚焦验证：先在项目根运行 `ar gui check electron --headless`（系统 ar 为归档命令时，使用已安装 AgentRouter 核心 `node <核心目录>/ar.mjs gui check electron --headless`），通过后 `npm --prefix app run build`、`node app/scripts/smoke.mjs --only=sit`。生成初始模型与 `smoke-sit.png`，不打开辅助界面。全量冒烟扩为十六个姿态，保留原有行为、道具、透明度、界面和音效断言；门禁产物仍使用 `AR_GATE_ARTIFACT_DIR`，本地默认 `app/smoke-out/`。Windows 用户复测清单见 `docs/guides/02-安装与使用.md`。
 
 ### 聚焦多轮聊天诊断
 

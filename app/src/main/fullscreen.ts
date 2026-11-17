@@ -1,7 +1,15 @@
 import { createRequire } from 'node:module';
-import type { Rect } from '../../shared/types';
-import { coversDisplay } from './logic';
-import type { WindowInfo } from './logic';
+import type { Rect } from '../shared/types';
+
+/** Native windows used only to identify foreground fullscreen applications. */
+export interface WindowInfo { id: string; bounds: Rect; minimized: boolean; ownerPid?: number }
+
+export function coversDisplay(window: WindowInfo | undefined, display: Rect): boolean {
+  if (!window || window.minimized) return false;
+  const r = window.bounds;
+  return Math.abs(r.x - display.x) <= 2 && Math.abs(r.y - display.y) <= 2 &&
+    Math.abs(r.x + r.width - display.x - display.width) <= 2 && Math.abs(r.y + r.height - display.y - display.height) <= 2;
+}
 
 type Koffi = typeof import('koffi');
 export interface NativeWindows { list(): WindowInfo[]; foreground(windows: WindowInfo[]): WindowInfo | undefined }
@@ -12,7 +20,7 @@ export function createWindowReader(options: {
 } = {}) {
   let native: NativeWindows | undefined, failed = false;
   const fail = (error: unknown) => {
-    if (!failed) (options.log ?? console.warn)(`窗口吸附与全屏检测已关闭：${String(error).replace(/\s+/g, ' ')}`);
+    if (!failed) (options.log ?? (() => {}))(`全屏检测已关闭：${String(error).replace(/\s+/g, ' ')}`);
     failed = true; native = undefined;
   };
   return {
