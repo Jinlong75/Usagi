@@ -66,6 +66,7 @@ vi.mock('../src/main/routine', async importOriginal => {
     constructor(options: import('../src/main/routine').RoutineOptions) { host.routineConstruct(); super(options); host.routine = this; }
   } };
 });
+vi.mock('../src/main/crashLog', () => ({ installCrashLog: () => () => {}, logCrash: vi.fn(), watchRenderer: vi.fn(), crashCounts: { renderGone: 0, childGone: 0 } }));
 vi.mock('../src/main/fps', () => ({ FpsLog: class { record = host.fpsRecord; } }));
 vi.mock('../src/main/ipc/keys', () => ({ AsyncKeyStore: class {
   load = async () => ({ apiKey: 'sk-123456789abcd', needsReentry: false }); save = host.keySave; flush = host.flush;
@@ -107,6 +108,36 @@ describe('008 主进程接线：原生窗口替身，无 GUI', () => {
     await import('../src/main/index'); await host.start!(); pet().emit('ready-to-show');
   });
   afterEach(() => { rmSync(host.directory, { recursive: true, force: true }); vi.restoreAllMocks(); vi.clearAllTimers(); vi.useRealTimers(); vi.unstubAllGlobals(); });
+  it('12 轮完成只记累计次数、耗时和错误状态，不泄露内容或 Key', async () => {
+    const { logCrash } = await import('../src/main/crashLog');
+    const chat = await open('和乌萨奇聊天');
+    for (let round = 1; round <= 12; round++) {
+      await invoke('chat:send', chat, String(round));
+      await vi.advanceTimersByTimeAsync(25);
+      host.emit({ type: 'done', requestId: 'request-1', text: 'private reply', emotion: 'happy' });
+    }
+    const entries = vi.mocked(logCrash).mock.calls.filter(([category]) => category === 'chat');
+    expect(entries.map(([, data]) => data)).toEqual(Array.from({ length: 12 }, (_, i) => ({ round: i + 1, durationMs: 25, error: false })));
+    expect(JSON.stringify(entries)).not.toMatch(/private reply|sk-123456789abcd/);
+    await invoke('chat:send', chat, 'private request');
+    host.emit({ type: 'error', requestId: 'request-1', code: 'network', message: 'private error' });
+    expect(logCrash).toHaveBeenLastCalledWith('chat', { round: 13, durationMs: 0, error: true });
+    await invoke('chat:send', chat, 'stop request');
+    host.emit({ type: 'stopped', requestId: 'request-1' });
+    expect(logCrash).toHaveBeenLastCalledWith('chat', { round: 14, durationMs: 0, error: false });
+  });
+  it('退出请求与 Electron 退出事件保留来源', async () => {
+    const { logCrash } = await import('../src/main/crashLog');
+    host.menu.find(item => item.label === '退出').click();
+    expect(logCrash).toHaveBeenLastCalledWith('quit', { phase: 'request', source: 'tray' });
+    host.appEvents.get('before-quit')!({ preventDefault: vi.fn() });
+    expect(logCrash).toHaveBeenCalledWith('quit', { phase: 'before-quit', source: 'tray' });
+    await vi.advanceTimersByTimeAsync(0);
+    host.appEvents.get('will-quit')!();
+    expect(logCrash).toHaveBeenLastCalledWith('quit', { phase: 'will-quit', source: 'tray' });
+    host.appEvents.get('window-all-closed')!();
+    expect(logCrash).toHaveBeenLastCalledWith('quit', { phase: 'request', source: 'window-all-closed' });
+  });
   it('晨间预取填缓存，问好插入天气；城市 IPC 仅读缓存且限制发送方', async () => {
     vi.clearAllTimers(); host.windows = []; vi.setSystemTime(new Date(2026, 10, 16, 7));
     host.weatherFetch.mockImplementation(async url => new Response(JSON.stringify(String(url).includes('open-meteo')

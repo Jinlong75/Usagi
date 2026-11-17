@@ -31,5 +31,5 @@ export function withSmokeDeadline(args, options = {}) {
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  process.exitCode = await withSmokeDeadline(['scripts/smoke-entry.mjs']);
+  process.exitCode = await withSmokeDeadline(['scripts/smoke-entry.mjs', ...process.argv.slice(2)]);
 }

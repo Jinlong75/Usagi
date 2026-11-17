@@ -1,3 +1,4 @@
+import { validChatRounds } from './smoke-chat-report.mjs';
 import { spawn } from 'node:child_process';
 
 /** Monitor only the child created for this smoke run, including failures before app startup. */
@@ -46,7 +47,10 @@ export function runSmokeProcess(executable, args, options = {}) {
       if (signal || code !== 0) return finish(1,
         `Electron 冒烟进程退出：${signal ?? code}${report?.reason ? `；${report.reason}` : ''}`);
       if (!report) return finish(1, 'Electron 已退出，但没有输出冒烟结果 JSON');
-      if (report.ok && (typeof report.model !== 'string' || !report.model ||
+      if (report.ok && report.chatRoundsOnly === true && !validChatRounds(report.chatRounds)) {
+        return finish(1, '12 轮聊天冒烟结果无效');
+      }
+      if (report.ok && report.chatRoundsOnly !== true && (typeof report.model !== 'string' || !report.model ||
           !Number.isFinite(report.opaqueRatio) || report.opaqueRatio < 0.02 || report.opaqueRatio > 0.95 ||
           report.vrmVersion !== '1' || !Array.isArray(report.expressions) ||
           !report.expressions.every((expression) => typeof expression === 'string'))) {

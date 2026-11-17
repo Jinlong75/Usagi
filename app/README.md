@@ -260,3 +260,9 @@ R2-1 聚焦自测（从 `app/` 目录运行）：`npm exec -- vitest run tests/p
 npm 包实含这两个预编译文件，已用 electron-builder 的 NodeModuleCopyHelper 只读收集核实两项均包含；作为 production 依赖收集，未设置架构排除；N-API 不需本机重编译。macOS 的 resources 实际位于 `Usagi.app/Contents/Resources`。本任务没有运行 dist，最终安装包启动检查仍需门禁/平台实机完成。
 
 聚焦验证：先在项目根运行 `ar gui check electron --headless`（系统 ar 为归档命令时，使用已安装 AgentRouter 核心 `node <核心目录>/ar.mjs gui check electron --headless`），通过后 `npm --prefix app run build`、`node app/scripts/smoke.mjs --only=sit`。生成初始模型与 `smoke-sit.png`，不打开辅助界面。全量冒烟扩为十六个姿态，保留原有行为、道具、透明度、界面和音效断言；门禁产物仍使用 `AR_GATE_ARTIFACT_DIR`，本地默认 `app/smoke-out/`。Windows 用户复测清单见 `docs/guides/02-安装与使用.md`。
+
+### 聚焦多轮聊天诊断
+
+`npm run smoke` 的完整门禁包含真实聊天窗口 IPC 连续发送 `1`～`12`、假 SSE 回复、进程退出计数、逐轮窗口/监听器/内存采样和持久聊天诊断校验。假传输在内存中返回 SSE，走实际 ChatService / DeepSeekClient；不连接网络，不读取真实 Key 或聊天记录。
+
+执行者按 GUI 策略先运行 `ar gui check Electron --headless`，通过后可用 `npm run smoke -- --chat-rounds` 单独执行这项隐藏窗口检查，不生成整套截图。`--only=...` 原有截图入口保持聚焦范围。冒烟日志使用系统临时目录，结果 JSON 的 `diagnostics.userData` 指向 `crash.log` 和逐轮采样 `chat-rounds.json`；`diagnostics.defaultUserData` 是当前应用的默认数据目录。完整截图及音效检查由门禁运行。

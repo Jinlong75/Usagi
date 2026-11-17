@@ -1,3 +1,4 @@
+import { watchRenderer } from '../crashLog';
 import { BrowserWindow } from 'electron';
 import { join } from 'node:path';
 export function secureWindow(kind: string, options: Electron.BrowserWindowConstructorOptions, smoke: boolean): BrowserWindow {
@@ -5,6 +6,7 @@ export function secureWindow(kind: string, options: Electron.BrowserWindowConstr
     preload: join(__dirname, `${kind}-preload.cjs`), contextIsolation: true, nodeIntegration: false,
     sandbox: true, offscreen: smoke, backgroundThrottling: false,
   } });
+  watchRenderer(win, kind);
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('will-navigate', event => event.preventDefault());
   return win;

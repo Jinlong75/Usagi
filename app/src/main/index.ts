@@ -1,7 +1,9 @@
+import { installCrashLog, logCrash, watchRenderer, crashCounts } from './crashLog';
 import { createWindowReader } from './perch/windows';
 import { PerchController } from './perch/controller';
 import { app, BrowserWindow, ipcMain, Menu, nativeImage, screen, Tray, safeStorage, powerMonitor, net } from 'electron';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
+import { mkdtempSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { DEFAULT_CONFIG, normalizeConfig, readConfig, writeConfig } from './config';
@@ -28,6 +30,22 @@ import type { Gesture } from '../shared/gesture';
 import type { Config, Point, RenderResult, Size, MoveRequest, SmokeBehavior, SoundUse, Rect, FoodActivity, FeedRequest } from '../shared/types';
 
 const smoke = process.argv.includes('--smoke');
+const chatRoundsOnly = smoke && process.argv.includes('--chat-rounds');
+const smokeDiagnostics = smoke ? { name: app.getName(), defaultUserData: app.getPath('userData') } : undefined;
+// Smoke runs must not append diagnostics to the user's installed app data.
+if (smoke) app.setPath('userData', mkdtempSync(join(tmpdir(), 'usagi-smoke-chat-')));
+const stopCrashLog = installCrashLog(app);
+let quitSource = 'external';
+function quit(source: string): void {
+  quitSource = source; logCrash('quit', { phase: 'request', source }); app.quit();
+}
+function exit(code: number, source: string, error?: unknown): void {
+  quitSource = source;
+  logCrash('quit', { phase: 'exit', source, code, ...(error === undefined ? {} : {
+    message: error instanceof Error ? error.message : String(error), stack: error instanceof Error ? error.stack : undefined,
+  }) });
+  app.exit(code);
+}
 configureWindowsRendering(app.commandLine);
 const root = resolve(__dirname, '../..');
 let win: BrowserWindow | null = null;
@@ -96,7 +114,7 @@ let lastHitAppliedAt = -Infinity;
 
 function exitSmoke(code: number, result: object): void {
   // app.exit() is immediate; wait for piped stdout so the gate receives the JSON.
-  process.stdout.write(JSON.stringify(result) + '\n', () => app.exit(code));
+  process.stdout.write(JSON.stringify(result) + '\n', () => exit(code, 'smoke', 'reason' in result ? result.reason : undefined));
 }
 
 function fail(reason: string): void {
@@ -256,7 +274,7 @@ function petMenu(): Electron.MenuItemConstructorOptions[] {
       checked: state.size === size, click: () => setSize(size),
     })) },
     { label: '重新载入模型', click: () => win?.webContents.send('pet:reload') },
-    { type: 'separator' }, { label: '退出', click: () => app.quit() },
+    { type: 'separator' }, { label: '退出', click: () => quit('tray') },
   ];
 }
 function refreshMenu(): void { if (tray && win) tray.setContextMenu(Menu.buildFromTemplate(petMenu())); }
@@ -270,7 +288,7 @@ function makeTray(): void {
 }
 
 async function capture(result: RenderResult): Promise<void> {
-  if (!smoke || completed || !win || captureBusy) return;
+  if (!smoke || chatRoundsOnly || completed || !win || captureBusy) return;
   if (!result.ok) return fail(result.reason ?? '模型加载失败');
   if (smokeIndex >= smokeBehaviors.length) return;
   const expected = smokeIndex < 0 ? undefined : smokeBehaviors[smokeIndex];
@@ -333,6 +351,8 @@ async function capture(result: RenderResult): Promise<void> {
       // Return to idle before composing the pet + bubble screenshot.
       win.webContents.send('pet:smoke-pose', 'idle');
       await captureUi(ui, win, directory);
+      const { checkChatRounds } = await import('../../scripts/smoke-chat');
+      const chatRounds = await checkChatRounds(ui, crashCounts);
       const audio = await sounds.verify();
       const decoded = await win.webContents.executeJavaScript(`(async () => {
         const context = new AudioContext();
@@ -344,7 +364,7 @@ async function capture(result: RenderResult): Promise<void> {
       exitSmoke(0, { ok: true, model: modelPath, opaqueRatio: initialRatio, vrmVersion: result.vrmVersion,
         expressions: result.expressions ?? [], behaviors: smokeBehaviors, behaviorOpaqueRatios: behaviorRatios,
         propOpaqueRatios, propFraming, behaviorTopTransparent, earDifferenceRatio, happyFaceDifferenceRatio, earDegrees, ui: ['bubble', 'chat', 'settings'],
-        sounds: { directory: audio.directory, clips: audio.clips, decoded: true } });
+        chatRounds, sounds: { directory: audio.directory, clips: audio.clips, decoded: true } });
     }
   } catch (error) { fail(String(error)); }
 }
@@ -376,7 +396,8 @@ async function start(): Promise<void> {
     win.webContents.send('pet:move-done', result);
   });
   if (!smoke) {
-    const reader = createWindowReader({ toDip: rect => screen.screenToDipRect(null, rect) });
+    // TODO(lead): Windows 用户用新日志复测第 6 轮退出；无 JS 日志的原生崩溃仍需系统转储。
+    const reader = createWindowReader({ log: reason => logCrash('perch-disabled', { reason }), toDip: rect => screen.screenToDipRect(null, rect) });
     perch = new PerchController({
       bounds: () => win!.getBounds(), area: () => screen.getDisplayMatching(win!.getBounds()).workArea,
       enabled: () => config.perch.enabled && reader.available, auto: () => config.perch.auto,
@@ -404,6 +425,7 @@ async function start(): Promise<void> {
   }
   win.setAlwaysOnTop(config.alwaysOnTop, 'floating');
   if (process.platform === 'darwin') win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  watchRenderer(win, 'pet');
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('console-message', (details) => {
     if (details.level === 'warning' || details.level === 'error') console.error(`[renderer:${details.level}] ${details.message}`);
@@ -595,13 +617,20 @@ async function start(): Promise<void> {
   }
   if (!smoke && process.env.USAGI_DEV_URL) await win.loadURL(process.env.USAGI_DEV_URL);
   else await win.loadFile(resolve(root, 'app/dist/index.html'));
+  if (chatRoundsOnly) {
+    const { checkChatRounds } = await import('../../scripts/smoke-chat');
+    const chatRounds = await checkChatRounds(ui, crashCounts);
+    completed = true;
+    exitSmoke(0, { ok: true, chatRoundsOnly: true, chatRounds, diagnostics: { ...smokeDiagnostics, userData: app.getPath('userData') } });
+  }
 }
 
 app.whenReady().then(start).catch((error) => {
   if (smoke) fail(String(error));
-  else { console.error(error); app.exit(1); }
+  else { console.error(error); exit(1, 'start-failed', error); }
 });
 app.on('before-quit', event => {
+  logCrash('quit', { phase: 'before-quit', source: quitSource });
   if (!smoke && !quitFlushed) {
     event.preventDefault();
     if (quitting) return;
@@ -616,7 +645,7 @@ app.on('before-quit', event => {
         await waitForQuitTask(() => keyStore?.flush(), 1500);
       })(),
     ]).finally(() => {
-      ui?.quit(); quitFlushed = true; app.quit();
+      ui?.quit(); quitFlushed = true; quit(quitSource);
     });
     return;
   }
@@ -629,4 +658,5 @@ app.on('before-quit', event => {
   if (!smoke) { finishDrag(true); save(); }
   tray?.destroy();
 });
-app.on('window-all-closed', () => app.quit());
+app.on('will-quit', () => { logCrash('quit', { phase: 'will-quit', source: quitSource }); stopCrashLog(); });
+app.on('window-all-closed', () => quit('window-all-closed'));

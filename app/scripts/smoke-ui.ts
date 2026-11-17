@@ -1,41 +1,33 @@
 import { nativeImage, type BrowserWindow } from 'electron';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { EmotionStreamFilter } from '../src/main/chat/emotion';
-import type { ChatEvent } from '../src/main/chat/service';
-import type { Session } from '../src/main/chat/types';
-import type { ChatPort, UiController } from '../src/main/ipc/ui';
+import { ChatService } from '../src/main/chat/service';
+import { DeepSeekClient } from '../src/main/chat/client';
+import type { Message, Session } from '../src/main/chat/types';
+import type { UiController } from '../src/main/ipc/ui';
 
 export function smokeDependencies() {
   const timestamp = new Date().toISOString();
   const session: Session = { sessionId: 'smoke', createdAt: timestamp, updatedAt: timestamp, messages: [] };
-  const store = { load: async () => structuredClone(session), clear: async () => { session.messages = []; } };
-  const listeners = new Set<(event: ChatEvent) => void>();
-  let stopped = false;
-  const emit = (event: ChatEvent) => { for (const listener of listeners) listener(event); };
-  const service: ChatPort = {
-    onEvent: listener => { listeners.add(listener); return () => { listeners.delete(listener); }; },
-    send(text) {
-      stopped = false; const requestId = 'smoke-reply';
-      session.messages.push({ id: 'user', role: 'user', content: text, createdAt: timestamp });
-      void (async () => {
-        emit({ type: 'status', status: 'thinking', requestId });
-        const filter = new EmotionStreamFilter(); let reply = '';
-        for (const chunk of ['[开', '心]呀哈！', '今天也要', '元气满满！']) {
-          await new Promise(resolve => setTimeout(resolve, 60)); if (stopped) return;
-          const delta = filter.push(chunk); reply += delta;
-          if (delta) emit({ type: 'delta', requestId, text: delta });
-        }
-        reply += filter.finish();
-        session.messages.push({ id: 'reply', role: 'assistant', content: reply, emotion: filter.emotion, createdAt: timestamp });
-        emit({ type: 'done', requestId, text: reply, emotion: filter.emotion });
-      })();
-      return requestId;
+  const store = { load: async () => structuredClone(session), clear: async () => { session.messages = []; },
+    append: async (message: Message) => { session.messages.push(message); } };
+  // Exercise the production service, client, SSE parser and abort cleanup. This
+  // fetch never opens a socket and never reads a real key or conversation.
+  const fetcher: typeof fetch = async () => new Response(new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const encoder = new TextEncoder();
+      for (const content of ['[开', '心]呀哈！', '今天也要', '元气满满！']) {
+        await new Promise(resolve => setTimeout(resolve, 60));
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\n`));
+      }
+      controller.enqueue(encoder.encode('data: [DONE]\n\n')); controller.close();
     },
-    stop: () => { stopped = true; emit({ type: 'stopped', requestId: 'smoke-reply' }); return true; },
-    testConnection: async () => ({ ok: true, models: ['deepseek-flash'] }),
-  };
-  return { service, store, keys: { load: async () => ({ apiKey: '', needsReentry: false }), save: async () => ({ persisted: true as const }) } };
+  }), { headers: { 'Content-Type': 'text/event-stream' } });
+  const keys = { load: async () => ({ apiKey: 'smoke-placeholder', needsReentry: false }),
+    save: async () => ({ persisted: true as const }) };
+  const service = new ChatService({ client: new DeepSeekClient(fetcher), store, keyStore: keys,
+    getSettings: () => ({ baseUrl: 'https://smoke.invalid', thinking: 'disabled' }) });
+  return { service, store, keys };
 }
 async function settled(win: BrowserWindow, predicate: string): Promise<void> {
   await win.webContents.executeJavaScript(`new Promise((resolve,reject) => {
