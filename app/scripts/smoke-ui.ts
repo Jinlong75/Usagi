@@ -68,3 +68,25 @@ export async function captureUi(ui: UiController, pet: BrowserWindow, directory:
   await settled(settings, "document.querySelector('#version')?.textContent.startsWith('版本 ') && document.querySelectorAll('section').length === 3");
   await writeFile(join(directory, 'smoke-settings.png'), (await settings.webContents.capturePage(undefined, { stayHidden: true, stayAwake: true })).toPNG());
 }
+
+/** Extra fixed limb poses for visual review, also available in --only=walk.
+ * Keep these separate from the accepted behavior/expression comparison frames. */
+export async function captureLimbFrames(pet: BrowserWindow, directory: string, behavior: string): Promise<string[]> {
+  const frames: { name: 'walk' | 'jump' | 'eatRiceball'; age: number; distance?: number; file: string }[] =
+    behavior === 'walk' ? [
+      { name: 'walk', age: 0.7, distance: 22.5, file: 'smoke-walk-left-foot.png' },
+      { name: 'walk', age: 0.7, distance: 67.5, file: 'smoke-walk-right-foot.png' },
+    ] : behavior === 'happy' ? [{ name: 'jump', age: 0.175, file: 'smoke-jump-apex.png' }]
+      : behavior === 'eatRiceball' ? [{ name: 'eatRiceball', age: 0.725, file: 'smoke-eatRiceball-bite.png' }] : [];
+  for (const frame of frames) {
+    await pet.webContents.executeJavaScript(`window.usagiSmokeFrame(${JSON.stringify(frame.name)}, ${frame.age}, ${frame.distance ?? 'undefined'})`);
+    const image = await pet.webContents.capturePage(undefined, { stayHidden: true, stayAwake: true });
+    const bitmap = image.toBitmap({ scaleFactor: 1 });
+    let opaque = 0;
+    for (let i = 3; i < bitmap.length; i += 4) if (bitmap[i]! > 0) opaque++;
+    const ratio = opaque / (bitmap.length / 4);
+    if (ratio < 0.02 || ratio > 0.95) throw new Error(`四肢截图角色占比无效：${frame.file}`);
+    await writeFile(join(directory, frame.file), image.toPNG());
+  }
+  return frames.map(frame => frame.file);
+}

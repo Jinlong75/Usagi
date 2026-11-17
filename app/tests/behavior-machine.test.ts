@@ -77,7 +77,7 @@ describe('纯行为规则', () => {
       const traveled = p * p * (3 - 2 * p) * distance;
       const pose = sampleMotion('walk', seconds * p, { duration: seconds });
       expect(pose).toEqual(sampleMotion('walk', seconds * p, { duration: seconds, distance: traveled }));
-      expect(pose.bones.leftUpperLeg![0]).toBeCloseTo(Math.sin(traveled / 45 * Math.PI) * 0.16);
+      expect(pose.bones.leftUpperLeg![0]).toBeCloseTo(Math.max(0, Math.sin(traveled / 45 * Math.PI)) * 0.35);
     }
   });
   it('先转向再发移动请求，完成通知后转回正面', () => {

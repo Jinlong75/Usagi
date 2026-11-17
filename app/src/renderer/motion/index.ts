@@ -26,6 +26,16 @@ export const MOTION_SECONDS: Record<MotionName, number> = {
 };
 /** 2026-11-16 用户：“那个形状就是最标准的形状”。静止不旋转上臂，保持 Tripo 原始姿态。 */
 export const ARM_REST = 0;
+/** Limb angles in normalized local radians. Positive left Z raises the arm.
+ * TODO(lead): jump table requests 0.45/0.15, but the explicit 031 safety cap is
+ * 0.43/0.10; retain that cap until a larger pose has been approved. */
+export const LIMB = {
+  walk: { arm: 0.25, thigh: 0.35, knee: 0.30, foot: -0.20 },
+  jump: { arm: 0.43, forearm: -0.10, press: 0.15, thigh: 0.25, knee: 0.35 },
+  food: { rest: 0.20, bite: 0.12, chew: 0.04 },
+  rope: { rest: 0.18, z: 0.10, x: 0.10 },
+  idle: { arm: 0.04 }, surprised: { arm: 0.35 }, drag: { thigh: 0.15 },
+} as const;
 /** 2026-11-17 主导授权多轴扫描；原手高与轮廓要求无解后采用 neck−0.04H。
  * 在扫描网格中取距 0.75 rad 纯抬臂最近的姿态，见 usagi_arm_scan.report.json。 */
 export const ARM_RAISE = { stretch: 0.43, shout: 0.43 } as const;
@@ -46,11 +56,17 @@ export function jumps(t: number, modelHeight = 1, starts: readonly number[] = [0
   }
   return { y: 0, squash: 0 };
 }
+function tuckedLegs(pose: Pose, flight: number): void {
+  for (const side of ['left', 'right'] as const) {
+    pose.bones[`${side}UpperLeg`] = [LIMB.jump.thigh * flight, 0, 0];
+    pose.bones[`${side}LowerLeg`] = [LIMB.jump.knee * flight, 0, 0];
+  }
+}
 export const ROPE_START = 1.2;
 export const ROPE_PERIOD = 0.6;
 export const ROPE_APEX = 0.175;
 export const BUBBLE_BLOWS = [0.55, 2.45] as const;
-export interface MotionOptions { loop?: boolean; duration?: number; direction?: -1 | 1; velocityX?: number; distance?: number; modelHeight?: number }
+export interface MotionOptions { loop?: boolean; duration?: number; direction?: -1 | 1; velocityX?: number; distance?: number; modelHeight?: number; breathTime?: number }
 /** Pure pose sampling; every finite clip has neutral endpoints, including expressions and root scale. */
 export function sampleMotion(name: MotionName, t: number, options: MotionOptions = {}): Pose {
   const pose = neutralPose();
@@ -63,12 +79,13 @@ export function sampleMotion(name: MotionName, t: number, options: MotionOptions
   const height = options.modelHeight ?? 1;
   if (isFoodMotion(name)) {
     pose.roundEyes = true;
-    sampleFood(pose, name, t, weight, height);
+    sampleFood(pose, name, t, weight, height, LIMB.food);
   } else if (name === 'jumpRope') {
     const age = t - ROPE_START;
     if (age >= 0 && age < 6 * ROPE_PERIOD) {
       const jump = jumps(age % ROPE_PERIOD, height * 0.6, [0]);
       pose.position[1] = jump.y;
+      tuckedLegs(pose, jump.y / (height * 0.06));
       pose.scale = [1 + jump.squash * 0.08 / 0.15, 1 - jump.squash, 1 + jump.squash * 0.08 / 0.15];
     }
     const phase = Math.max(0, Math.min(6 * ROPE_PERIOD, age));
@@ -81,8 +98,9 @@ export function sampleMotion(name: MotionName, t: number, options: MotionOptions
     const ropeWidth = 1 + 0.03 * Math.sin(ropeAngle) ** 2;
     pose.props = { handles: { name: 'handles', position: [0, ROPE_PIVOT_Y, 0.02], scale: [weight, weight, weight] },
       rope: { name: 'rope', position: [0, ROPE_PIVOT_Y, 0.02], rotation: [ropeAngle, 0, 0], scale: [weight * ropeWidth, weight, weight], ropeOpen: smooth(upper) } };
-    const swing = Math.sin(phase / ROPE_PERIOD * Math.PI * 2) * 0.06 * weight;
-    pose.bones.leftUpperArm = [swing, 0, 0]; pose.bones.rightUpperArm = [swing, 0, 0];
+    const armZ = (LIMB.rope.rest + LIMB.rope.z * Math.sin(ropeAngle)) * weight;
+    const armX = LIMB.rope.x * Math.cos(ropeAngle) * weight;
+    pose.bones.leftUpperArm = [armX, 0, armZ]; pose.bones.rightUpperArm = [armX, 0, -armZ];
     if (age >= 3.6 && age < 4.1) pose.expressions.happy = 1;
   } else if (name === 'blowBubbles') {
     pose.props = { wand: { name: 'wand', position: [...WAND_RING], scale: [weight, weight, weight] } };
@@ -117,10 +135,21 @@ export function sampleMotion(name: MotionName, t: number, options: MotionOptions
     pose.bones.rightUpperArm = [0.08 * w, 0, -0.06 * w];
   } else if (name === 'idle' || name === 'lookAround') {
     pose.rotation[2] = Math.sin(p * Math.PI * 2) * 0.025 * weight;
+    const arm = Math.sin((options.breathTime ?? t) / MOTION_SECONDS.idle * Math.PI * 2) * LIMB.idle.arm * weight;
+    pose.bones.leftUpperArm = [0, 0, arm]; pose.bones.rightUpperArm = [0, 0, -arm];
     if (name === 'lookAround') pose.bones.head = [0, Math.sin(p * Math.PI * 2) * 0.12 * weight, 0];
   } else if (name === 'happy' || name === 'jump') {
     const jump = jumps(t, height);
     pose.position[1] = jump.y;
+    const flight = jump.y / (height * 0.1);
+    // Existing landing compression is also the crouch before the next takeoff.
+    // TODO(lead): the first flight starts at t=0; separate anticipation would
+    // require changing the existing jump timing, so no extra phase is inserted.
+    const arm = (LIMB.jump.arm * flight - LIMB.jump.press * jump.squash / 0.15) * weight;
+    const forearm = LIMB.jump.forearm * flight * weight;
+    pose.bones.leftUpperArm = [0, 0, arm]; pose.bones.rightUpperArm = [0, 0, -arm];
+    pose.bones.leftLowerArm = [0, 0, forearm]; pose.bones.rightLowerArm = [0, 0, -forearm];
+    tuckedLegs(pose, flight * weight);
     pose.scale = [1 + jump.squash * (0.08 / 0.15), 1 - jump.squash, 1 + jump.squash * (0.08 / 0.15)];
     if (name === 'happy') pose.expressions.happy = 1;
   } else if (name === 'stretch' || name === 'shout') {
@@ -144,6 +173,8 @@ export function sampleMotion(name: MotionName, t: number, options: MotionOptions
     pose.position[2] = -height * 0.04 * Math.sin(p * Math.PI) * weight;
     pose.scale = [1 - 0.05 * weight, 1 - 0.08 * weight, 1 - 0.05 * weight];
     pose.bones.head = [-0.18 * weight, 0, 0];
+    const arm = LIMB.surprised.arm * (1 - smooth((t - 0.18) / 0.27)) * weight;
+    pose.bones.leftUpperArm = [0, 0, arm]; pose.bones.rightUpperArm = [0, 0, -arm];
     pose.expressions.surprised = 1;
   } else if (name === 'turn') {
     pose.rotation[1] = (options.direction ?? 1) * 50 * Math.PI / 180 * Math.sin(p * Math.PI) * weight;
@@ -153,19 +184,24 @@ export function sampleMotion(name: MotionName, t: number, options: MotionOptions
     const phase = distance / 45 * Math.PI;
     pose.position[1] = Math.abs(Math.sin(phase)) * height * 0.028 * weight;
     pose.rotation[2] = Math.sin(phase) * 0.1 * weight;
-    pose.bones.leftUpperLeg = [Math.sin(phase) * 0.16 * weight, 0, 0];
-    pose.bones.rightUpperLeg = [-Math.sin(phase) * 0.16 * weight, 0, 0];
-    pose.bones.leftLowerLeg = [Math.max(0, -Math.sin(phase)) * 0.12 * weight, 0, 0];
-    pose.bones.rightLowerLeg = [Math.max(0, Math.sin(phase)) * 0.12 * weight, 0, 0];
-    pose.bones.leftUpperArm = [-Math.sin(phase) * 0.025 * weight, 0, 0];
-    pose.bones.rightUpperArm = [Math.sin(phase) * 0.025 * weight, 0, 0];
+    const step = Math.sin(phase) * weight;
+    const left = Math.max(0, step), right = Math.max(0, -step);
+    pose.bones.leftUpperLeg = [left * LIMB.walk.thigh, 0, 0];
+    pose.bones.rightUpperLeg = [right * LIMB.walk.thigh, 0, 0];
+    pose.bones.leftLowerLeg = [left * LIMB.walk.knee, 0, 0];
+    pose.bones.rightLowerLeg = [right * LIMB.walk.knee, 0, 0];
+    pose.bones.leftFoot = [left * LIMB.walk.foot, 0, 0];
+    pose.bones.rightFoot = [right * LIMB.walk.foot, 0, 0];
+    // Opposite hand rises with the lifted foot (right Z is mirrored).
+    pose.bones.leftUpperArm = [0, 0, -step * LIMB.walk.arm];
+    pose.bones.rightUpperArm = [0, 0, -step * LIMB.walk.arm];
   } else if (name === 'drag') {
     const sway = Math.max(-1, Math.min(1, (options.velocityX ?? 180) / 700));
     pose.rotation[2] = -sway * Math.PI / 12 * weight;
     pose.bones.leftUpperArm = [0, 0, (-0.16 + sway * 0.05) * weight];
     pose.bones.rightUpperArm = [0, 0, (0.16 + sway * 0.05) * weight];
-    pose.bones.leftUpperLeg = [0.035 * weight, 0, sway * 0.04 * weight];
-    pose.bones.rightUpperLeg = [-0.035 * weight, 0, sway * 0.04 * weight];
+    pose.bones.leftUpperLeg = [(0.035 + sway * LIMB.drag.thigh) * weight, 0, sway * 0.04 * weight];
+    pose.bones.rightUpperLeg = [(-0.035 - sway * LIMB.drag.thigh) * weight, 0, sway * 0.04 * weight];
     pose.expressions.surprised = 1;
   }
   return pose;
@@ -179,7 +215,7 @@ export function caughtSnackPose(snackAge: number, modelHeight = 1): Pose {
   return pose;
 }
 const BONES: VRMHumanBoneName[] = ['hips', 'spine', 'chest', 'neck', 'head', 'leftShoulder', 'rightShoulder', 'leftUpperArm', 'rightUpperArm',
-  'leftLowerArm', 'rightLowerArm', 'leftUpperLeg', 'rightUpperLeg', 'leftLowerLeg', 'rightLowerLeg'];
+  'leftLowerArm', 'rightLowerArm', 'leftHand', 'rightHand', 'leftUpperLeg', 'rightUpperLeg', 'leftLowerLeg', 'rightLowerLeg', 'leftFoot', 'rightFoot'];
 const EXPRESSIONS = ['happy', 'angry', 'sad', 'relaxed', 'surprised', 'aa', 'ih', 'ou', 'ee', 'oh'];
 
 export class MotionRig {

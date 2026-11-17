@@ -261,7 +261,7 @@ describe('进食节奏与几何形变', () => {
     expect(sampleMotion('iceCream', 3.201).expressions.surprised).toBeUndefined();
     expect(sampleMotion('iceCream', 4.5).expressions).toEqual({ happy: 1 });
   });
-  it('偷看左右各 0.5 秒、两口 aa/sad，所有食物动作上臂不超过 0.3rad 且保持圆眼', () => {
+  it('偷看左右各 0.5 秒、两口 aa/sad，所有食物动作上臂不超过 0.32rad 且保持圆眼', () => {
     expect(sampleMotion('sneakSnack', 0.45).bones.head![1]).toBeCloseTo(-0.25);
     expect(sampleMotion('sneakSnack', 0.95).bones.head![1]).toBeCloseTo(0.25);
     for (const start of [1.5, 2.2]) {
@@ -271,7 +271,7 @@ describe('进食节奏与几何形变', () => {
     for (const name of ['eatRiceball', 'eatWatermelon', 'iceCream', 'sneakSnack'] as const) {
       for (let t = 0.01; t < MOTION_SECONDS[name]; t += 0.01) {
         const pose = sampleMotion(name, t); expect(pose.roundEyes).toBe(true);
-        for (const bone of ['leftUpperArm', 'rightUpperArm'] as const) expect(Math.hypot(...pose.bones[bone]!)).toBeLessThanOrEqual(0.3);
+        for (const bone of ['leftUpperArm', 'rightUpperArm'] as const) expect(Math.hypot(...pose.bones[bone]!)).toBeLessThanOrEqual(0.32);
         expect(pose.expressions.relaxed).toBeUndefined(); expect(pose.expressions.blink).toBeUndefined();
       }
     }

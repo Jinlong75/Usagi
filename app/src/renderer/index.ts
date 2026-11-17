@@ -19,7 +19,11 @@ import { frameBounds, measureMotionBounds, motionAspect, springEnvelope } from '
 import { setEmotion } from './behaviors/expressions';
 import { renderInterval } from './behavior/power';
 
-declare global { interface Window { pet: PetBridge } }
+declare global { interface Window {
+  pet: PetBridge;
+  /** Only installed in offscreen smoke mode; no production IPC surface. */
+  usagiSmokeFrame?: (name: 'walk' | 'jump' | 'eatRiceball', age: number, distance?: number) => Promise<void>;
+} }
 
 const errorText = document.querySelector<HTMLParagraphElement>('#error')!;
 let renderer: WebGLRenderer;
@@ -53,6 +57,7 @@ let smokePose: SmokeBehavior | undefined;
 let smokePoseFrames = 0;
 let smokeAge = 0;
 let smokeDragImpulse = false;
+let smokeFrame: { name: 'walk' | 'jump' | 'eatRiceball'; age: number; distance?: number } | undefined;
 // 饭团、西瓜和偷吃截取 aa 咬食；冰淇淋截取第三次舔的 ih（小张口带舌）。
 const smokeAges = { idle: 0.875, walk: 0.7, happy: 0.175, surprised: 0.45, shout: 0.55, stretch: 1.1, drag: 0.32, 'ear-shake': 0.3, jumpRope: 2.575, blowBubbles: 1.65, napPillow: 2, eatRiceball: 0.72, eatWatermelon: 0.72, iceCream: 2.3, sneakSnack: 1.6 };
 let chatExpression: { name: PetExpression; until: number } | undefined;
@@ -134,6 +139,13 @@ async function loadModel(): Promise<void> {
   try {
     const data = await window.pet.loadModel();
     smoke = data.smoke;
+    if (smoke) window.usagiSmokeFrame = async (name, age, distance) => {
+      smokeFrame = { name, age, distance };
+      springs?.restore(); rig?.reset(); vrm?.update(0); vrm?.springBoneManager?.reset();
+      // The normal animation loop renders this fixed pose, with the real camera,
+      // lighting, MToon materials and framing. Wait until two frames are drawn.
+      await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+    };
     if (smoke && !animationFrame) animationFrame = requestAnimationFrame(animate);
     const failedResources: string[] = [];
     const manager = new LoadingManager();
@@ -224,7 +236,7 @@ function renderPose(now: number, delta: number): void {
     const step = Math.min(1 / 60, Math.max(0, smokeAges[name] - smokeAge));
     smokeAge += step;
     delta = step;
-    applyPose(sampleMotion(name === 'ear-shake' ? 'shake' : name, smokeAge, { velocityX: 500, modelHeight }));
+    applyPose(sampleMotion(smokeFrame?.name ?? (name === 'ear-shake' ? 'shake' : name), smokeFrame?.age ?? smokeAge, { distance: smokeFrame?.distance, velocityX: 500, modelHeight }));
     if (name === 'drag' && springs) {
       if (!smokeDragImpulse && smokeAge >= 0.25) {
         springs.sample({ x: 0, y: 0 }, 0); springs.sample({ x: 500, y: 0 }, 100); smokeDragImpulse = true;
@@ -249,7 +261,7 @@ function renderPose(now: number, delta: number): void {
       look(vrm, lookTarget, direction, delta);
       if (head) gaze = { x: head.rotation.x, y: head.rotation.y };
       if (neck) neckGaze = { x: neck.rotation.x, y: neck.rotation.y };
-      applyPose(sampleMotion(Math.floor(state.startedAt / 3500) % 2 ? 'lookAround' : 'idle', age));
+      applyPose(sampleMotion(Math.floor(state.startedAt / 3500) % 2 ? 'lookAround' : 'idle', age, { breathTime: elapsed }));
     } else {
       if (vrm.lookAt) { vrm.lookAt.target = null; vrm.lookAt.reset(); }
       if (state.state === 'nap') applyPose(sampleMotion('napPillow', age, { loop: true, modelHeight }));
@@ -393,7 +405,7 @@ try {
   window.pet.onSmokePose((pose) => {
     if (!smoke) return;
     springs?.restore(); smokePose = pose; smokePoseFrames = 0; reported = false;
-    smokeAge = 0; smokeDragImpulse = false;
+    smokeAge = 0; smokeDragImpulse = false; smokeFrame = undefined;
     rig?.reset(); vrm?.update(0); vrm?.springBoneManager?.reset();
   });
   window.pet.onVisibility(({ visible }) => {
