@@ -1,3 +1,4 @@
+import { validChatRounds } from '../scripts/smoke-chat-report.mjs';
 import { describe, expect, it } from 'vitest';
 // @ts-expect-error The allowed smoke entry is JavaScript; its validation is tested directly.
 import { BEHAVIORS, validBehaviorReport, validFocusedReport, validUiReport, validSoundReport, shouldRetryFreshElectron } from '../scripts/smoke.mjs';
@@ -169,4 +170,27 @@ it('聚焦截图只接受点名道具行为，仍要求每类道具可见且完�
       expect(validFocusedReport({ ...report, propOpaqueRatios: { ...report.propOpaqueRatios, [name]: ratio } }, only)).toBe(false);
     }
   }
+});
+
+function chatRounds() {
+  return Array.from({ length: 12 }, (_, i) => ({ round: i + 1, windows: 3, renderGone: 0, childGone: 0,
+    ipc: { 'chat:settings': 1 }, webContents: [1, 2, 3].map(id => ({ id, listeners: { 'render-process-gone': 1 } })),
+    memory: { rss: 1000 + i, heapUsed: 500 + i } }));
+}
+it('12 轮聊天报告拒绝进程退出、窗口和监听器累积以及缺失采样', () => {
+  expect(validChatRounds(chatRounds())).toBe(true);
+  expect(validChatRounds(chatRounds().slice(0, 11))).toBe(false);
+  for (const change of [
+    { childGone: 1 }, { renderGone: 1 }, { windows: 4 }, { ipc: { 'chat:settings': 2 } },
+    { webContents: [1, 2, 3].map(id => ({ id, listeners: { 'render-process-gone': 2 } })) },
+    { memory: { rss: NaN, heapUsed: 1 } },
+  ]) {
+    const rounds = chatRounds(); Object.assign(rounds[11]!, change); expect(validChatRounds(rounds)).toBe(false);
+  }
+});
+it('聚焦聊天报告也必须经子进程入口校验，不能静默省略 12 轮', async () => {
+  const result = await run(`console.log(JSON.stringify({ ok: true, chatRoundsOnly: true, chatRounds: ${JSON.stringify(chatRounds())} }))`);
+  expect(result.code).toBe(0);
+  const missing = await run(`console.log(JSON.stringify({ ok: true, chatRoundsOnly: true }))`);
+  expect(missing.code).toBe(1); expect(JSON.parse(missing.stdout).reason).toBe('12 轮聊天冒烟结果无效');
 });

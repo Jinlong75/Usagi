@@ -1,3 +1,4 @@
+import { validChatRounds } from './smoke-chat-report.mjs';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
@@ -40,6 +41,7 @@ export function shouldRetryFreshElectron(_freshDownload, code, output) {
 
 async function runOnce(electron, args) {
   let invalid = false; let output = '';
+  const chatOnly = args.includes('--chat-rounds');
   const only = args.find(arg => arg.startsWith('--only='))?.slice(7).split(',');
   const code = await runSmokeProcess(electron, args, {
     cwd: fileURLToPath(new URL('..', import.meta.url)),
@@ -47,7 +49,7 @@ async function runOnce(electron, args) {
       output += text;
       try {
         const report = JSON.parse(text);
-        if (report.ok && (only ? !validFocusedReport(report, only) : !validBehaviorReport(report) || !validUiReport(report) || !validSoundReport(report))) {
+        if (report.ok && (chatOnly ? report.chatRoundsOnly !== true || !validChatRounds(report.chatRounds) : only ? !validFocusedReport(report, only) : !validBehaviorReport(report) || !validUiReport(report) || !validSoundReport(report) || !validChatRounds(report.chatRounds))) {
           invalid = true;
           process.stdout.write(JSON.stringify({ ...report, ok: false, reason: '冒烟缺少界面/行为/音效、不透明像素占比无效或角色超出取景' }) + '\n');
           return;

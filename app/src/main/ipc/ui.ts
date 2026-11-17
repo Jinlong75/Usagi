@@ -1,3 +1,4 @@
+import { logCrash } from '../crashLog';
 import { app, dialog, ipcMain, type BrowserWindow } from 'electron';
 import type { ChatService, ChatEvent } from '../chat/service';
 import { maskKey } from '../chat/keyStore';
@@ -28,6 +29,13 @@ export class UiController {
   settings: SettingsWindow;
   active = false;
   text = '';
+  private chatStarted?: number;
+  private rounds = 0;
+  private finishChat(error: boolean): void {
+    if (this.chatStarted === undefined) return;
+    logCrash('chat', { round: ++this.rounds, durationMs: Math.round(performance.now() - this.chatStarted), error });
+    this.chatStarted = undefined;
+  }
   private lastBubble = -Infinity;
   private streamTimer?: ReturnType<typeof setTimeout>;
   private requestId?: string;
@@ -102,18 +110,19 @@ export class UiController {
     if (typeof text !== 'string' || !text.trim() || text.length > 100000) return { message: '请输入 1～100000 字的消息。' };
     if (this.active) return { message: '正在回复上一条消息，请稍等或先停止。' };
     try {
-      this.text = ''; this.active = true;
+      this.text = ''; this.active = true; this.chatStarted = performance.now();
       this.requestId = this.options.service.send(text);
       this.lastBubble = -Infinity;
       void this.bubble.showBubble('嗯……让我想想', Infinity, true);
       return { requestId: this.requestId };
-    } catch { this.active = false; return { message: '暂时无法发送消息，请稍后重试。' }; }
+    } catch { this.finishChat(true); this.active = false; return { message: '暂时无法发送消息，请稍后重试。' }; }
   }
   private streamingBubble(): void {
     this.lastBubble = Date.now(); void this.bubble.showBubble(preview(this.text), Infinity, true);
   }
   private event(event: ChatEvent): void {
     if (this.requestId && this.requestId !== event.requestId) return;
+    if (event.type === 'done' || event.type === 'error' || event.type === 'stopped') this.finishChat(event.type === 'error');
     this.chat.window?.webContents.send('chat:event', event);
     if (event.type === 'delta') {
       this.text += event.text;
