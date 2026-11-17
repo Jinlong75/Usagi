@@ -1,4 +1,5 @@
 import { validChatRounds } from '../scripts/smoke-chat-report.mjs';
+import { spawnSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 // @ts-expect-error The allowed smoke entry is JavaScript; its validation is tested directly.
 import { BEHAVIORS, validBehaviorReport, validFocusedReport, validUiReport, validSoundReport, shouldRetryFreshElectron } from '../scripts/smoke.mjs';
@@ -213,15 +214,20 @@ it('完整冒烟入口校验异常必须非零退出', async () => {
         'export function validChatRounds() { throw new Error("validator fixture"); }') };
     return next(specifier, context);
   }`;
-  const result = await run(`
+  // Use a complete report so the inner process monitor succeeds before the
+  // smoke.mjs-only validator throws. Read the raw exit status: run() would
+  // independently turn ok:false into failure and mask a broken entry exit code.
+  const report = { ...success, sounds: { directory: '/resources/sounds/usagi', clips: 20, decoded: true }, chatRounds: chatRounds() };
+  const result = spawnSync(process.execPath, ['--input-type=module', '-e', `
     import { register } from 'node:module';
     register('data:text/javascript,' + encodeURIComponent(${JSON.stringify(loader)}), import.meta.url);
     const { smokeMain } = await import(${JSON.stringify(new URL('../scripts/smoke.mjs', import.meta.url).href)});
     await smokeMain(process.execPath, ['--input-type=module', '-e',
-      ${JSON.stringify('console.log(' + JSON.stringify(JSON.stringify({ ok: true, chatRoundsOnly: true, chatRounds: chatRounds() })) + ')')},
-      '--', '--chat-rounds']);
-  `);
-  expect(result.code).toBe(1);
+      ${JSON.stringify('console.log(' + JSON.stringify(JSON.stringify(report)) + ')')}]);
+  `], { encoding: 'utf8', timeout: 5_000 });
+  expect(result.error).toBeUndefined();
+  expect(result.signal).toBeNull();
+  expect(result.status).toBe(1);
   expect(JSON.parse(result.stdout).ok).toBe(false);
   expect(result.stdout).toContain('冒烟校验异常：Error: validator fixture');
 });
