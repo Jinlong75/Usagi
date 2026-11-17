@@ -43,7 +43,7 @@ export function sampleFood(pose: Pose, name: FoodMotion, t: number, weight: numb
     }
   } else if (name === 'eatWatermelon') {
     const eaten = MELON_BITES.filter(start => t >= start + 0.25).length;
-    pose.props.watermelon = { name: 'watermelon', position: [0, 0.275, 0.36], scale: [weight, weight, weight], foodRemaining: [1, 0.72, 0.44, 0.16][eaten]! };
+    pose.props.watermelon = { name: 'watermelon', position: [0, 0.275, 0.36], scale: [weight, weight, weight], foodRemaining: [1, 0.72, 0.44, 0][eaten]! };
     MELON_BITES.forEach((start, i) => bite(start, 0.75, [-1, 1, 0][i]));
     if (t >= 4) pose.expressions.happy = 1;
   } else if (name === 'iceCream') {

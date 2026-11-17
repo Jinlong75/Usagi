@@ -26,7 +26,7 @@ export function createProp(name: PropName): PropHandle {
   const group = new Group(); group.name = `prop:${name}`;
   const geometries = new Set<BufferGeometry>();
   const materials = new Set<MeshBasicMaterial>();
-  const melonFlesh: Group[] = [];
+  let eatMelon: ((remaining: number) => void) | undefined;
   let openRope: ((amount: number) => void) | undefined;
   const add = (geometry: BufferGeometry, color: string, position: Triple = [0, 0, 0], opacity = 1) => {
     geometries.add(geometry);
@@ -115,17 +115,36 @@ export function createProp(name: PropName): PropHandle {
   } else if (name === 'rice' || name === 'iceDrop') {
     add(new SphereGeometry(1, 12, 8).scale(1, name === 'rice' ? 1.7 : 1, 1), name === 'rice' ? PROP_COLORS.rice : PROP_COLORS.ice);
   } else if (name === 'watermelon') {
-    const halfDisc = (radius: number, depth: number) => {
+    const halfDisc = (radius: number, depth: number, innerRadius = 0) => {
       const shape = new Shape(); shape.moveTo(-radius, 0);
-      shape.absarc(0, 0, radius, Math.PI, 0, true); shape.closePath();
+      shape.absarc(0, 0, radius, Math.PI, 0, false);
+      if (innerRadius > 0) shape.absarc(0, 0, innerRadius, 0, Math.PI, true);
+      shape.closePath();
       return new ExtrudeGeometry(shape, { depth, bevelEnabled: false, curveSegments: 32 }).translate(0, -0.045, -depth / 2);
     };
-    add(halfDisc(0.1, 0.045), PROP_COLORS.rind);
-    add(halfDisc(0.093, 0.008), PROP_COLORS.rindWhite, [0, 0, 0.025]);
-    melonFlesh.push(add(halfDisc(0.085, 0.008), PROP_COLORS.melon, [0, 0, 0.032]));
-    for (const [x, y] of [[-0.055, -0.015], [-0.03, 0.012], [0, 0.025], [0.03, 0.012], [0.055, -0.015]]) {
-      melonFlesh.push(add(new SphereGeometry(1, 12, 8).scale(0.003, 0.007, 0.002), PROP_COLORS.outline, [x!, y!, 0.039]));
+    add(halfDisc(0.1, 0.045, 0.093), PROP_COLORS.rind);
+    const white = add(halfDisc(0.093, 0.008), PROP_COLORS.rindWhite, [0, 0, 0.025]);
+    const flesh = add(halfDisc(0.085, 0.008), PROP_COLORS.melon, [0, 0, 0.032]);
+    const layers = [white, flesh].map(part => {
+      const geometry = (part.children[0] as Mesh).geometry;
+      const positions = geometry.attributes.position!;
+      return { part, geometry, positions, original: positions.array.slice() };
+    });
+    const seeds: Group[] = [];
+    for (const [x, y] of [[-0.055, -0.075], [-0.03, -0.102], [0, -0.115], [0.03, -0.102], [0.055, -0.075]]) {
+      seeds.push(add(new SphereGeometry(1, 12, 8).scale(0.003, 0.007, 0.002), PROP_COLORS.outline, [x!, y!, 0.039]));
     }
+    eatMelon = remaining => {
+      // Lower the straight cut toward the rind; preserve the uneaten lower arc.
+      const cutY = -0.045 - 0.085 * (1 - remaining);
+      for (const { part, geometry, positions, original } of layers) {
+        part.visible = remaining > 0;
+        for (let i = 1; i < positions.array.length; i += 3) positions.array[i] = Math.min(original[i]!, cutY);
+        positions.needsUpdate = true;
+        geometry.computeBoundingBox(); geometry.computeBoundingSphere();
+      }
+      for (const seed of seeds) seed.visible = remaining > 0 && seed.position.y + 0.007 <= cutY;
+    };
   } else if (name === 'iceCream') {
     add(new CylinderGeometry(0.035, 0, 0.12, 24), PROP_COLORS.cone);
     add(new SphereGeometry(0.05, 24, 16), PROP_COLORS.ice, [0, 0.095, 0]);
@@ -139,15 +158,7 @@ export function createProp(name: PropName): PropHandle {
   return { group, apply(state) {
     openRope?.(state.ropeOpen ?? 0);
     const remaining = Math.max(0, Math.min(1, state.foodRemaining ?? 1));
-    for (const part of melonFlesh) {
-      part.scale.y = remaining;
-      // Keep the straight bottom edge fixed while the red arc and seeds shrink.
-      if (part === melonFlesh[0]) part.position.y = -0.045 * (1 - remaining);
-      else {
-        part.userData.restY ??= part.position.y;
-        part.position.y = -0.045 + (part.userData.restY + 0.045) * remaining;
-      }
-    }
+    eatMelon?.(remaining);
     group.visible = !disposed && state.visible !== false;
     group.position.set(...state.position); group.rotation.set(...(state.rotation ?? [0, 0, 0]));
     group.scale.set(...(state.scale ?? [1, 1, 1]));

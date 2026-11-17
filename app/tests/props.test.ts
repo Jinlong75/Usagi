@@ -196,17 +196,49 @@ describe('进食节奏与几何形变', () => {
     expect(sampleMotion('eatRiceball', 5.2).expressions).toEqual({ happy: 1 });
     expect(sampleMotion('eatRiceball', 5.275).position[1]).toBeCloseTo(0.04);
   });
-  it('西瓜左、右、中啃后瓤高度逐次减小；真实红瓤与籽变形、底边保持固定', () => {
+  it('西瓜弧边朝下，左、右、中啃后切口下移，吃完只剩绿皮', () => {
     const prop = createProp('watermelon');
+    const flesh = prop.group.children[2]!;
+    const geometry = (flesh.children[0] as Mesh).geometry;
+    const original = geometry.attributes.position!.array.slice();
+    const flatY = -0.045;
+    for (let i = 0; i < geometry.attributes.position!.count; i++) {
+      expect(geometry.attributes.position!.getY(i)).toBeLessThanOrEqual(flatY + 1e-8);
+    }
+    const rindPositions = (prop.group.children[0]!.children[0] as Mesh).geometry.attributes.position!;
+    for (let i = 0; i < rindPositions.count; i++) {
+      expect(rindPositions.getY(i)).toBeLessThanOrEqual(flatY + 1e-8);
+      expect(Math.hypot(rindPositions.getX(i), rindPositions.getY(i) - flatY)).toBeGreaterThanOrEqual(0.093 - 1e-8);
+    }
+    const seeds = prop.group.children.slice(3);
+    expect(seeds).toHaveLength(5);
+    for (const seed of seeds) {
+      const { x, y } = seed.position;
+      expect(Math.hypot(Math.abs(x) + 0.003, y - flatY - 0.007)).toBeLessThan(0.085);
+      expect(y + 0.007).toBeLessThan(flatY);
+    }
     let previous = Infinity;
     for (const [i, time] of [0.7, 1, 2.2, 3.4].entries()) {
       const state = sampleMotion('eatWatermelon', time).props!.watermelon!;
-      expect(state.foodRemaining).toBe([1, 0.72, 0.44, 0.16][i]);
+      expect(state.foodRemaining).toBe([1, 0.72, 0.44, 0][i]);
       prop.apply(state);
-      const flesh = prop.group.children[2]!;
-      const box = new Box3().setFromObject(flesh, true);
+      prop.group.updateMatrixWorld(true);
+      const box = new Box3().setFromObject(flesh.children[0]!, true);
+      expect(box.min.y - state.position[1]).toBeCloseTo(-0.13);
+      expect(box.max.y - state.position[1]).toBeCloseTo(flatY - 0.085 * (1 - state.foodRemaining!));
+      for (const seed of seeds) expect(seed.visible).toBe(state.foodRemaining! > 0 && seed.position.y + 0.007 <= flatY - 0.085 * (1 - state.foodRemaining!));
       expect(box.getSize(new Vector3()).y).toBeLessThan(previous); previous = box.getSize(new Vector3()).y;
     }
+    expect(prop.group.children.map(part => part.visible)).toEqual([true, false, false, false, false, false, false, false]);
+    prop.apply({ name: 'watermelon', position: [0, 0, 0], foodRemaining: 0.5 });
+    prop.group.updateMatrixWorld(true);
+    const halfBox = new Box3().setFromObject(flesh.children[0]!, true);
+    expect(halfBox.min.y).toBeCloseTo(-0.13);
+    expect(halfBox.max.y).toBeCloseTo(-0.0875);
+    expect(seeds.map(seed => seed.visible)).toEqual([false, true, true, true, false]);
+    prop.apply({ name: 'watermelon', position: [0, 0, 0], foodRemaining: 1 });
+    expect(geometry.attributes.position!.array).toEqual(original);
+    expect(prop.group.children.every(part => part.visible)).toBe(true);
     expect(sampleMotion('eatWatermelon', 0.7).bones.head![2]).toBe(-0.1);
     expect(sampleMotion('eatWatermelon', 1.9).bones.head![2]).toBe(0.1);
     expect(sampleMotion('eatWatermelon', 3.1).bones.head![2]).toBe(0);
