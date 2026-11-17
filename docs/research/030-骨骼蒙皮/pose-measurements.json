@@ -1,0 +1,679 @@
+{
+  "runtime_parity_max_error": {
+    "neutral": 2.0069083104424453e-07,
+    "head_y_pos": 2.0069083104424453e-07,
+    "head_y_neg": 2.0069083104424453e-07,
+    "head_x_pos": 2.391450680152183e-07,
+    "head_x_neg": 2.407356265396403e-07,
+    "arms_only": 2.6827910283560614e-07,
+    "arms_full": 2.7516760397880357e-07,
+    "gaze": 2.0069083104424453e-07,
+    "walk_peak": 1.8431718463976653e-07
+  },
+  "original": {
+    "neutral": {
+      "high_head": {
+        "n": 2526,
+        "max_displacement": 0.0,
+        "mean_displacement": 0.0,
+        "max_vertical": 0.0,
+        "max_frontal": 0.0
+      },
+      "head_side_band": {
+        "n": 114,
+        "max_displacement": 1.5269146510898468e-07,
+        "mean_displacement": 1.4590782824208596e-07,
+        "max_vertical": 2.9802322387695312e-08,
+        "max_frontal": 1.519626234052415e-07
+      },
+      "hand_l": {
+        "n": 137,
+        "max_displacement": 1.5004413107891625e-07,
+        "mean_displacement": 1.43417055825319e-07,
+        "max_vertical": 2.9802322387695312e-08,
+        "max_frontal": 1.4975481660844222e-07
+      },
+      "foot_l": {
+        "n": 79,
+        "max_displacement": 3.0091953317455035e-08,
+        "mean_displacement": 1.4065727290536122e-08,
+        "max_vertical": 1.30385160446167e-08,
+        "max_frontal": 1.501712528671799e-08
+      },
+      "hand_r": {
+        "n": 137,
+        "max_displacement": 2.1524837271888154e-07,
+        "mean_displacement": 2.08122219322913e-07,
+        "max_vertical": 1.1920928955078125e-07,
+        "max_frontal": 2.1490760299348766e-07
+      },
+      "foot_r": {
+        "n": 79,
+        "max_displacement": 1.378986538863152e-07,
+        "mean_displacement": 6.837339816180647e-08,
+        "max_vertical": 5.774199962615967e-08,
+        "max_frontal": 5.822069796952525e-08
+      }
+    },
+    "head_y_pos": {
+      "high_head": {
+        "n": 2526,
+        "max_displacement": 0.13080481492292767,
+        "mean_displacement": 0.07868852824664221,
+        "max_vertical": 0.0,
+        "max_frontal": 0.11782865226268768
+      },
+      "head_side_band": {
+        "n": 114,
+        "max_displacement": 1.5269146510898468e-07,
+        "mean_displacement": 1.4590782824208596e-07,
+        "max_vertical": 2.9802322387695312e-08,
+        "max_frontal": 1.519626234052415e-07
+      },
+      "hand_l": {
+        "n": 137,
+        "max_displacement": 1.5004413107891625e-07,
+        "mean_displacement": 1.43417055825319e-07,
+        "max_vertical": 2.9802322387695312e-08,
+        "max_frontal": 1.4975481660844222e-07
+      },
+      "foot_l": {
+        "n": 79,
+        "max_displacement": 3.0091953317455035e-08,
+        "mean_displacement": 1.4065727290536122e-08,
+        "max_vertical": 1.30385160446167e-08,
+        "max_frontal": 1.501712528671799e-08
+      },
+      "hand_r": {
+        "n": 137,
+        "max_displacement": 2.1524837271888154e-07,
+        "mean_displacement": 2.08122219322913e-07,
+        "max_vertical": 1.1920928955078125e-07,
+        "max_frontal": 2.1490760299348766e-07
+      },
+      "foot_r": {
+        "n": 79,
+        "max_displacement": 1.378986538863152e-07,
+        "mean_displacement": 6.837339816180647e-08,
+        "max_vertical": 5.774199962615967e-08,
+        "max_frontal": 5.822069796952525e-08
+      }
+    },
+    "head_y_neg": {
+      "high_head": {
+        "n": 2526,
+        "max_displacement": 0.13080481492292767,
+        "mean_displacement": 0.07868852839350736,
+        "max_vertical": 0.0,
+        "max_frontal": 0.11782864481210709
+      },
+      "head_side_band": {
+        "n": 114,
+        "max_displacement": 1.5269146510898468e-07,
+        "mean_displacement": 1.4590782824208596e-07,
+        "max_vertical": 2.9802322387695312e-08,
+        "max_frontal": 1.519626234052415e-07
+      },
+      "hand_l": {
+        "n": 137,
+        "max_displacement": 1.5004413107891625e-07,
+        "mean_displacement": 1.43417055825319e-07,
+        "max_vertical": 2.9802322387695312e-08,
+        "max_frontal": 1.4975481660844222e-07
+      },
+      "foot_l": {
+        "n": 79,
+        "max_displacement": 3.0091953317455035e-08,
+        "mean_displacement": 1.4065727290536122e-08,
+        "max_vertical": 1.30385160446167e-08,
+        "max_frontal": 1.501712528671799e-08
+      },
+      "hand_r": {
+        "n": 137,
+        "max_displacement": 2.1524837271888154e-07,
+        "mean_displacement": 2.08122219322913e-07,
+        "max_vertical": 1.1920928955078125e-07,
+        "max_frontal": 2.1490760299348766e-07
+      },
+      "foot_r": {
+        "n": 79,
+        "max_displacement": 1.378986538863152e-07,
+        "mean_displacement": 6.837339816180647e-08,
+        "max_vertical": 5.774199962615967e-08,
+        "max_frontal": 5.822069796952525e-08
+      }
+    },
+    "head_x_pos": {
+      "high_head": {
+        "n": 2526,
+        "max_displacement": 0.08897645816404137,
+        "mean_displacement": 0.07078001785322571,
+        "max_vertical": 0.07282525300979614,
+        "max_frontal": 0.07282525300979614
+      },
+      "head_side_band": {
+        "n": 114,
+        "max_displacement": 1.5269146510898468e-07,
+        "mean_displacement": 1.4590782824208596e-07,
+        "max_vertical": 2.9802322387695312e-08,
+        "max_frontal": 1.519626234052415e-07
+      },
+      "hand_l": {
+        "n": 137,
+        "max_displacement": 1.5004413107891625e-07,
+        "mean_displacement": 1.43417055825319e-07,
+        "max_vertical": 2.9802322387695312e-08,
+        "max_frontal": 1.4975481660844222e-07
+      },
+      "foot_l": {
+        "n": 79,
+        "max_displacement": 3.0091953317455035e-08,
+        "mean_displacement": 1.4065727290536122e-08,
+        "max_vertical": 1.30385160446167e-08,
+        "max_frontal": 1.501712528671799e-08
+      },
+      "hand_r": {
+        "n": 137,
+        "max_displacement": 2.1524837271888154e-07,
+        "mean_displacement": 2.08122219322913e-07,
+        "max_vertical": 1.1920928955078125e-07,
+        "max_frontal": 2.1490760299348766e-07
+      },
+      "foot_r": {
+        "n": 79,
+        "max_displacement": 1.378986538863152e-07,
+        "mean_displacement": 6.837339816180647e-08,
+        "max_vertical": 5.774199962615967e-08,
+        "max_frontal": 5.822069796952525e-08
+      }
+    },
+    "head_x_neg": {
+      "high_head": {
+        "n": 2526,
+        "max_displacement": 0.08897645750984967,
+        "mean_displacement": 0.07078001841281445,
+        "max_vertical": 0.07596069574356079,
+        "max_frontal": 0.07596069574356079
+      },
+      "head_side_band": {
+        "n": 114,
+        "max_displacement": 1.5269146510898468e-07,
+        "mean_displacement": 1.4590782824208596e-07,
+        "max_vertical": 2.9802322387695312e-08,
+        "max_frontal": 1.519626234052415e-07
+      },
+      "hand_l": {
+        "n": 137,
+        "max_displacement": 1.5004413107891625e-07,
+        "mean_displacement": 1.43417055825319e-07,
+        "max_vertical": 2.9802322387695312e-08,
+        "max_frontal": 1.4975481660844222e-07
+      },
+      "foot_l": {
+        "n": 79,
+        "max_displacement": 3.0091953317455035e-08,
+        "mean_displacement": 1.4065727290536122e-08,
+        "max_vertical": 1.30385160446167e-08,
+        "max_frontal": 1.501712528671799e-08
+      },
+      "hand_r": {
+        "n": 137,
+        "max_displacement": 2.1524837271888154e-07,
+        "mean_displacement": 2.08122219322913e-07,
+        "max_vertical": 1.1920928955078125e-07,
+        "max_frontal": 2.1490760299348766e-07
+      },
+      "foot_r": {
+        "n": 79,
+        "max_displacement": 1.378986538863152e-07,
+        "mean_displacement": 6.837339816180647e-08,
+        "max_vertical": 5.774199962615967e-08,
+        "max_frontal": 5.822069796952525e-08
+      }
+    },
+    "arms_only": {
+      "high_head": {
+        "n": 2526,
+        "max_displacement": 0.0,
+        "mean_displacement": 0.0,
+        "max_vertical": 0.0,
+        "max_frontal": 0.0
+      },
+      "head_side_band": {
+        "n": 114,
+        "max_displacement": 0.026327924613550865,
+        "mean_displacement": 0.021062159764477843,
+        "max_vertical": 0.01149296760559082,
+        "max_frontal": 0.026327924602114625
+      },
+      "hand_l": {
+        "n": 137,
+        "max_displacement": 0.03341021778801432,
+        "mean_displacement": 0.029928461392253868,
+        "max_vertical": 0.0328499972820282,
+        "max_frontal": 0.03341021805019925
+      },
+      "foot_l": {
+        "n": 79,
+        "max_displacement": 3.0091953317455035e-08,
+        "mean_displacement": 1.4065727290536122e-08,
+        "max_vertical": 1.30385160446167e-08,
+        "max_frontal": 1.501712528671799e-08
+      },
+      "hand_r": {
+        "n": 137,
+        "max_displacement": 0.03341018223599605,
+        "mean_displacement": 0.029922651731956667,
+        "max_vertical": 0.03284996747970581,
+        "max_frontal": 0.03341018292278075
+      },
+      "foot_r": {
+        "n": 79,
+        "max_displacement": 1.378986538863152e-07,
+        "mean_displacement": 6.837339816180647e-08,
+        "max_vertical": 5.774199962615967e-08,
+        "max_frontal": 5.822069796952525e-08
+      }
+    },
+    "arms_full": {
+      "high_head": {
+        "n": 2526,
+        "max_displacement": 0.04558423670623519,
+        "mean_displacement": 0.03659624694283351,
+        "max_vertical": 0.030256152153015137,
+        "max_frontal": 0.030256152153015137
+      },
+      "head_side_band": {
+        "n": 114,
+        "max_displacement": 0.028747470515413872,
+        "mean_displacement": 0.02190984726715439,
+        "max_vertical": 0.015703469514846802,
+        "max_frontal": 0.02793446215597477
+      },
+      "hand_l": {
+        "n": 137,
+        "max_displacement": 0.034331212424671194,
+        "mean_displacement": 0.03053964712912599,
+        "max_vertical": 0.0336935818195343,
+        "max_frontal": 0.034160995699354706
+      },
+      "foot_l": {
+        "n": 79,
+        "max_displacement": 3.0091953317455035e-08,
+        "mean_displacement": 1.4065727290536122e-08,
+        "max_vertical": 1.30385160446167e-08,
+        "max_frontal": 1.501712528671799e-08
+      },
+      "hand_r": {
+        "n": 137,
+        "max_displacement": 0.03433118968147615,
+        "mean_displacement": 0.030533843616286208,
+        "max_vertical": 0.033693522214889526,
+        "max_frontal": 0.034160971814595195
+      },
+      "foot_r": {
+        "n": 79,
+        "max_displacement": 1.378986538863152e-07,
+        "mean_displacement": 6.837339816180647e-08,
+        "max_vertical": 5.774199962615967e-08,
+        "max_frontal": 5.822069796952525e-08
+      }
+    },
+    "gaze": {
+      "high_head": {
+        "n": 2526,
+        "max_displacement": 0.15300581909024671,
+        "mean_displacement": 0.09204403166925947,
+        "max_vertical": 5.960464477539063e-08,
+        "max_frontal": 0.13847219944000566
+      },
+      "head_side_band": {
+        "n": 114,
+        "max_displacement": 1.5269146510898468e-07,
+        "mean_displacement": 1.4590782824208596e-07,
+        "max_vertical": 2.9802322387695312e-08,
+        "max_frontal": 1.519626234052415e-07
+      },
+      "hand_l": {
+        "n": 137,
+        "max_displacement": 1.5004413107891625e-07,
+        "mean_displacement": 1.43417055825319e-07,
+        "max_vertical": 2.9802322387695312e-08,
+        "max_frontal": 1.4975481660844222e-07
+      },
+      "foot_l": {
+        "n": 79,
+        "max_displacement": 3.0091953317455035e-08,
+        "mean_displacement": 1.4065727290536122e-08,
+        "max_vertical": 1.30385160446167e-08,
+        "max_frontal": 1.501712528671799e-08
+      },
+      "hand_r": {
+        "n": 137,
+        "max_displacement": 2.1524837271888154e-07,
+        "mean_displacement": 2.08122219322913e-07,
+        "max_vertical": 1.1920928955078125e-07,
+        "max_frontal": 2.1490760299348766e-07
+      },
+      "foot_r": {
+        "n": 79,
+        "max_displacement": 1.378986538863152e-07,
+        "mean_displacement": 6.837339816180647e-08,
+        "max_vertical": 5.774199962615967e-08,
+        "max_frontal": 5.822069796952525e-08
+      }
+    },
+    "walk_peak": {
+      "high_head": {
+        "n": 2526,
+        "max_displacement": 0.0,
+        "mean_displacement": 0.0,
+        "max_vertical": 0.0,
+        "max_frontal": 0.0
+      },
+      "head_side_band": {
+        "n": 114,
+        "max_displacement": 0.002681991212167596,
+        "mean_displacement": 0.0012671092704272108,
+        "max_vertical": 0.0023677051067352295,
+        "max_frontal": 0.002367705111424255
+      },
+      "hand_l": {
+        "n": 137,
+        "max_displacement": 0.0008122623097981865,
+        "mean_displacement": 0.0004891132066230672,
+        "max_vertical": 0.0008122622966766357,
+        "max_frontal": 0.0008122623054243362
+      },
+      "foot_l": {
+        "n": 79,
+        "max_displacement": 0.012033451376290782,
+        "mean_displacement": 0.010112602207237469,
+        "max_vertical": 0.005675189197063446,
+        "max_frontal": 0.005675189197063446
+      },
+      "hand_r": {
+        "n": 137,
+        "max_displacement": 0.0008122743326375238,
+        "mean_displacement": 0.0004891228023053796,
+        "max_vertical": 0.0008120238780975342,
+        "max_frontal": 0.0008120238830195605
+      },
+      "foot_r": {
+        "n": 79,
+        "max_displacement": 0.005453918065387023,
+        "mean_displacement": 0.004946333838542439,
+        "max_vertical": 0.002091059461236,
+        "max_frontal": 0.002091059461236
+      }
+    }
+  },
+  "trial": {
+    "pruned_vertices": 195,
+    "max_discarded_weight": 0.023801291537596136,
+    "changed_vertices": 1253,
+    "max_influences": 4,
+    "metrics": {
+      "neutral": {
+        "high_head": {
+          "max_displacement": 0.0,
+          "mean_displacement": 0.0
+        },
+        "head_side_band": {
+          "max_displacement": 5.972094663188382e-08,
+          "mean_displacement": 3.405560847665589e-08
+        },
+        "hand_l": {
+          "max_displacement": 1.5004413107891625e-07,
+          "mean_displacement": 1.43417055825319e-07
+        },
+        "foot_l": {
+          "max_displacement": 3.0091953317455035e-08,
+          "mean_displacement": 1.4065727290536122e-08
+        },
+        "hand_r": {
+          "max_displacement": 2.1524837271888154e-07,
+          "mean_displacement": 2.08122219322913e-07
+        },
+        "foot_r": {
+          "max_displacement": 1.378986538863152e-07,
+          "mean_displacement": 6.837339816180647e-08
+        }
+      },
+      "head_y_pos": {
+        "high_head": {
+          "max_displacement": 0.13080481492292767,
+          "mean_displacement": 0.07868852824664221
+        },
+        "head_side_band": {
+          "max_displacement": 0.04997481228098446,
+          "mean_displacement": 0.025064465574824512
+        },
+        "hand_l": {
+          "max_displacement": 1.47295015286406e-05,
+          "mean_displacement": 4.6301814587309125e-07
+        },
+        "foot_l": {
+          "max_displacement": 3.0091953317455035e-08,
+          "mean_displacement": 1.4065727290536122e-08
+        },
+        "hand_r": {
+          "max_displacement": 1.4721690700171753e-05,
+          "mean_displacement": 5.26074947406243e-07
+        },
+        "foot_r": {
+          "max_displacement": 1.378986538863152e-07,
+          "mean_displacement": 6.837339816180647e-08
+        }
+      },
+      "head_y_neg": {
+        "high_head": {
+          "max_displacement": 0.13080481492292767,
+          "mean_displacement": 0.07868852839350736
+        },
+        "head_side_band": {
+          "max_displacement": 0.049974811298235104,
+          "mean_displacement": 0.025064465674782363
+        },
+        "hand_l": {
+          "max_displacement": 1.471361776419689e-05,
+          "mean_displacement": 4.6271851480776907e-07
+        },
+        "foot_l": {
+          "max_displacement": 3.0091953317455035e-08,
+          "mean_displacement": 1.4065727290536122e-08
+        },
+        "hand_r": {
+          "max_displacement": 1.4733948400782439e-05,
+          "mean_displacement": 5.263524117849715e-07
+        },
+        "foot_r": {
+          "max_displacement": 1.378986538863152e-07,
+          "mean_displacement": 6.837339816180647e-08
+        }
+      },
+      "head_x_pos": {
+        "high_head": {
+          "max_displacement": 0.08897645816404137,
+          "mean_displacement": 0.07078001785322571
+        },
+        "head_side_band": {
+          "max_displacement": 0.010078437485356535,
+          "mean_displacement": 0.003703279968659906
+        },
+        "hand_l": {
+          "max_displacement": 2.151142263097586e-06,
+          "mean_displacement": 1.8762367528262122e-07
+        },
+        "foot_l": {
+          "max_displacement": 3.0091953317455035e-08,
+          "mean_displacement": 1.4065727290536122e-08
+        },
+        "hand_r": {
+          "max_displacement": 2.1602090859202186e-06,
+          "mean_displacement": 2.5089309365902534e-07
+        },
+        "foot_r": {
+          "max_displacement": 1.378986538863152e-07,
+          "mean_displacement": 6.837339816180647e-08
+        }
+      },
+      "head_x_neg": {
+        "high_head": {
+          "max_displacement": 0.08897645750984967,
+          "mean_displacement": 0.07078001841281445
+        },
+        "head_side_band": {
+          "max_displacement": 0.010078425483211606,
+          "mean_displacement": 0.003703277322314106
+        },
+        "hand_l": {
+          "max_displacement": 2.140745776320843e-06,
+          "mean_displacement": 1.8737180940213716e-07
+        },
+        "foot_l": {
+          "max_displacement": 3.0091953317455035e-08,
+          "mean_displacement": 1.4065727290536122e-08
+        },
+        "hand_r": {
+          "max_displacement": 2.119081418274272e-06,
+          "mean_displacement": 2.5022010109788744e-07
+        },
+        "foot_r": {
+          "max_displacement": 1.378986538863152e-07,
+          "mean_displacement": 6.837339816180647e-08
+        }
+      },
+      "arms_only": {
+        "high_head": {
+          "max_displacement": 0.0,
+          "mean_displacement": 0.0
+        },
+        "head_side_band": {
+          "max_displacement": 0.00884224886864821,
+          "mean_displacement": 0.004890613353098647
+        },
+        "hand_l": {
+          "max_displacement": 0.03341021778801432,
+          "mean_displacement": 0.029927873131479887
+        },
+        "foot_l": {
+          "max_displacement": 3.0091953317455035e-08,
+          "mean_displacement": 1.4065727290536122e-08
+        },
+        "hand_r": {
+          "max_displacement": 0.03341018223599605,
+          "mean_displacement": 0.0299220629522547
+        },
+        "foot_r": {
+          "max_displacement": 1.378986538863152e-07,
+          "mean_displacement": 6.837339816180647e-08
+        }
+      },
+      "arms_full": {
+        "high_head": {
+          "max_displacement": 0.04558423670623519,
+          "mean_displacement": 0.03659624694283351
+        },
+        "head_side_band": {
+          "max_displacement": 0.01278777235928607,
+          "mean_displacement": 0.007775978159980656
+        },
+        "hand_l": {
+          "max_displacement": 0.034331212424671194,
+          "mean_displacement": 0.030539060597453767
+        },
+        "foot_l": {
+          "max_displacement": 3.0091953317455035e-08,
+          "mean_displacement": 1.4065727290536122e-08
+        },
+        "hand_r": {
+          "max_displacement": 0.03433118968147615,
+          "mean_displacement": 0.030533257488623327
+        },
+        "foot_r": {
+          "max_displacement": 1.378986538863152e-07,
+          "mean_displacement": 6.837339816180647e-08
+        }
+      },
+      "gaze": {
+        "high_head": {
+          "max_displacement": 0.15300581909024671,
+          "mean_displacement": 0.09204403166925947
+        },
+        "head_side_band": {
+          "max_displacement": 0.0584568455352585,
+          "mean_displacement": 0.029318561513543905
+        },
+        "hand_l": {
+          "max_displacement": 1.7223687829535137e-05,
+          "mean_displacement": 5.176349832950945e-07
+        },
+        "foot_l": {
+          "max_displacement": 3.0091953317455035e-08,
+          "mean_displacement": 1.4065727290536122e-08
+        },
+        "hand_r": {
+          "max_displacement": 1.7217858936895986e-05,
+          "mean_displacement": 5.806957629426933e-07
+        },
+        "foot_r": {
+          "max_displacement": 1.378986538863152e-07,
+          "mean_displacement": 6.837339816180647e-08
+        }
+      },
+      "walk_peak": {
+        "high_head": {
+          "max_displacement": 0.0,
+          "mean_displacement": 0.0
+        },
+        "head_side_band": {
+          "max_displacement": 0.0006174715212841452,
+          "mean_displacement": 0.00026831131440502244
+        },
+        "hand_l": {
+          "max_displacement": 0.0008122623097981865,
+          "mean_displacement": 0.0004890991923412461
+        },
+        "foot_l": {
+          "max_displacement": 0.012033451376290782,
+          "mean_displacement": 0.010112602207237469
+        },
+        "hand_r": {
+          "max_displacement": 0.0008122743326375238,
+          "mean_displacement": 0.00048910874471097
+        },
+        "foot_r": {
+          "max_displacement": 0.005453918065387023,
+          "mean_displacement": 0.004946333838542439
+        }
+      }
+    },
+    "neutral_max_displacement": {
+      "high_head": {
+        "max_displacement": 0.0,
+        "mean_displacement": 0.0
+      },
+      "head_side_band": {
+        "max_displacement": 5.972094663188382e-08,
+        "mean_displacement": 3.405560847665589e-08
+      },
+      "hand_l": {
+        "max_displacement": 1.5004413107891625e-07,
+        "mean_displacement": 1.43417055825319e-07
+      },
+      "foot_l": {
+        "max_displacement": 3.0091953317455035e-08,
+        "mean_displacement": 1.4065727290536122e-08
+      },
+      "hand_r": {
+        "max_displacement": 2.1524837271888154e-07,
+        "mean_displacement": 2.08122219322913e-07
+      },
+      "foot_r": {
+        "max_displacement": 1.378986538863152e-07,
+        "mean_displacement": 6.837339816180647e-08
+      }
+    }
+  }
+}
