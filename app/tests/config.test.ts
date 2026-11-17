@@ -53,3 +53,13 @@ it('weather defaults on for old configs and preserves explicit false', () => {
   expect(normalizeConfig({ routine: { weather: false } }).routine.weather).toBe(false);
   expect(normalizeConfig({ routine: { weather: 'false' } }).routine.weather).toBe(true);
 });
+
+it('旧config.json含吸附字段正常读取，忽略且保存不写回', () => {
+  const path = fixture();
+  writeFileSync(path, JSON.stringify({ size: 'small', perch: { enabled: true, auto: false } }));
+  const config = readConfig(path);
+  expect(config.size).toBe('small');
+  expect(config).not.toHaveProperty('perch');
+  writeConfig(path, config);
+  expect(JSON.parse(readFileSync(path, 'utf8'))).not.toHaveProperty('perch');
+});

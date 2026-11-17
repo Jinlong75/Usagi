@@ -170,7 +170,7 @@ describe('道具活动与作息', () => {
       const action = pickAction(ACTIONS, undefined, (i + 0.5) / 10000)!;
       counts[action] = (counts[action] ?? 0) + 1;
     }
-    expect(counts).toEqual({ perchHop: 833, jump: 1667, stretch: 1667, shake: 1666, spin: 1667, jumpRope: 833, blowBubbles: 834, sneakSnack: 833 });
+    expect(counts).toEqual({ jump: 1818, stretch: 1818, shake: 1819, spin: 1818, jumpRope: 909, blowBubbles: 909, sneakSnack: 909 });
     for (const name of ['eatRiceball', 'eatWatermelon', 'iceCream']) expect(ACTIONS).not.toContain(name);
     for (const previous of ACTIONS) for (let i = 0; i < 100; i++) expect(pickAction(ACTIONS, previous, i / 100)).not.toBe(previous);
     expect(pickAction(['jumpRope'], 'jumpRope', 0)).toBe('jumpRope');

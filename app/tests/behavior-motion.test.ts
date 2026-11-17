@@ -23,7 +23,7 @@ function model() {
   return { vrm, bones, values };
 }
 describe('程序化动作与复位', () => {
-  const durations: Record<Exclude<MotionName, 'sit' | 'perchHop' | 'perchDown'>, number> = { idle: 3.5, lookAround: 3.5, turn: 0.9, walk: 2, drag: 1.2,
+  const durations: Record<MotionName, number> = { idle: 3.5, lookAround: 3.5, turn: 0.9, walk: 2, drag: 1.2,
     eatRiceball: 6, eatWatermelon: 5, iceCream: 5.5, sneakSnack: 4.5, jumpRope: 6.5, blowBubbles: 5, napPillow: 4, jump: 1.2, stretch: 2.2, shake: 1.2, spin: 1.8, happy: 1.2, surprised: 1.1, shout: 1.3 };
   it.each(Object.keys(durations) as (keyof typeof durations)[])('%s 有正确时长、中段有动作、两端恢复所有骨骼和根节点', (name) => {
     expect(MOTION_SECONDS[name]).toBe(durations[name]);

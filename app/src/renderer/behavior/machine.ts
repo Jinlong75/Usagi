@@ -2,20 +2,20 @@ import type { MoveRequest, MoveResult, WindowInfo, Activity, ActivityRequest, Fo
 
 export type State = 'idle' | 'turn' | 'act' | 'move' | 'click' | 'drag' | 'nap' | 'caught';
 export type Reaction = 'happy' | 'surprised' | 'shout';
-export type Action = 'jump' | 'stretch' | 'shake' | 'spin' | Activity | 'sneakSnack' | 'perchHop';
-export const ACTIONS: Action[] = ['perchHop', 'jump', 'stretch', 'shake', 'spin', 'jumpRope', 'blowBubbles', 'sneakSnack'];
-export const ACTION_WEIGHTS: Record<Action, number> = { perchHop: 0.5, jump: 1, stretch: 1, shake: 1, spin: 1, jumpRope: 0.5, blowBubbles: 0.5, sneakSnack: 0.5, eatRiceball: 0.5, eatWatermelon: 0.5, iceCream: 0.5 };
+export type Action = 'jump' | 'stretch' | 'shake' | 'spin' | Activity | 'sneakSnack';
+export const ACTIONS: Action[] = ['jump', 'stretch', 'shake', 'spin', 'jumpRope', 'blowBubbles', 'sneakSnack'];
+export const ACTION_WEIGHTS: Record<Action, number> = { jump: 1, stretch: 1, shake: 1, spin: 1, jumpRope: 0.5, blowBubbles: 0.5, sneakSnack: 0.5, eatRiceball: 0.5, eatWatermelon: 0.5, iceCream: 0.5 };
 export function pickAction(pool: readonly Action[], previous: Action | undefined, value: number): Action | undefined {
   const choices = pool.length > 1 ? pool.filter(action => action !== previous) : pool;
   let roll = value * choices.reduce((sum, action) => sum + ACTION_WEIGHTS[action], 0);
   return choices.find(action => (roll -= ACTION_WEIGHTS[action]) < 0) ?? choices.at(-1);
 }
-export const DURATIONS = { perchHop: 1040, idle: 3500, turn: 450, jump: 1200, stretch: 2200, shake: 1200, spin: 1800, jumpRope: 6500, blowBubbles: 5000,
+export const DURATIONS = { idle: 3500, turn: 450, jump: 1200, stretch: 2200, shake: 1200, spin: 1800, jumpRope: 6500, blowBubbles: 5000,
   eatRiceball: 6000, eatWatermelon: 5000, iceCream: 5500, sneakSnack: 4500,
   happy: 1200, surprised: 1100, shout: 1300 } as const;
 export const SPEED = 90;
 export const TURN_ANGLE = 50 * Math.PI / 180;
-export type Command = { type: 'perchHop' } | { type: 'move'; request: MoveRequest } | { type: 'cancel' } |
+export type Command = { type: 'move'; request: MoveRequest } | { type: 'cancel' } |
   { type: 'activityDone'; activity: FoodActivity; feedId: number } |
   { type: 'sound'; use: 'click_happy' | 'click_surprise' | 'click_shout' | 'drag' };
 export interface Snapshot {
@@ -56,14 +56,6 @@ export class BehaviorMachine {
   snapshot: Snapshot;
   private commands: Command[] = [];
   private lastAction?: Action;
-  private perched = false;
-  private canHop = false;
-  private inFlight = false;
-  perch(sitting: boolean, canHop: boolean, inFlight = false): void {
-    const changed = this.perched !== sitting || this.inFlight !== inFlight;
-    this.perched = sitting; this.canHop = canHop; this.inFlight = inFlight;
-    if (changed || (!canHop && !inFlight && this.snapshot.action === 'perchHop')) { this.cancel(); this.enter('idle', DURATIONS.idle); }
-  }
   private lastReaction?: Reaction;
   private pending: ReturnType<typeof planMove> = null;
   private pressed = false;
@@ -86,7 +78,6 @@ export class BehaviorMachine {
   routine(state: RoutineState): void {
     if (state === this.routineState) return;
     this.routineState = state;
-    if (this.inFlight) return;
     if (state === 'awake') {
       this.wakeStretch = true;
       if (this.snapshot.state !== 'drag' && !this.pressed) this.stretchAwake();
@@ -96,7 +87,6 @@ export class BehaviorMachine {
   activity(request: ActivityRequest): void {
     if (!this.visible || this.snapshot.state === 'drag' || this.pressed) return;
     const action = typeof request === 'string' ? request : request.activity;
-    if ((this.perched && action === 'jumpRope') || this.inFlight) return;
     this.cancel();
     // 休息时手动玩耍与点击一致：保持清醒 60 秒后再按作息回到打盹。
     if (this.routineState !== 'awake') this.awakeUntil = this.now() + 60_000;
@@ -167,16 +157,14 @@ export class BehaviorMachine {
     this.enter('turn', DURATIONS.turn, { fromAngle: this.snapshot.direction * TURN_ANGLE, toAngle: 0 });
   }
   private act(): void {
-    const pool = this.pool.filter(a => (a !== 'perchHop' || this.canHop) && (!this.perched || !['perchHop', 'jump', 'spin', 'jumpRope'].includes(a)));
-    const action = pickAction(pool, this.lastAction, this.random());
+    const action = pickAction(this.pool, this.lastAction, this.random());
     if (!action) { this.enter('idle', DURATIONS.idle); return; }
-    if (action === 'perchHop') this.commands.push({ type: 'perchHop' });
     this.lastAction = action;
     this.enter('act', DURATIONS[action], { action });
   }
   tick(info: WindowInfo | null): Snapshot {
     const state = this.snapshot;
-    if (!this.visible || this.pressed || this.inFlight || state.state === 'drag') return state;
+    if (!this.visible || this.pressed || state.state === 'drag') return state;
     if (state.state === 'caught') {
       if (this.now() - state.startedAt >= state.durationMs) this.clickReaction('surprised');
       return this.snapshot;
@@ -210,7 +198,6 @@ export class BehaviorMachine {
     } else if (state.state === 'click') this.enter('idle', DURATIONS.idle);
     else {
       const roll = this.random();
-      if (this.perched) { if (roll < 0.4) this.enter('idle', DURATIONS.idle); else this.act(); return this.snapshot; }
       const bucket = roll < 0.30 ? 'idle' : roll < 0.40 ? 'turn' : roll < 0.80 ? 'act' : 'move';
       const inward = info ? inwardDirection(info, state.direction) : state.direction;
       // The facing gate corrects outward idle, and downgrades an already-correct turn.

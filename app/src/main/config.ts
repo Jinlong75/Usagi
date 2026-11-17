@@ -3,7 +3,6 @@ import { dirname } from 'node:path';
 import type { Config } from '../shared/types';
 
 export const DEFAULT_CONFIG: Config = {
-  perch: { enabled: true, auto: true },
   modelPath: null, size: 'medium', position: null, alwaysOnTop: true,
   chat: { baseUrl: 'https://api.deepseek.com', model: 'deepseek-flash', temperature: 0.7, maxTokens: 2048, thinking: 'disabled' },
   routine: { enabled: true, quiet: false, weather: true, morning: ['06:00', '10:00'], lunch: ['11:30', '13:00'],
@@ -41,8 +40,6 @@ export function normalizeConfig(value: unknown): Config {
   result.selfTalk.maxSec = Math.max(result.selfTalk.minSec, finite(talk.maxSec, result.selfTalk.maxSec, 5));
   if (Array.isArray(talk.lines)) result.selfTalk.lines = [...new Set(talk.lines
     .filter((line): line is string => typeof line === 'string').map(line => line.trim()).filter(Boolean))];
-  const perch = record(data.perch);
-  for (const key of ['enabled', 'auto'] as const) if (typeof perch[key] === 'boolean') result.perch[key] = perch[key];
   const routine = record(data.routine);
   for (const key of ['enabled', 'quiet', 'weather'] as const) if (typeof routine[key] === 'boolean') result.routine[key] = routine[key];
   const validTime = (time: unknown): time is string => typeof time === 'string' && /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time);

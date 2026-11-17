@@ -142,13 +142,6 @@ describe('设置页保存失败，无 GUI', () => {
     await import('../src/settings/index');
     await vi.waitFor(() => expect(field('version').textContent).toBe('版本 0.1.0 · 开发版（占位模型）'));
   });
-  it('两个吸附开关默认开启，关闭自动与关闭功能分别完整保存', async () => {
-    expect(field('perch-enabled').checked).toBe(true); expect(field('perch-auto').checked).toBe(true);
-    vi.mocked(bridge.save).mockImplementation(async config => ({ ok: true, config, maskedKey: '' }));
-    field('perch-auto').checked = false; await field('save').onclick!();
-    await vi.waitFor(() => expect(bridge.save).toHaveBeenCalledWith(expect.objectContaining({ perch: { enabled: true, auto: false } }), 'edited-key'));
-    field('perch-enabled').checked = false; await field('save').onclick!();
-    await vi.waitFor(() => expect(bridge.save).toHaveBeenCalledWith(expect.objectContaining({ perch: { enabled: false, auto: false } }), undefined));
-  });
+
 
 });

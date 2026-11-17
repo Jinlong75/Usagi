@@ -1,4 +1,4 @@
-import { Box3, Vector3, SkinnedMesh } from 'three';
+import { Box3, Vector3 } from 'three';
 import type { VRM } from '@pixiv/three-vrm';
 import { sampleMotion } from './index';
 import type { MotionRig, Pose } from './index';
@@ -7,7 +7,7 @@ import { TURN_ANGLE } from '../behavior/machine';
 
 /** Pose extrema, sampled once before the first rendered frame. */
 export function framingPoses(modelHeight = 1): Pose[] {
-  const poses = [sampleMotion('sit', 0.75), sampleMotion('sit', 2.25),sampleMotion('shout', 0.55), sampleMotion('happy', 0.175), sampleMotion('stretch', 1.1),
+  const poses = [sampleMotion('shout', 0.55), sampleMotion('happy', 0.175), sampleMotion('stretch', 1.1),
     sampleMotion('shake', 0.3), sampleMotion('shake', 0.42)];
   for (let angle = 0; angle < 360; angle += 45) {
     const pose = sampleMotion('spin', 0.9);
@@ -103,36 +103,4 @@ export function frameBounds(neutral: Box3, poses: readonly Box3[], aspect: numbe
   const bottom = Math.min(neutral.min.y - height * 0.05, padded.min.y);
   return { width, height, left: center.x - width / 2, right: center.x + width / 2,
     bottom, top: bottom + height, centerX: center.x, centerZ: center.z, front: bounds.max.z };
-}
-
-/** Measure the seated pelvis skin, excluding the legs/feet and tail. Values are
- * model/world coordinates and are projected through the same camera as headTop. */
-export function measureSeat(vrm: VRM, rig: MotionRig, neutral: Box3): Vector3 {
-  const height = neutral.getSize(new Vector3()).y;
-  const hips = vrm.humanoid.getRawBoneNode('hips');
-  const seat = neutral.getCenter(new Vector3());
-  seat.y = Infinity;
-  rig.reset(); rig.apply(sampleMotion('sit', 0, { modelHeight: height }));
-  vrm.update(0); vrm.scene.updateMatrixWorld(true);
-  try {
-    vrm.scene.traverse(object => {
-      if (!(object instanceof SkinnedMesh) || !hips) return;
-      const index = object.skeleton.bones.findIndex(bone => bone === hips);
-      const indices = object.geometry.getAttribute('skinIndex'), weights = object.geometry.getAttribute('skinWeight');
-      if (index < 0 || !indices || !weights) return;
-      const point = new Vector3();
-      for (let i = 0; i < indices.count; i++) {
-        let pelvis = 0;
-        for (let j = 0; j < 4; j++) if (indices.getComponent(i, j) === index) pelvis += weights.getComponent(i, j);
-        if (pelvis < 0.5) continue;
-        object.getVertexPosition(i, point).applyMatrix4(object.matrixWorld);
-        seat.y = Math.min(seat.y, point.y);
-      }
-    });
-    // Non-skinned custom models can still report their measured sole anchor.
-    if (!Number.isFinite(seat.y)) seat.y = neutral.min.y;
-    return seat;
-  } finally {
-    rig.reset(); vrm.update(0); vrm.scene.updateMatrixWorld(true); vrm.springBoneManager?.reset();
-  }
 }
